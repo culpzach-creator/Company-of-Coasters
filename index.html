@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Company of Coasters — Alpha v1.7</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <span style="font-size:1.5rem;">🎢</span>
+    <div>
+      <div class="logo-title">COMPANY OF COASTERS</div>
+      <div style="font-size:.66rem;color:var(--text-muted);">Lower-48 US Population Map & Facilities • Alpha v1.7</div>
+    </div>
+  </div>
+
+  <div class="top-hud" id="topHud">
+    <div class="hud-stat">
+      <span class="hud-label">CEO & Chain</span>
+      <span class="hud-value" id="hudPlayerName">—</span>
+    </div>
+    <div class="hud-stat" id="hudLegendPill" onclick="openLegendInfoModal()" title="Click for Legend Info" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLegendInfoModal()}">
+      <span class="hud-label">Legend</span>
+      <span class="hud-value hud-legend-value" id="hudLegendName" style="color:var(--accent-gold);font-size:.78rem;">—</span>
+    </div>
+    <div class="hud-stat">
+      <span class="hud-label">Year / Era</span>
+      <span class="hud-value year" id="hudYear">Yr 1 • Classic</span>
+    </div>
+    <div class="hud-stat" id="hudBankBox">
+      <span class="hud-label">Chain Treasury</span>
+      <span class="hud-value cash" id="hudCash">$30.00M</span>
+    </div>
+    <div class="hud-stat">
+      <span class="hud-label">Attendance (Goal: 50M)</span>
+      <span class="hud-value att" id="hudAttendance">0</span>
+    </div>
+    <button class="btn-gold" id="btnEndTurn" onclick="endPlayerTurn()">End Turn ➔</button>
+    <button class="btn-outline btn-sm" onclick="openSetupModal()">New Game</button>
+  </div>
+</header>
+
+<div class="main-workspace">
+  <aside class="left-toolbar" id="panelLeftSidebar">
+    <div class="toolbar-tabs">
+      <button class="toolbar-tab-btn active" id="tbTabParks" onclick="switchSidebarTab('parks')"><span>🎡</span><span>Parks</span></button>
+      <button class="toolbar-tab-btn" id="tbTabRivals" onclick="switchSidebarTab('rivals')"><span>🏢</span><span>Chains</span></button>
+      <button class="toolbar-tab-btn" id="tbTabRd" onclick="switchSidebarTab('rd')"><span>🔬</span><span>R&D Lab</span></button>
+      <button class="toolbar-tab-btn" id="tbTabRecords" onclick="switchSidebarTab('records')"><span>🏆</span><span>Records</span></button>
+    </div>
+
+    <div class="toolbar-body" id="sidebarParksPane">
+      <div id="inspectionNoticeBox"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+        <span style="font-size:.72rem;text-transform:uppercase;color:var(--text-muted);font-weight:700;">Selected Chain's Parks</span>
+        <button class="btn-outline btn-sm" onclick="openLegendDetailsModal()">👑 Legend</button>
+      </div>
+      <div id="parkListContainer"></div>
+      <div style="margin-top:.8rem;padding:.65rem;background:#f0f9ff;border:1px solid var(--border-color);border-radius:8px;font-size:.74rem;color:var(--text-muted);line-height:1.4;">
+        💡 <strong>Facility Coverage:</strong> Restrooms and restaurants serve cleared tiles within 2 hexes. Tiles outside either service radius lose 10% of their points per missing amenity (up to 20%). Each Park still needs 1 <strong>Guest Services</strong> (-5% park score if missing).
+      </div>
+    </div>
+
+    <div class="toolbar-body" id="sidebarRivalsPane" style="display:none;">
+      <div style="font-size:.72rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:.5rem;font-weight:700;">Global Conglomerates (Click to Inspect)</div>
+      <div id="leaderboardContainer"></div>
+    </div>
+
+    <div class="toolbar-body" id="sidebarRdPane" style="display:none;">
+      <p style="font-size:.73rem;color:var(--text-muted);margin-bottom:.6rem;">
+        Classic (Yr 1) • <strong>Modern</strong> (Yr 15) • <strong>Advanced</strong> (Yr 30). First to research & build earns a <strong>$1.00M Innovation Bonus</strong>!
+      </p>
+      <div id="researchListContainer"></div>
+    </div>
+
+    <div class="toolbar-body" id="sidebarRecordsPane" style="display:none;">
+      <div style="font-size:.73rem;color:var(--text-muted);margin-bottom:.6rem;">Each World Record grants <strong>+<span id="lblRecPts">1</span> pt</strong> (+1 every 10 yrs).</div>
+      <div id="sidebarRecordsTableContainer"></div>
+      <div style="margin-top:1rem;font-size:.72rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:.4rem;font-weight:700;">Event Feed</div>
+      <div id="gameLogContainer" style="font-size:.74rem;display:flex;flex-direction:column;gap:.35rem;"></div>
+    </div>
+  </aside>
+
+  <main class="map-stage" id="panelCenterWorkspace">
+    <canvas id="mapCanvas"></canvas>
+
+    <div class="map-top-bar">
+      <div class="map-pill">
+        <span id="mapModeIndicator" style="font-weight:700;color:var(--accent-gold);">🌎 Contiguous US Population Hex Map</span>
+        <button class="btn-primary btn-sm" id="btnExitParkView" style="display:none;" onclick="exitParkCampusView()">⬅ Back to US Map</button>
+      </div>
+
+      <div class="map-legend-box" id="usMapTraitLegend">
+        <span><i class="legend-swatch" style="background:#fca5a5;"></i> Barren (0.8x)</span>
+        <span><i class="legend-swatch" style="background:#fdba74;"></i> Rural (0.9x)</span>
+        <span><i class="legend-swatch" style="background:#fde047;"></i> Suburban (1.0x)</span>
+        <span><i class="legend-swatch" style="background:#7dd3fc;"></i> Urban (1.2x)</span>
+        <span><i class="legend-swatch" style="background:#7c3aed;"></i> Destination (1.4x)</span>
+      </div>
+    </div>
+
+    <div class="map-bottom-left" id="hexInspectorCard">
+      <div style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Hex Inspector</div>
+      <div id="hexInspectorContent" style="margin-top:.35rem;font-size:.82rem;">
+        Click any hex on the US map to inspect its attendance modifier, nearby park cluster bonus (+0.1x within 3 hexes), and land acquisition prices.
+      </div>
+    </div>
+
+    <div class="map-bottom-right">
+      <button class="btn-outline btn-sm" onclick="zoomMapBy(1.25)">➕ Zoom In</button>
+      <button class="btn-outline btn-sm" onclick="zoomMapBy(0.8)">➖ Zoom Out</button>
+      <button class="btn-outline btn-sm" onclick="resetMapCamera()">🎯 Center Map</button>
+    </div>
+
+    <div class="park-drawer" id="parkZoneDrawer">
+      <div class="modal-header" style="background:#f8fafc;">
+        <div>
+          <span id="drawerParkTitle" style="color:var(--accent-gold);">Park Zones</span>
+          <div id="drawerParkSub" style="font-size:.7rem;color:var(--text-muted);font-weight:400;"></div>
+          <span id="drawerParkIdentity" class="badge badge-gold" style="margin-top:.25rem;"></span>
+        </div>
+        <div style="display:flex;gap:.35rem;">
+          <button class="btn-outline btn-sm" onclick="toggleParkDrawer(false)">Hide Drawer ➔</button>
+        </div>
+      </div>
+      <div class="modal-body" id="drawerParkBody" style="padding:.85rem;"></div>
+    </div>
+  </main>
+</div>
+
+<div class="tutorial-floating" id="tutorialFloatingBox">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem;">
+    <span class="badge badge-gold" id="tutorialStepBadge">Tutorial 1 / 6</span>
+    <button class="icon-btn" onclick="endTutorial()">Skip ✕</button>
+  </div>
+  <h4 id="tutorialStepTitle" style="color:var(--accent-gold);margin-bottom:.35rem;">Welcome</h4>
+  <p id="tutorialStepText" style="font-size:.82rem;color:var(--text-main);line-height:1.45;margin-bottom:.8rem;"></p>
+  <div style="display:flex;justify-content:space-between;">
+    <button class="btn-outline btn-sm" id="btnTutPrev" onclick="stepTutorial(-1)">⬅ Back</button>
+    <button class="btn-gold btn-sm" id="btnTutNext" onclick="stepTutorial(1)">Next Tip ➔</button>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-backdrop active" id="setupModal">
+  <div class="modal-content setup-modal-content" style="max-width:1100px;">
+    <div class="modal-header"><span>🎢 Company of Coasters — Launch & Legend Draft</span></div>
+    <div class="modal-body">
+      <div id="setupStepConfig">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;">
+          <div class="form-group">
+            <label>Game Mode</label>
+            <select id="setupMode" onchange="toggleSetupModeUI()">
+              <option value="single">Single Player (vs AI Bots)</option>
+              <option value="hotseat">Live Pass & Play Multiplayer (2–8 Players)</option>
+            </select>
+          </div>
+          <div id="singlePlayerCountBox" class="form-group">
+            <label>AI Bot Competitors (1 to 7)</label>
+            <input type="number" id="setupBotCount" value="3" min="1" max="7">
+          </div>
+          <div id="singlePlayerDiffBox" class="form-group">
+            <label>AI Skill Level (Cash Modifiers)</label>
+            <select id="setupBotDifficulty">
+              <option value="easy">Easy (AI gets 0.90x Cash)</option>
+              <option value="medium" selected>Medium (AI gets 1.10x Cash)</option>
+              <option value="hard">Hard (AI gets 1.30x Cash)</option>
+            </select>
+          </div>
+          <div id="multiplayerCountBox" class="form-group" style="display:none;">
+            <label>Total Human Players (2 to 8)</label>
+            <input type="number" id="setupHumanCount" value="2" min="2" max="8">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:.2rem;">
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;color:var(--text-main);">
+            <input type="checkbox" id="setupDisableTutorial" style="width:auto;"> Disable Interactive UI Tutorial on Start
+          </label>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border-color);padding-top:.85rem;margin-top:.4rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;">
+          <h4 id="draftPlayerHeading" style="color:var(--accent-gold);">Player 1: Select Your Legend & Empire</h4>
+          <button class="btn-primary btn-sm" onclick="openCustomLegendModal()">✨ Create Custom Legend</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.65rem;">
+          <div class="form-group">
+            <label>CEO Name (Locked if Premade Legend)</label>
+            <input type="text" id="setupCeoName" value="Walt Disney" readonly>
+          </div>
+          <div class="form-group">
+            <label>Theme Park Chain Name</label>
+            <input type="text" id="setupChainName" value="Walt Disney Attractions">
+          </div>
+          <div class="form-group">
+            <label>First Park Name</label>
+            <input type="text" id="setupParkName" value="Disneyland">
+          </div>
+        </div>
+
+        <label style="font-size:.75rem;color:var(--text-muted);">Choose a Premade Legend (Only 1 of each Legend allowed per game):</label>
+        <div class="legend-grid" id="premadeLegendsGrid"></div>
+        <div id="selectedLegendSpotlight" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-gold" id="btnConfirmDraftPlayer" onclick="confirmPlayerSetupStep()">Confirm & Launch Game ➔</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="legendInfoModal">
+  <div class="modal-content" style="max-width:760px;">
+    <div class="modal-header">
+      <span id="legendInfoModalTitle">👑 Legend Dossier</span>
+      <button class="btn-outline btn-sm" onclick="closeModal('legendInfoModal')" aria-label="Close legend dossier">✕</button>
+    </div>
+    <div class="modal-body" id="legendInfoModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('legendInfoModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="customLegendModal">
+  <div class="modal-content" style="max-width:760px;">
+    <div class="modal-header">
+      <span>✨ Custom Legend Creator (Pick 2 Positive & 2 Negative Traits)</span>
+      <button class="btn-outline btn-sm" onclick="closeModal('customLegendModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Custom CEO Name</label>
+        <input type="text" id="customLegendCeoInput" value="Zachary Culp">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div>
+          <h5 style="color:var(--accent-blue);margin-bottom:.45rem;">Positive Attributes (<span id="posTraitCount">0</span>/2)</h5>
+          <div id="posTraitsList" style="display:flex;flex-direction:column;gap:.35rem;"></div>
+        </div>
+        <div>
+          <h5 style="color:var(--accent-red);margin-bottom:.45rem;">Negative Attributes (<span id="negTraitCount">0</span>/2)</h5>
+          <div id="negTraitsList" style="display:flex;flex-direction:column;gap:.35rem;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('customLegendModal')">Cancel</button>
+      <button class="btn-gold" id="btnSaveCustomLegend" onclick="applyCustomLegendSelection()" disabled>Apply Custom Legend</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="welcomeModal">
+  <div class="modal-content" style="max-width:580px;">
+    <div class="modal-header"><span>🗞️ Official Press Release — A New Era Begins!</span></div>
+    <div class="modal-body" id="welcomeModalBody" style="line-height:1.6;font-size:.95rem;"></div>
+    <div class="modal-footer">
+      <button class="btn-gold" onclick="closeWelcomeAndStartTutorial()">Step Into the CEO Office ➔</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="buildRideModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span id="buildModalTitle">Construct Attraction or Facility</span>
+      <button class="btn-outline btn-sm" onclick="closeModal('buildRideModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tabs">
+        <button class="tab-btn active" id="buildTabFlat" onclick="switchBuildCategory('flat')">🎠 Flat Rides (1 Slot)</button>
+        <button class="tab-btn" id="buildTabTracked" onclick="switchBuildCategory('tracked')">🚣 Tracked & Shows (2 Slots)</button>
+        <button class="tab-btn" id="buildTabCoaster" onclick="switchBuildCategory('coaster')">🎢 Roller Coasters (2 Slots)</button>
+        <button class="tab-btn" id="buildTabFacility" onclick="switchBuildCategory('facility')">🚻 Facilities (1 Slot)</button>
+      </div>
+      <div id="buildCatalogSection"></div>
+      <div id="buildCustomizerSection" style="display:none;border-top:1px solid var(--border-color);padding-top:1rem;margin-top:1rem;">
+        <h4 id="customizerModelTitle" style="margin-bottom:.65rem;color:var(--accent-gold);">Customize Attraction</h4>
+        <div class="form-group">
+          <label>Attraction / Facility Name</label>
+          <div style="display:flex;gap:.5rem;">
+            <input type="text" id="customRideName" placeholder="Enter custom name...">
+            <button class="btn-outline btn-sm" type="button" onclick="rollRandomAttractionName()">🎲 Random</button>
+          </div>
+        </div>
+        <div id="customSlidersContainer"></div>
+        <div class="form-group">
+          <label id="lblInitialScenerySelect">Initial Scenery Tier</label>
+          <select id="customRideTheme" onchange="updateCustomizerPreview()"></select>
+        </div>
+        <div class="card" style="background:rgba(6,182,212,.08);border-color:var(--accent-teal);">
+          <div style="display:flex;justify-content:space-between;font-size:.88rem;">
+            <span>Total Cost (with Legend Modifiers & Research):</span>
+            <strong id="previewTotalCost" style="color:var(--accent-green);">$0.00M</strong>
+          </div>
+          <div id="previewDiscountNote" style="font-size:.74rem;color:var(--accent-gold);margin-top:.15rem;"></div>
+          <div style="display:flex;justify-content:space-between;font-size:.88rem;margin-top:.25rem;">
+            <span>Estimated Score Contribution:</span>
+            <strong id="previewTotalScore" style="color:var(--accent-gold);">0.0 pts</strong>
+          </div>
+          <div id="previewSmoothnessOdds" style="font-size:.74rem;color:var(--text-muted);margin-top:.35rem;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('buildRideModal')">Cancel</button>
+      <button class="btn-gold" id="btnConfirmBuildRide" onclick="confirmBuildRide()" disabled>Construct</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="buyParkModal">
+  <div class="modal-content" style="max-width:540px;">
+    <div class="modal-header">
+      <span id="buyParkModalHeader">🗺️ Acquire Regional Theme Park</span>
+      <button class="btn-outline btn-sm" onclick="closeModal('buyParkModal')">✕</button>
+    </div>
+    <div class="modal-body" id="buyParkModalBody"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="renameModal">
+  <div class="modal-content" style="max-width:440px;">
+    <div class="modal-header">
+      <span id="renameModalHeader">✏️ Rename Item</span>
+      <button class="btn-outline btn-sm" onclick="closeModal('renameModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label id="renameModalLabel">Enter New Name</label>
+        <div style="display:flex;gap:.5rem;">
+          <input type="text" id="renameModalInput" onkeydown="if(event.key==='Enter') saveRenameModal()">
+          <button class="btn-outline btn-sm" type="button" onclick="randomizeRenameModalInput()">🎲</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('renameModal')">Cancel</button>
+      <button class="btn-gold" onclick="saveRenameModal()">Save Name</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="yearEndModal">
+  <div class="modal-content" style="max-width:880px;">
+    <div class="modal-header">
+      <span id="yearEndModalTitle">📊 Season Report</span>
+      <span class="badge badge-gold" id="yearEndStepIndicator">Page 1 of 4</span>
+    </div>
+    <div class="modal-body">
+      <div id="globalTourismBadge" style="margin-bottom:.55rem;font-size:.74rem;color:var(--text-muted);">Global tourism climate affects attendance equally across all chains.</div>
+      <div class="tabs" style="pointer-events:none;">
+        <button class="tab-btn active" id="reportTabBtn1">1. Attendance</button>
+        <button class="tab-btn" id="reportTabBtn2">2. News Wire</button>
+        <button class="tab-btn" id="reportTabBtn3">3. Awards & Records</button>
+        <button class="tab-btn" id="reportTabBtn4">4. Maintenance & Safety</button>
+      </div>
+      <div id="reportPage1"></div>
+      <div id="reportPage2" style="display:none;"></div>
+      <div id="reportPage3" style="display:none;"></div>
+      <div id="reportPage4" style="display:none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" id="btnReportPrev" onclick="stepReportPage(-1)" style="display:none;">⬅ Previous Page</button>
+      <button class="btn-gold" id="btnReportNext" onclick="stepReportPage(1)">Next Page: News Wire ➔</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="recordsModal">
+  <div class="modal-content" style="max-width:640px;">
+    <div class="modal-header">
+      <span id="recordsModalTitle">👑 Legend Profile</span>
+      <button class="btn-outline btn-sm" onclick="closeModal('recordsModal')">✕</button>
+    </div>
+    <div class="modal-body" id="recordsModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('recordsModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="engine.js"></script>
+</body>
+</html>
