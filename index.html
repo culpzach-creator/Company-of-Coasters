@@ -60,7 +60,7 @@
       </div>
       <div id="parkListContainer"></div>
       <div style="margin-top:.8rem;padding:.65rem;background:#f0f9ff;border:1px solid var(--border-color);border-radius:8px;font-size:.74rem;color:var(--text-muted);line-height:1.4;">
-        💡 <strong>Facility Coverage:</strong> Restrooms and restaurants serve cleared tiles within 2 hexes. Tiles outside either service radius lose 10% of their points per missing amenity (up to 20%). Each Park still needs 1 <strong>Guest Services</strong> (-5% park score if missing).
+        💡 <strong>Facility Coverage:</strong> Restrooms and restaurants serve cleared tiles within 2 hexes. Tiles outside either service radius lose 10% of their points per missing amenity (up to 20%). Each Park still needs 1 <strong>Guest Services</strong> (-5% park score if missing). Above 1M attendance, keep at least 25% of points in support and scenery to avoid overcrowding penalties.
       </div>
     </div>
 
@@ -86,6 +86,7 @@
 
   <main class="map-stage" id="panelCenterWorkspace">
     <canvas id="mapCanvas"></canvas>
+    <div class="campus-sprite-layer animations-paused" id="campusSpriteLayer" aria-hidden="true"></div>
 
     <div class="map-top-bar">
       <div class="map-pill">
@@ -146,16 +147,21 @@
 
 <!-- MODALS -->
 <div class="modal-backdrop active" id="setupModal">
-  <div class="modal-content setup-modal-content" style="max-width:1100px;">
-    <div class="modal-header"><span>🎢 Company of Coasters — Launch & Legend Draft</span></div>
-    <div class="modal-body">
-      <div id="setupStepConfig">
+  <div class="modal-content setup-modal-content">
+    <div class="modal-header"><span>🎢 Company of Coasters — Game Setup</span></div>
+    <div class="modal-body setup-modal-body">
+      <section id="setupStepConfig" class="setup-step">
+        <div class="setup-step-heading">
+          <span class="badge badge-gold">STEP 1 OF 2</span>
+          <h2>Game Options</h2>
+          <p>Choose your game mode and opponent settings before drafting your park leader.</p>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;">
           <div class="form-group">
             <label>Game Mode</label>
             <select id="setupMode" onchange="toggleSetupModeUI()">
               <option value="single">Single Player (vs AI Bots)</option>
-              <option value="hotseat">Live Pass & Play Multiplayer (2–8 Players)</option>
+              <option value="hotseat">Live Pass &amp; Play Multiplayer (2–8 Players)</option>
             </select>
           </div>
           <div id="singlePlayerCountBox" class="form-group">
@@ -180,36 +186,79 @@
             <input type="checkbox" id="setupDisableTutorial" style="width:auto;"> Disable Interactive UI Tutorial on Start
           </label>
         </div>
+        <div class="setup-step-actions">
+          <button class="btn-gold setup-next-button" onclick="showLegendSetupStep()">Next: Select Leader →</button>
+        </div>
       </div>
 
-      <div style="border-top:1px solid var(--border-color);padding-top:.85rem;margin-top:.4rem;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;">
-          <h4 id="draftPlayerHeading" style="color:var(--accent-gold);">Player 1: Select Your Legend & Empire</h4>
-          <button class="btn-primary btn-sm" onclick="openCustomLegendModal()">✨ Create Custom Legend</button>
+      <section id="setupStepLegend" class="setup-step" hidden>
+        <div class="legend-select-layout">
+          <aside class="legend-roster-pane">
+            <div class="legend-roster-heading">
+              <span class="badge badge-gold">STEP 2 OF 2</span>
+              <h3 id="draftPlayerHeading">Select Your Legend</h3>
+              <p>Choose a leader to view their strategy and bonuses.</p>
+            </div>
+            <div class="legend-roster-list" id="legendRosterList" role="listbox" aria-label="Legend roster"></div>
+          </aside>
+          <section class="legend-detail-pane" aria-live="polite">
+            <div class="legend-detail-main">
+              <div id="legendDetailHero" class="legend-detail-hero"></div>
+              <div id="legendDetailPerks" class="legend-detail-perks"></div>
+              <div id="customLegendBuilder" class="custom-legend-builder" style="display:none;">
+                <div class="custom-builder-fields">
+                  <div class="form-group">
+                    <label for="customLegendBuilderName">Custom leader name</label>
+                    <input type="text" id="customLegendBuilderName" value="Zachary Culp" oninput="updateCustomLegendDraft()">
+                  </div>
+                  <div class="form-group">
+                    <label for="customLegendPortrait">Portrait</label>
+                    <select id="customLegendPortrait" onchange="updateCustomLegendDraft()"></select>
+                  </div>
+                </div>
+                <div class="custom-builder-traits">
+                  <div>
+                    <h5>Choose 2 positive perks <span id="builderPosCount">0/2</span></h5>
+                    <select id="builderPosTraitA" aria-label="First positive perk"></select>
+                    <select id="builderPosTraitB" aria-label="Second positive perk"></select>
+                  </div>
+                  <div>
+                    <h5>Choose 2 trade-offs <span id="builderNegCount">0/2</span></h5>
+                    <select id="builderNegTraitA" aria-label="First trade-off"></select>
+                    <select id="builderNegTraitB" aria-label="Second trade-off"></select>
+                  </div>
+                </div>
+              </div>
+              <div class="legend-empire-fields legend-empire-fields-themed">
+                <div class="form-group">
+                  <label for="setupChainName">Theme Park Chain Name</label>
+                  <input type="text" id="setupChainName" value="Walt Disney Attractions">
+                </div>
+                <div class="form-group">
+                  <label for="setupParkName">First Park Name</label>
+                  <input type="text" id="setupParkName" value="Disneyland">
+                </div>
+                <div class="form-group">
+                  <label for="setupStartingTheme">Starting Land Theme</label>
+                  <select id="setupStartingTheme">
+                    <option value="classic" selected>Classic</option>
+                    <option value="frontier">Frontier</option>
+                    <option value="western">Western</option>
+                    <option value="medieval">Medieval</option>
+                    <option value="gothic">Gothic</option>
+                    <option value="space">Space</option>
+                    <option value="jungle">Jungle</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="legend-action-bar">
+              <button class="btn-outline" onclick="showOptionsSetupStep()">← Back to Options</button>
+              <button class="btn-gold" id="btnConfirmDraftPlayer" onclick="confirmPlayerSetupStep()">Select Legend &amp; Start Game</button>
+            </div>
+          </section>
         </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.65rem;">
-          <div class="form-group">
-            <label>CEO Name (Locked if Premade Legend)</label>
-            <input type="text" id="setupCeoName" value="Walt Disney" readonly>
-          </div>
-          <div class="form-group">
-            <label>Theme Park Chain Name</label>
-            <input type="text" id="setupChainName" value="Walt Disney Attractions">
-          </div>
-          <div class="form-group">
-            <label>First Park Name</label>
-            <input type="text" id="setupParkName" value="Disneyland">
-          </div>
-        </div>
-
-        <label style="font-size:.75rem;color:var(--text-muted);">Choose a Premade Legend (Only 1 of each Legend allowed per game):</label>
-        <div class="legend-grid" id="premadeLegendsGrid"></div>
-        <div id="selectedLegendSpotlight" aria-live="polite"></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-gold" id="btnConfirmDraftPlayer" onclick="confirmPlayerSetupStep()">Confirm & Launch Game ➔</button>
+      </section>
     </div>
   </div>
 </div>
@@ -227,35 +276,6 @@
   </div>
 </div>
 
-<div class="modal-backdrop" id="customLegendModal">
-  <div class="modal-content" style="max-width:760px;">
-    <div class="modal-header">
-      <span>✨ Custom Legend Creator (Pick 2 Positive & 2 Negative Traits)</span>
-      <button class="btn-outline btn-sm" onclick="closeModal('customLegendModal')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Custom CEO Name</label>
-        <input type="text" id="customLegendCeoInput" value="Zachary Culp">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-        <div>
-          <h5 style="color:var(--accent-blue);margin-bottom:.45rem;">Positive Attributes (<span id="posTraitCount">0</span>/2)</h5>
-          <div id="posTraitsList" style="display:flex;flex-direction:column;gap:.35rem;"></div>
-        </div>
-        <div>
-          <h5 style="color:var(--accent-red);margin-bottom:.45rem;">Negative Attributes (<span id="negTraitCount">0</span>/2)</h5>
-          <div id="negTraitsList" style="display:flex;flex-direction:column;gap:.35rem;"></div>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-outline" onclick="closeModal('customLegendModal')">Cancel</button>
-      <button class="btn-gold" id="btnSaveCustomLegend" onclick="applyCustomLegendSelection()" disabled>Apply Custom Legend</button>
-    </div>
-  </div>
-</div>
-
 <div class="modal-backdrop" id="welcomeModal">
   <div class="modal-content" style="max-width:580px;">
     <div class="modal-header"><span>🗞️ Official Press Release — A New Era Begins!</span></div>
@@ -267,50 +287,56 @@
 </div>
 
 <div class="modal-backdrop" id="buildRideModal">
-  <div class="modal-content">
+  <div class="modal-content ride-modal-content">
     <div class="modal-header">
       <span id="buildModalTitle">Construct Attraction or Facility</span>
       <button class="btn-outline btn-sm" onclick="closeModal('buildRideModal')">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="tabs">
+    <div class="modal-body ride-modal-body">
+      <div class="tabs ride-category-tabs">
         <button class="tab-btn active" id="buildTabFlat" onclick="switchBuildCategory('flat')">🎠 Flat Rides (1 Slot)</button>
         <button class="tab-btn" id="buildTabTracked" onclick="switchBuildCategory('tracked')">🚣 Tracked & Shows (2 Slots)</button>
         <button class="tab-btn" id="buildTabCoaster" onclick="switchBuildCategory('coaster')">🎢 Roller Coasters (2 Slots)</button>
         <button class="tab-btn" id="buildTabFacility" onclick="switchBuildCategory('facility')">🚻 Facilities (1 Slot)</button>
       </div>
-      <div id="buildCatalogSection"></div>
-      <div id="buildCustomizerSection" style="display:none;border-top:1px solid var(--border-color);padding-top:1rem;margin-top:1rem;">
-        <h4 id="customizerModelTitle" style="margin-bottom:.65rem;color:var(--accent-gold);">Customize Attraction</h4>
-        <div class="form-group">
-          <label>Attraction / Facility Name</label>
-          <div style="display:flex;gap:.5rem;">
-            <input type="text" id="customRideName" placeholder="Enter custom name...">
-            <button class="btn-outline btn-sm" type="button" onclick="rollRandomAttractionName()">🎲 Random</button>
+      <div class="ride-split-layout">
+        <div id="buildCatalogSection" class="ride-catalog-list" aria-label="Available attractions"></div>
+        <section class="ride-inspector-pane">
+          <div class="ride-preview-showcase">
+            <div class="ride-preview-graphic" id="ridePreviewGraphic"><span>🎢</span></div>
+            <div class="ride-preview-copy">
+              <span id="ridePreviewCategory" class="badge badge-teal">Attraction</span>
+              <h3 id="ridePreviewName">Select an attraction</h3>
+              <div id="ridePreviewStats" class="ride-preview-stats"></div>
+            </div>
           </div>
-        </div>
-        <div id="customSlidersContainer"></div>
-        <div class="form-group">
-          <label id="lblInitialScenerySelect">Initial Scenery Tier</label>
-          <select id="customRideTheme" onchange="updateCustomizerPreview()"></select>
-        </div>
-        <div class="card" style="background:rgba(6,182,212,.08);border-color:var(--accent-teal);">
-          <div style="display:flex;justify-content:space-between;font-size:.88rem;">
-            <span>Total Cost (with Legend Modifiers & Research):</span>
-            <strong id="previewTotalCost" style="color:var(--accent-green);">$0.00M</strong>
+          <div id="buildCustomizerSection" class="ride-customizer" style="display:none;">
+            <h4 id="customizerModelTitle">Customize Attraction</h4>
+            <div class="ride-name-field form-group">
+              <label>Attraction / Facility Name</label>
+              <div style="display:flex;gap:.5rem;">
+                <input type="text" id="customRideName" placeholder="Enter custom name..." oninput="updateCustomizerPreview()">
+                <button class="btn-outline btn-sm" type="button" onclick="rollRandomAttractionName()">🎲 Random</button>
+              </div>
+            </div>
+            <div id="customSlidersContainer" class="ride-custom-sliders"></div>
+            <div class="form-group ride-scenery-field">
+              <label id="lblInitialScenerySelect">Initial Scenery Tier</label>
+              <select id="customRideTheme" onchange="updateCustomizerPreview()"></select>
+            </div>
+            <div class="card ride-cost-breakdown">
+              <div class="ride-cost-row"><span>Total Cost (with Modifiers & Research)</span><strong id="previewTotalCost">$0.00M</strong></div>
+              <div id="previewDiscountNote"></div>
+              <div class="ride-cost-row"><span>Estimated Score Contribution</span><strong id="previewTotalScore">0.0 pts</strong></div>
+              <div id="previewSmoothnessOdds"></div>
+            </div>
           </div>
-          <div id="previewDiscountNote" style="font-size:.74rem;color:var(--accent-gold);margin-top:.15rem;"></div>
-          <div style="display:flex;justify-content:space-between;font-size:.88rem;margin-top:.25rem;">
-            <span>Estimated Score Contribution:</span>
-            <strong id="previewTotalScore" style="color:var(--accent-gold);">0.0 pts</strong>
+          <div class="ride-build-bar">
+            <button class="btn-outline" onclick="closeModal('buildRideModal')">Cancel</button>
+            <button class="btn-gold" id="btnConfirmBuildRide" onclick="confirmBuildRide()" disabled>Build Attraction</button>
           </div>
-          <div id="previewSmoothnessOdds" style="font-size:.74rem;color:var(--text-muted);margin-top:.35rem;"></div>
-        </div>
+        </section>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-outline" onclick="closeModal('buildRideModal')">Cancel</button>
-      <button class="btn-gold" id="btnConfirmBuildRide" onclick="confirmBuildRide()" disabled>Construct</button>
     </div>
   </div>
 </div>
@@ -387,6 +413,8 @@
 </div>
 
 <script src="data.js"></script>
+<script src="sprites.js"></script>
+<script src="themePacks.js"></script>
 <script src="engine.js"></script>
 </body>
 </html>

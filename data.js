@@ -49,7 +49,7 @@ const PREMADE_LEGENDS = [
     id: "walt_disney",
     name: "Walt Disney",
     title: "The Immersive Visionary",
-    img: "images/walt_disney.jpg",
+    img: "Images/walt_disney.jpg",
     defaultChain: "Walt Disney Attractions",
     defaultPark: "Disneyland",
     desc: "+100% Harmony bonus (Doubled). Maintenance odds increased to 12% & Broken odds to 6%."
@@ -58,7 +58,7 @@ const PREMADE_LEGENDS = [
     id: "michael_eisner",
     name: "Michael Eisner",
     title: "The Rapid Expansionist",
-    img: "images/michael_eisner.jpg",
+    img: "Images/michael_eisner.jpg",
     defaultChain: "EuroDisney Corp",
     defaultPark: "Disney-MGM Studios",
     desc: "New parks cost 30% less; first 2 rides built in a purchased park get 40% off. Flat rides cost +10%."
@@ -67,7 +67,7 @@ const PREMADE_LEGENDS = [
     id: "matt_ouimet",
     name: "Matt Ouimet",
     title: "The Paced Quality Builder",
-    img: "images/matt_ouimet.jpg",
+    img: "Images/matt_ouimet.jpg",
     defaultChain: "Cedar Fair Entertainment",
     defaultPark: "Cedar Point",
     desc: "5% discount on the first attraction added during each turn."
@@ -76,16 +76,16 @@ const PREMADE_LEGENDS = [
     id: "jim_reid",
     name: "Jim Reid-Anderson",
     title: "The Thrill & Clone Mogul",
-    img: "images/jim_reid.jpg",
+    img: "Images/jim_reid.jpg",
     defaultChain: "Six Flags Entertainment",
     defaultPark: "Six Flags Great Adventure",
     desc: "15% ride discount if that model already exists in another park in your chain. Plot scenery costs +15%."
   },
   {
     id: "roland_mack",
-    name: "Roland Mack",
+    name: "Rolland Mack",
     title: "The R&D & Mega-Campus Engineer",
-    img: "images/roland_mack.jpg",
+    img: "Images/rolland_mack.jpg",
     defaultChain: "Mack Leisure Group",
     defaultPark: "Europa-Park",
     desc: "Initial park gets +2 extra expansion plots (4 total). Scenic upgrades cost 5% less. Buying extra parks costs +20%."
@@ -94,7 +94,7 @@ const PREMADE_LEGENDS = [
     id: "hugo_herschend",
     name: "Hugo Herschend",
     title: "The Nostalgia & Artisan Operator",
-    img: "images/hugo_herschend.jpg",
+    img: "Images/hugo_herschend.jpg",
     defaultChain: "Herschend Family Ent.",
     defaultPark: "Silver Dollar City",
     desc: "Stage Show, River Rapids & Park Train receive a +20% point bonus. Flat rides cost +10%."
@@ -103,7 +103,7 @@ const PREMADE_LEGENDS = [
     id: "john_arie",
     name: "John Arie Jr.",
     title: "The Flat-Ride & Value Hustler",
-    img: "images/john_arie.jpg",
+    img: "Images/john_arie.jpg",
     defaultChain: "Fun Spot America",
     defaultPark: "Fun Spot Orlando",
     desc: "Flat rides cost 15% less. All Plot & Ride scenery costs +10%."
@@ -112,10 +112,73 @@ const PREMADE_LEGENDS = [
     id: "angus_wynne",
     name: "Angus Wynne",
     title: "The Regional Classic Tycoon",
-    img: "images/angus_wynne.jpg",
+    img: "Images/angus_wynne.jpg",
     defaultChain: "Great Southwest Corp",
     defaultPark: "Six Flags Over Texas",
     desc: "New parks cost 50% less. Classic era rides gain +10% points. Scenery upgrades cost +10%."
+  },
+  {
+    id: "anton_pieck",
+    name: "Anton Pieck",
+    title: "The Enchanted Storyteller",
+    img: "Images/anton_pieck.jpg",
+    defaultChain: "Pieck Storybook Parks",
+    defaultPark: "Fairytale Gardens",
+    desc: "Harmony requires just 2 attractions per land. Rides are twice as likely to become Cult Classics. Attraction construction costs 5% more."
+  },
+  {
+    id: "milton_hershey",
+    name: "Milton Hershey",
+    title: "The Generous Confectioner",
+    img: "Images/milton_hershey.jpg",
+    defaultChain: "Hershey Leisure",
+    defaultPark: "Chocolate World",
+    desc: "F&B profits increase by 6%. Annual ride upkeep costs 50% more."
+  },
+  {
+    id: "jay_stein",
+    name: "Jay Stein",
+    title: "The Scenic Showman",
+    img: "Images/jay_stein.jpg",
+    defaultChain: "Stein Entertainment",
+    defaultPark: "Studio Adventure",
+    desc: "Ride scenery generates 8% more points. Rides age 5% faster."
+  },
+  {
+    id: "mark_woodburry",
+    name: "Mark Woodburry",
+    title: "The Seasonal Innovator",
+    img: "Images/mark_woodbury.jpg",
+    defaultChain: "Woodburry Parks",
+    defaultPark: "Woodburry Adventure Park",
+    desc: "A park gets 2% more attendance in years when it adds an attraction. Rides age 4% faster."
+  },
+  {
+    id: "walter_knott",
+    name: "Walter Knott",
+    title: "The Pioneer Preserver",
+    img: "Images/walter_knott.jpg",
+    defaultChain: "Knott Family Parks",
+    defaultPark: "Knott's Berry Farm",
+    desc: "Light theming is free for campus tiles (not rides). Clearing expansion tiles costs 15% more."
+  },
+  {
+    id: "george_milley",
+    name: "George Millay",
+    title: "The Show Business Pioneer",
+    img: "Images/george_milley.jpg",
+    defaultChain: "Milley Entertainment",
+    defaultPark: "Ocean Adventure",
+    desc: "Every new park receives a free Stage Show. Build up to 3 Stage Shows per park."
+  },
+  {
+    id: "dick_kinzel",
+    name: "Dick Kinzel",
+    title: "The Record-Breaking Builder",
+    img: "Images/dick_kinzel.jpg",
+    defaultChain: "Kinzel Amusements",
+    defaultPark: "Great Lakes Park",
+    desc: "Rides holding one or more world records generate 20% more ride points."
   }
 ];
 
@@ -150,6 +213,31 @@ const CUSTOM_NEG_TRAITS = [
 ];
 
 const ERA_UNLOCK_YEARS = { classic: 1, modern: 15, advanced: 30 };
+
+const ECONOMIC_BALANCING_RULES = {
+  attendanceBrackets: [
+    { limit: 1500000, efficiency: 1.00 },
+    { limit: 3000000, efficiency: 0.65 },
+    { limit: 4500000, efficiency: 0.35 },
+    { limit: Infinity, efficiency: 0.15 }
+  ],
+  rideAgeGraceYears: 2,
+  rideAgeDecayPerYear: 0.02,
+  rideMinimumCondition: 0.40,
+  annualRideUpkeepRate: 0.02,
+  annualUpkeepCreepPerYear: 0.025,
+  refurbishCostRate: 0.35,
+  duplicateScoreMultipliers: [1.00, 0.70, 0.40],
+  infrastructureAttendanceThreshold: 1000000,
+  infrastructureSupportShareThreshold: 0.25,
+  infrastructureMaximumPenalty: 0.25,
+  corporateOverheadTiers: [
+    { attendanceLimit: 4000000, rate: 0.05 },
+    { attendanceLimit: 8000000, rate: 0.12 },
+    { attendanceLimit: 12000000, rate: 0.20 },
+    { attendanceLimit: Infinity, rate: 0.28 }
+  ]
+};
 
 // Plot Scenery Costs DOUBLED (2x)
 const PLOT_SCENERY_TIERS = [
@@ -202,6 +290,7 @@ const FACILITY_CATALOG = [
     era: "classic",
     cost: 1.0,
     points: 0,
+    supportPoints: 4,
     researchCost: 0,
     spaces: 1,
     lifespan: 30,
@@ -215,6 +304,7 @@ const FACILITY_CATALOG = [
     era: "classic",
     cost: 2.0,
     points: 0,
+    supportPoints: 6,
     researchCost: 0,
     spaces: 1,
     lifespan: 30,
@@ -228,6 +318,7 @@ const FACILITY_CATALOG = [
     era: "classic",
     cost: 2.5,
     points: 0,
+    supportPoints: 4,
     researchCost: 0,
     spaces: 1,
     lifespan: 30,
@@ -238,11 +329,12 @@ const FACILITY_CATALOG = [
 
 const FLAT_RIDE_CATALOG = [
   { id: "scrambler", name: "Scrambler", era: "classic", subType: "family", cost: 1.5, points: 2.5, researchCost: 0, spaces: 1 },
+  { id: "carousel", name: "Carousel", era: "classic", subType: "family", cost: 1.5, points: 2.5, researchCost: 0, spaces: 1 },
+  { id: "flyer", name: "Flyer", era: "classic", subType: "family", cost: 1.5, points: 2.5, researchCost: 0, spaces: 1 },
   { id: "bumper_cars", name: "Bumper Cars", era: "classic", subType: "family", cost: 1.5, points: 2.5, researchCost: 0, spaces: 1 },
   { id: "chair_swings", name: "Chair Swings", era: "classic", subType: "family", cost: 2.0, points: 3.0, researchCost: 0, spaces: 1 },
   { id: "enterprise", name: "Enterprise", era: "classic", subType: "thrill", cost: 2.0, points: 3.0, researchCost: 0, spaces: 1 },
   { id: "pirate_ship", name: "Pirate Ship", era: "classic", subType: "family", cost: 2.5, points: 3.5, researchCost: 0, spaces: 1 },
-  { id: "air_race", name: "Air Race", era: "classic", subType: "thrill", cost: 3.0, points: 4.0, researchCost: 0, spaces: 1 },
   { id: "antique_cars", name: "Antique Cars", era: "classic", subType: "family", cost: 3.0, points: 4.0, researchCost: 0, spaces: 1 },
   { id: "drop_tower", name: "Drop Tower", era: "classic", subType: "thrill", cost: 3.5, points: 4.0, researchCost: 1.0, spaces: 1, customizable: true, baseHeight: 60, maxHeight: 400, stepHeight: 20, costPerStep: 1.0, ptsPerStep: 1.0 },
   { id: "ferris_wheel", name: "Ferris Wheel", era: "classic", subType: "transport", cost: 3.0, points: 4.5, researchCost: 0, spaces: 1, customizable: true, baseHeight: 100, maxHeight: 500, stepHeight: 20, costPerStep: 1.0, ptsPerStep: 1.0 },
@@ -252,11 +344,12 @@ const FLAT_RIDE_CATALOG = [
   { id: "disco", name: "Disco", era: "modern", subType: "family", cost: 4.0, points: 5.5, researchCost: 2.0, spaces: 1 },
   { id: "demolition_derby", name: "Demolition Derby", era: "advanced", subType: "family", cost: 4.0, points: 5.0, researchCost: 2.0, spaces: 1, immuneToIssues: true },
   { id: "giant_discovery", name: "Giant Discovery", era: "advanced", subType: "thrill", cost: 4.0, points: 5.5, researchCost: 2.0, spaces: 1, immuneToIssues: true },
-  { id: "sky_fly", name: "Sky Fly", era: "advanced", subType: "thrill", cost: 4.0, points: 5.5, researchCost: 2.0, spaces: 1, immuneToIssues: true }
+  { id: "sky_fly", name: "Sky Fly", era: "advanced", subType: "thrill", cost: 4.0, points: 5.5, researchCost: 2.0, spaces: 1, immuneToIssues: true },
+  { id: "air_race", name: "Air Race", era: "advanced", subType: "thrill", cost: 4.0, points: 5.5, researchCost: 2.0, spaces: 1, immuneToIssues: true }
 ];
 
 const TRACKED_RIDE_CATALOG = [
-  { id: "stage_show", name: "Stage Show", era: "classic", subType: "family", cost: 4.5, points: 6.5, researchCost: 0, spaces: 2, lifespan: 20, maxPerPark: 1, immuneToIssues: true },
+  { id: "stage_show", name: "Stage Show", era: "classic", subType: "family", cost: 4.5, points: 6.5, researchCost: 0, spaces: 1, lifespan: 20, maxPerPark: 1, immuneToIssues: true },
   { id: "log_flume", name: "Log Flume", era: "classic", subType: "family", cost: 5.5, points: 6.5, researchCost: 1.5, spaces: 2, lifespan: 20, maxPerPark: 1, hasLength: true, baseLen: 1000, maxLen: 4000, lenStep: 200, lenCost: 0.5, lenPts: 1.0, hasHeight: true, baseHeight: 40, maxHeight: 120, heightStep: 10, heightCost: 0.5, heightPts: 0.75 },
   { id: "rapids", name: "River Rapids", era: "modern", subType: "family", cost: 6.5, points: 7.5, researchCost: 2.0, spaces: 2, lifespan: 20, maxPerPark: 1, hasLength: true, baseLen: 1000, maxLen: 4000, lenStep: 200, lenCost: 0.5, lenPts: 1.0, hasHeight: true, baseHeight: 10, maxHeight: 50, heightStep: 10, heightCost: 0.75, heightPts: 1.0 },
   { id: "dark_ride", name: "Dark Ride", era: "modern", subType: "family", cost: 7.0, points: 8.5, researchCost: 2.5, spaces: 2, lifespan: 20, maxPerPark: 2, hasLength: true, baseLen: 400, maxLen: 1400, lenStep: 100, lenCost: 1.0, lenPts: 1.5 },
@@ -307,12 +400,6 @@ const RANDOM_PARK_NAMES = [
   "Pacific Wonderland", "Zephyr Towers", "Avalon Woods", "Hyperion Bay"
 ];
 
-const RANDOM_ZONE_NAMES = [
-  "Haunted Woods", "Forbidden Egypt", "Cyber Metropolis", "Pirate Cove",
-  "Lost Aviary", "Alpine Village", "Dragon's Keep", "Neon Boardwalk",
-  "Shadow Hollow", "Clockwork Plaza", "Wild Frontier", "Atlantis Reef"
-];
-
 const RANDOM_RIDE_NAMES = [
   "Leviathan's Fury", "Vortex", "Iron Condor", "Raptor Strike", "Goliath",
   "Banshee", "Hyperion", "Maverick", "Nemesis", "Kraken's Revenge",
@@ -323,22 +410,22 @@ const RANDOM_RIDE_NAMES = [
 
 const STARTING_UNLOCKED_IDS = [
   "scrambler", "bumper_cars", "chair_swings", "enterprise", "pirate_ship",
-  "air_race", "antique_cars", "ferris_wheel", "train", "stage_show",
+  "antique_cars", "ferris_wheel", "train", "stage_show",
   "classic_wood", "wild_mouse", "claw", "toilets", "restaurant", "guest_services"
 ];
 /* ============================================================================
    CAMPUS 49-HEX DISTRICT GRID & ZONING CONSTANTS (v1.8)
    ============================================================================ */
 
-const LAND_COLOR_PALETTE = [
-  { id: "mint",   name: "Campus Blue", hex: "#7dd3fc" },
-  { id: "pink",   name: "Fantasy Pink", hex: "#f472b6" },
-  { id: "peach",  name: "Frontier Tan", hex: "#fdba74" },
-  { id: "sky",    name: "Tomorrow Sky", hex: "#38bdf8" },
-  { id: "purple", name: "Mystic Lilac", hex: "#c084fc" },
-  { id: "gold",   name: "Imperial Gold",hex: "#fde047" },
-  { id: "coral",  name: "Sunset Coral", hex: "#fb7185" },
-  { id: "teal",   name: "Lagoon Teal",  hex: "#2dd4bf" }
+// These logical asset keys resolve to procedural canvas packs in themePacks.js.
+const LAND_THEMES = [
+  { id: "classic", name: "Classic Midway", badgeColor: "#fde68a", borderColor: "#a16207", sceneryAssets: { 0: "theme-pack/classic/tier-0", 1: "theme-pack/classic/tier-1", 2: "theme-pack/classic/tier-2", 3: "theme-pack/classic/tier-3", 4: "theme-pack/classic/tier-4" } },
+  { id: "frontier", name: "Frontier Wilderness", badgeColor: "#bbf7d0", borderColor: "#15803d", sceneryAssets: { 0: "theme-pack/frontier/tier-0", 1: "theme-pack/frontier/tier-1", 2: "theme-pack/frontier/tier-2", 3: "theme-pack/frontier/tier-3", 4: "theme-pack/frontier/tier-4" } },
+  { id: "western", name: "Western Badlands", badgeColor: "#fed7aa", borderColor: "#c2410c", sceneryAssets: { 0: "theme-pack/western/tier-0", 1: "theme-pack/western/tier-1", 2: "theme-pack/western/tier-2", 3: "theme-pack/western/tier-3", 4: "theme-pack/western/tier-4" } },
+  { id: "medieval", name: "Medieval Kingdom", badgeColor: "#ddd6fe", borderColor: "#6d28d9", sceneryAssets: { 0: "theme-pack/medieval/tier-0", 1: "theme-pack/medieval/tier-1", 2: "theme-pack/medieval/tier-2", 3: "theme-pack/medieval/tier-3", 4: "theme-pack/medieval/tier-4" } },
+  { id: "gothic", name: "Gothic Manor", badgeColor: "#cbd5e1", borderColor: "#475569", sceneryAssets: { 0: "theme-pack/gothic/tier-0", 1: "theme-pack/gothic/tier-1", 2: "theme-pack/gothic/tier-2", 3: "theme-pack/gothic/tier-3", 4: "theme-pack/gothic/tier-4" } },
+  { id: "space", name: "Spaceport", badgeColor: "#bae6fd", borderColor: "#0369a1", sceneryAssets: { 0: "theme-pack/space/tier-0", 1: "theme-pack/space/tier-1", 2: "theme-pack/space/tier-2", 3: "theme-pack/space/tier-3", 4: "theme-pack/space/tier-4" } },
+  { id: "jungle", name: "Jungle Expedition", badgeColor: "#a7f3d0", borderColor: "#047857", sceneryAssets: { 0: "theme-pack/jungle/tier-0", 1: "theme-pack/jungle/tier-1", 2: "theme-pack/jungle/tier-2", 3: "theme-pack/jungle/tier-3", 4: "theme-pack/jungle/tier-4" } }
 ];
 
 // Per-Hex Ground Tile Scenery Costs & Base Points
