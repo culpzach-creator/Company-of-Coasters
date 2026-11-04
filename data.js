@@ -65,30 +65,33 @@ const PREMADE_LEGENDS = [
   },
   {
     id: "matt_ouimet",
-    name: "Matt Ouimet",
+    name: "Matt",
     title: "The Paced Quality Builder",
     img: "Images/matt_ouimet.jpg",
     defaultChain: "Cedar Fair Entertainment",
     defaultPark: "Cedar Point",
-    desc: "5% discount on the first attraction added during each turn."
+    desc: "5% discount on the first attraction added during each turn.",
+    parkNames: ["Carowinds Resort", "Monarch Island", "Monarch Dominion", "Wonderland North", "California's Great Midway", "Gilroy Botanical Gardens"]
   },
   {
     id: "jim_reid",
-    name: "Jim Reid-Anderson",
+    name: "Jim",
     title: "The Thrill & Clone Mogul",
     img: "Images/jim_reid.jpg",
     defaultChain: "Six Flags Entertainment",
     defaultPark: "Six Flags Great Adventure",
-    desc: "15% ride discount if that model already exists in another park in your chain. Plot scenery costs +15%."
+    desc: "15% ride discount if that model already exists in another park in your chain. Plot scenery costs +15%.",
+    parkNames: ["Thrill Flags Magic Mountain", "Thrill Flags Great Adventure", "Thrill Flags Great America", "Thrill Flags Fiesta Texas", "Thrill Flags New England", "Thrill Flags Discovery Kingdom"]
   },
   {
     id: "roland_mack",
-    name: "Rolland Mack",
+    name: "Lukas",
     title: "The R&D & Mega-Campus Engineer",
     img: "Images/rolland_mack.jpg",
     defaultChain: "Mack Leisure Group",
     defaultPark: "Europa-Park",
-    desc: "Initial park gets +2 extra expansion plots (4 total). Scenic upgrades cost 5% less. Buying extra parks costs +20%."
+    desc: "Initial park gets +2 extra expansion plots (4 total). Scenic upgrades cost 5% less. Buying extra parks costs +20%.",
+    parkNames: ["Continental-Park", "Nordic-Waterworld", "Americana-Park", "Pacifica-Park", "Bavaria-Park", "Mediterranea-Park"]
   },
   {
     id: "hugo_herschend",
@@ -110,75 +113,117 @@ const PREMADE_LEGENDS = [
   },
   {
     id: "angus_wynne",
-    name: "Angus Wynne",
-    title: "The Regional Classic Tycoon",
+    name: "Angus",
+    title: "The Regional Flag Pioneer",
     img: "Images/angus_wynne.jpg",
     defaultChain: "Great Southwest Corp",
     defaultPark: "Six Flags Over Texas",
-    desc: "New parks cost 50% less. Classic era rides gain +10% points. Scenery upgrades cost +10%."
+    desc: "New parks cost 50% less. Classic era rides gain +10% points. Scenery upgrades cost +10%.",
+    parkNames: ["Six Banners Over Texas", "Six Banners Over Georgia", "Six Banners Over Mid-America", "Six Banners AstroWorld", "Six Banners Over the Gulf", "Six Banners Over the Carolinas"]
   },
   {
     id: "anton_pieck",
-    name: "Anton Pieck",
-    title: "The Enchanted Storyteller",
+    name: "Willem",
+    title: "The Fairytale & Folklore Artist",
     img: "Images/anton_pieck.jpg",
     defaultChain: "Pieck Storybook Parks",
     defaultPark: "Fairytale Gardens",
-    desc: "Harmony requires just 2 attractions per land. Rides are twice as likely to become Cult Classics. Attraction construction costs 5% more."
+    desc: "Harmony requires just 2 attractions per land. Rides are twice as likely to become Cult Classics. Attraction construction costs 5% more.",
+    parkNames: ["Sprookjeswald", "Grimmwood Forest", "Fablehaven", "Mythos Woods", "Andersen Gardens", "Avalon Hollow"]
   },
   {
     id: "milton_hershey",
-    name: "Milton Hershey",
-    title: "The Generous Confectioner",
+    name: "Arthur",
+    title: "The Confectionery Baron",
     img: "Images/milton_hershey.jpg",
     defaultChain: "Hershey Leisure",
     defaultPark: "Chocolate World",
-    desc: "F&B profits increase by 6%. Annual ride upkeep costs 50% more."
+    desc: "F&B profits increase by 6%. Annual ride upkeep costs 50% more.",
+    parkNames: ["Cocoa Valley Park", "Sweetwater Confectionery Park", "Cocoa Avenue Gardens", "Sugar Mill Pleasure Grounds", "Caramel Valley Resort", "Peppermint Point"]
   },
   {
     id: "jay_stein",
-    name: "Jay Stein",
-    title: "The Scenic Showman",
+    name: "Jay",
+    title: "The Studio Backlot Mogul",
     img: "Images/jay_stein.jpg",
     defaultChain: "Stein Entertainment",
     defaultPark: "Studio Adventure",
-    desc: "Ride scenery generates 8% more points. Rides age 5% faster."
+    desc: "Ride scenery generates 8% more points. Rides age 5% faster.",
+    parkNames: ["Global Studios Florida", "Global Studios Hollywood", "Global Mediterranea", "Global Studios Europe", "Global Studios Chicago", "Global Studios Texas"]
   },
   {
     id: "mark_woodburry",
-    name: "Mark Woodburry",
-    title: "The Seasonal Innovator",
+    name: "Mark",
+    title: "The Seasonal & Portal Innovator",
     img: "Images/mark_woodbury.jpg",
     defaultChain: "Woodburry Parks",
     defaultPark: "Woodburry Adventure Park",
-    desc: "A park gets 2% more attendance in years when it adds an attraction. Rides age 4% faster."
+    desc: "A park gets 2% more attendance in years when it adds an attraction. Rides age 4% faster.",
+    parkNames: ["Epic Portals Universe", "Isles of Adventure", "Global Studios Osaka", "Global Studios Beijing", "Krakatoa Volcano Bay", "Global Kids Resort"]
   },
   {
     id: "walter_knott",
-    name: "Walter Knott",
-    title: "The Pioneer Preserver",
+    name: "Walter",
+    title: "The Ghost Town Pioneer",
     img: "Images/walter_knott.jpg",
     defaultChain: "Knott Family Parks",
     defaultPark: "Knott's Berry Farm",
-    desc: "Light theming is free for campus tiles (not rides). Clearing expansion tiles costs 15% more."
+    desc: "Light theming is free for campus tiles (not rides). Clearing expansion tiles costs 15% more.",
+    parkNames: ["Walter's Boysenberry Farm", "Calico Silver Ghost Town", "Buena Vista Peach Orchard", "Sierra Timber Country", "Mojave Gold Rush Camp", "Golden State Apple Valley"]
   },
   {
     id: "george_milley",
-    name: "George Millay",
-    title: "The Show Business Pioneer",
+    name: "George",
+    title: "The Marine & Waterpark Showman",
     img: "Images/george_milley.jpg",
     defaultChain: "Milley Entertainment",
     defaultPark: "Ocean Adventure",
-    desc: "Every new park receives a free Stage Show. Build up to 3 Stage Shows per park."
+    desc: "Every new park receives a free Stage Show. Build up to 3 Stage Shows per park.",
+    parkNames: ["OceanWorld San Diego", "OceanWorld Orlando", "OceanWorld San Antonio", "OceanWorld Ohio", "Splash 'n Wild Orlando", "Splash 'n Wild Emerald Pointe"]
   },
   {
     id: "dick_kinzel",
-    name: "Dick Kinzel",
-    title: "The Record-Breaking Builder",
+    name: "Dick",
+    title: "The Coaster Wars Titan",
     img: "Images/dick_kinzel.jpg",
     defaultChain: "Kinzel Amusements",
     defaultPark: "Great Lakes Park",
-    desc: "Rides holding one or more world records generate 20% more ride points."
+    desc: "Rides holding one or more world records generate 20% more ride points.",
+    parkNames: ["Sandusky Point", "Valleyfair Grounds", "Lehigh Park", "Worlds of Thrills", "Michigan's Coaster Coast", "Geauga Lakefront"]
+  },
+  {
+    id: "john_arie",
+    name: "John",
+    title: "The Roadside Thrill Maverick",
+    img: "Images/john_arie.jpg",
+    defaultChain: "Fun Spot America",
+    defaultPark: "Fun Spot Orlando",
+    desc: "Flat rides cost 15% less. All Plot & Ride scenery costs +10%.",
+    parkNames: ["Thrill Spot Orlando", "Thrill Spot Kissimmee", "Thrill Spot Atlanta", "Thrill Spot Chicago", "Thrill Spot Dallas", "Thrill Spot Myrtle Beach"]
+  }
+];
+
+const ADVISOR_CATALOG = [
+  {
+    id: "technical",
+    name: "Technical Advisor",
+    title: "Maintenance & Capacity Auditor",
+    image: "Images/technical_advisor.jpg",
+    description: "Audits ride aging, maintenance traps, and facility coverage bottlenecks." 
+  },
+  {
+    id: "financial",
+    name: "Financial Advisor",
+    title: "Pricing & Value Strategist",
+    image: "Images/financial_advisor.jpg",
+    description: "Audits gate ticket pricing elasticity, meal pricing wallet caps, and rival price undercutting."
+  },
+  {
+    id: "creative",
+    name: "Creative Advisor",
+    title: "Land & Guest Experience Director",
+    image: "Images/creative_advisor.jpg",
+    description: "Audits themed land utilization, scenery tier mismatches, ride category balance, and duplicate ride boredom."
   }
 ];
 

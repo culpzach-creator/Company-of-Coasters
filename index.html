@@ -49,6 +49,7 @@
       <button class="toolbar-tab-btn active" id="tbTabParks" onclick="switchSidebarTab('parks')"><span>🎡</span><span>Parks</span></button>
       <button class="toolbar-tab-btn" id="tbTabRivals" onclick="switchSidebarTab('rivals')"><span>🏢</span><span>Chains</span></button>
       <button class="toolbar-tab-btn" id="tbTabRd" onclick="switchSidebarTab('rd')"><span>🔬</span><span>R&D Lab</span></button>
+      <button class="toolbar-tab-btn" id="tbTabAdvisors" onclick="switchSidebarTab('advisors')"><span>🧠</span><span>Advisors</span></button>
       <button class="toolbar-tab-btn" id="tbTabRecords" onclick="switchSidebarTab('records')"><span>🏆</span><span>Records</span></button>
     </div>
 
@@ -74,6 +75,11 @@
         Classic (Yr 1) • <strong>Modern</strong> (Yr 15) • <strong>Advanced</strong> (Yr 30). First to research & build earns a <strong>$1.00M Innovation Bonus</strong>!
       </p>
       <div id="researchListContainer"></div>
+    </div>
+
+    <div class="toolbar-body" id="sidebarAdvisorsPane" style="display:none;">
+      <div style="font-size:.72rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:.55rem;font-weight:700;">Chain Advisers</div>
+      <div id="advisorListContainer"></div>
     </div>
 
     <div class="toolbar-body" id="sidebarRecordsPane" style="display:none;">

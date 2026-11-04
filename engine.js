@@ -45,6 +45,8 @@ let gameState = {
 let uidCounter = 1000;
 function nextUid(prefix) { return `${prefix}_${++uidCounter}`; }
 
+const RIDE_REFURB_FRACTION = ECONOMIC_BALANCING_RULES.refurbishCostRate;
+
 const themeCutoutCache = new Map();
 const campusHexNodes = new Map();
 let campusLayerParkId = null;
@@ -800,6 +802,9 @@ function createInitialParkForPlayer(parkName, legend, playerId, hexObj, themeId 
     additionThisYear: true,
     attractionAddedThisYear: false,
     newCoasterBuiltThisYear: false,
+    ticketPrice: 45,
+    fairTicketPrice: 45,
+    mealPricingStance: "Standard",
     lastFoodAndBeverageLedger: null,
     tiles,
     themeId: starterTheme.id,
@@ -885,6 +890,13 @@ function finalizeSetupAndLaunchGame() {
       cash: 30.0,
       totalAttendance: 0,
       ridesBuiltThisTurn: 0,
+      advisors: ADVISOR_CATALOG.map(advisor => ({
+        ...advisor,
+        hired: false,
+        turnsRemaining: 0,
+        lastReportYear: 0,
+        latestReport: "Position Vacant — No Audit Conducted"
+      })),
       parks: [createInitialParkForPlayer(dp.parkName, dp.legend, pid, sHex, dp.startingThemeId)]
     });
   });
@@ -912,6 +924,13 @@ function finalizeSetupAndLaunchGame() {
         cash: 30.0,
         totalAttendance: 0,
         ridesBuiltThisTurn: 0,
+        advisors: ADVISOR_CATALOG.map(advisor => ({
+          ...advisor,
+          hired: false,
+          turnsRemaining: 0,
+          lastReportYear: 0,
+          latestReport: "Position Vacant — No Audit Conducted"
+        })),
         parks: [createInitialParkForPlayer(leg.defaultPark, leg, pid, sHex, getPreferredLandThemeId(leg))]
       });
     }
@@ -4062,6 +4081,179 @@ function getGlobalAverageMealPrice() {
   return restaurants.reduce((sum, restaurant) => sum + getRestaurantMealPrice(restaurant), 0) / restaurants.length;
 }
 
+function getRideSceneryUpgradeCost(ride, ownerPlayer = null) {
+  if (!ride) return 0;
+  const player = ownerPlayer || getRideOwner(ride);
+  const level = getEffectiveRideThemeLevel(ride);
+  const tier = RIDE_SCENERY_TIERS[level] || RIDE_SCENERY_TIERS[0];
+  const baseCost = level === 0 ? tier.cost : tier.upgradeCost;
+  const adjusted = baseCost * getCategorySceneryScale(ride.category) * getPlayerRideSceneryMultiplier(player, level > 0);
+  return Number(adjusted || 0);
+}
+
+function getRideRefurbishCost(ride, ownerPlayer = null) {
+  const baseRideCost = Number(getRideBaseBuildCost(ride)) || 0;
+  const sceneryUpgradeCost = getRideSceneryUpgradeCost(ride, ownerPlayer);
+  return +(baseRideCost * RIDE_REFURB_FRACTION + (sceneryUpgradeCost / 6)).toFixed(2);
+}
+
+function getParkMealPricingStance(park) {
+  return (park && park.mealPricingStance) || "Standard";
+}
+
+function getAdvisorAnnualSalary(player, advisorId) {
+  const turnIndex = Math.max(1, Number(gameState.year) || 1);
+  const parkCount = Math.max(0, (player?.parks?.length || 1) - 1);
+  return +(0.60 + (turnIndex * 0.08) + (parkCount * 0.20)).toFixed(2);
+}
+
+function getAdvisorState(player, advisorId) {
+  return (player?.advisors || []).find(advisor => advisor.id === advisorId) || null;
+}
+
+function hireAdvisor(advisorId) {
+  const player = gameState.players[gameState.activePlayerIdx];
+  if (!player) return;
+  const advisor = getAdvisorState(player, advisorId);
+  if (!advisor || advisor.hired) return;
+  const salary = getAdvisorAnnualSalary(player, advisorId);
+  if (player.cash < salary) {
+    addLog(`${player.ceoName} cannot afford ${advisor.name} (${salary.toFixed(2)}M).`);
+    return;
+  }
+  player.cash -= salary;
+  advisor.hired = true;
+  advisor.turnsRemaining = 3;
+  advisor.lastReportYear = gameState.year;
+  advisor.latestReport = `${advisor.name} is on contract and awaiting the next tri-annual audit.`;
+  addLog(`${player.ceoName} hired ${advisor.name} for an annual advisory fee of $${salary.toFixed(2)}M.`);
+  renderAll();
+}
+
+function fireAdvisor(advisorId) {
+  const player = gameState.players[gameState.activePlayerIdx];
+  if (!player) return;
+  const advisor = getAdvisorState(player, advisorId);
+  if (!advisor || !advisor.hired) return;
+  advisor.hired = false;
+  advisor.turnsRemaining = 0;
+  advisor.latestReport = `${advisor.name} was released. The prior dossier remains archived for review.`;
+  addLog(`${player.ceoName} dismissed ${advisor.name}.`);
+  renderAll();
+}
+
+function generateAdvisorAuditReport(player, advisorId) {
+  const advisor = getAdvisorState(player, advisorId);
+  if (!advisor || !advisor.hired) return null;
+  const parks = player.parks || [];
+  const totalAttendance = player.totalAttendance || 0;
+  const activeParks = parks.filter(park => park && park.rides && park.rides.length > 0);
+  const averageRideAge = activeParks.length
+    ? activeParks.reduce((sum, park) => sum + (park.rides || []).reduce((inner, ride) => inner + (Number(ride.age) || 0), 0), 0) /
+      activeParks.reduce((sum, park) => sum + (park.rides || []).length, 0)
+    : 0;
+  const supportGap = parks.filter(park => !calculateParkInfrastructureSupport(park, player, park.lastAttendance || 0).hasGuestServices).length;
+  const pricingWarnings = parks.filter(park => {
+    const state = getParkTicketPricingState(park, player);
+    return state.overPriced || state.underpriced;
+  }).length;
+  const harmonyAvg = parks.length
+    ? parks.reduce((sum, park) => sum + (calculateParkPrestigeMetrics(park, player).placeMakingIndex || 0), 0) / parks.length
+    : 0;
+
+  let report = "";
+  if (advisor.id === "technical") {
+    const maintenanceRisk = averageRideAge > 12 ? "maintenance risk is elevated" : "maintenance conditions remain stable";
+    report = `Technical review: ${maintenanceRisk}; ${supportGap} park${supportGap === 1 ? "" : "s"} lack full guest-service coverage and average ride age sits at ${averageRideAge.toFixed(1)} years.`;
+  } else if (advisor.id === "financial") {
+    const gateText = pricingWarnings > 0 ? `${pricingWarnings} park${pricingWarnings === 1 ? "" : "s"} are mispriced relative to fair value` : "park gate pricing is currently aligned to fair value";
+    report = `Financial review: ${gateText}; chain attendance is ${totalAttendance.toLocaleString()} and meal pricing remains ${getParkMealPricingStance(parks[0] || {}) || "Standard"} across the portfolio.`;
+  } else {
+    const harmonyText = harmonyAvg >= 0.65 ? "experience mix remains strong" : "experience mix needs more coherent theming";
+    report = `Creative review: ${harmonyText}; ${activeParks.length} active park zones are shaping a ${Math.min(100, Math.max(0, harmonyAvg * 100)).toFixed(0)}% place-making index across the chain.`;
+  }
+
+  advisor.latestReport = report;
+  advisor.lastReportYear = gameState.year;
+  advisor.turnsRemaining = 3;
+  return report;
+}
+
+function processAdvisorReportsForPlayer(player) {
+  for (const advisor of player.advisors || []) {
+    if (!advisor.hired) continue;
+    const lastYear = Number(advisor.lastReportYear) || 0;
+    if ((gameState.year - lastYear) >= 3) {
+      generateAdvisorAuditReport(player, advisor.id);
+    }
+  }
+}
+
+function getParkTicketPricingState(park, ownerPlayer = null, summaryOverride = null) {
+  const owner = ownerPlayer || gameState.players.find(player => player.parks.some(item => item.id === park.id)) || null;
+  const summary = summaryOverride || calculateParkScoreSummary(park, owner);
+  const parkScore = Number(summary?.finalScore) || 0;
+  const ticketPrice = Number(park?.ticketPrice) || 45;
+  const bottleneck = summary?.infrastructureBottleneck || !summary?.hasGuestServices;
+  const fairTicketPrice = Math.min(200, Math.max(20,
+    25 + (Math.min(parkScore, 85) * 1.8) + Math.max(0, parkScore - 85) * 0.9 - (bottleneck ? 8 : 0)
+  ));
+  const priceRatio = fairTicketPrice > 0 ? ticketPrice / fairTicketPrice : 1;
+  let attendanceMultiplier = 1;
+  if (priceRatio < 0.90) attendanceMultiplier = 1 + Math.min(0.25, (1 - priceRatio) * 0.6);
+  else if (priceRatio <= 1.10) attendanceMultiplier = 1 - (priceRatio - 1.0) * 0.25;
+  else attendanceMultiplier = Math.max(0.25, 1 - Math.pow(priceRatio - 1.0, 1.45) * 1.3);
+
+  let withinRangePenalty = 1;
+  if (priceRatio > 1.10) {
+    const parkHex = gameState.hexByKey.get(park.hexKey);
+    const ownerParks = owner?.parks || [];
+    const currentValueRatio = parkScore / Math.max(1, ticketPrice);
+    for (const rivalPark of ownerParks.filter(item => item.id !== park.id)) {
+      const rivalHex = gameState.hexByKey.get(rivalPark.hexKey);
+      if (!parkHex || !rivalHex) continue;
+      if (hexDistance(parkHex, rivalHex) <= 2) {
+        const rivalSummary = calculateParkScoreSummary(rivalPark, owner);
+        const rivalValueRatio = (rivalSummary?.finalScore || 0) / Math.max(1, Number(rivalPark.ticketPrice || 45));
+        if (rivalValueRatio > currentValueRatio * 1.25) {
+          withinRangePenalty = 0.90;
+          break;
+        }
+      }
+    }
+  }
+
+  return {
+    fairTicketPrice,
+    ticketPrice,
+    priceRatio,
+    attendanceMultiplier: attendanceMultiplier * withinRangePenalty,
+    underpriced: priceRatio < 0.90,
+    overPriced: priceRatio > 1.10,
+    valueRatio: parkScore / Math.max(1, ticketPrice),
+    rivalBleed: withinRangePenalty < 1
+  };
+}
+
+function setParkTicketPrice(parkId, rawPrice) {
+  const player = gameState.players[gameState.activePlayerIdx];
+  const park = player.parks.find(item => item.id === parkId);
+  const value = Number(rawPrice);
+  if (!park || !Number.isFinite(value)) return;
+  park.ticketPrice = Math.min(200, Math.max(20, Math.round(value / 5) * 5));
+  park.fairTicketPrice = getParkTicketPricingState(park, player).fairTicketPrice;
+  renderAll();
+}
+
+function setParkMealPricingStance(parkId, stance) {
+  const player = gameState.players[gameState.activePlayerIdx];
+  const park = player.parks.find(item => item.id === parkId);
+  if (!park) return;
+  const valid = ["Value", "Standard", "Premium"]; 
+  park.mealPricingStance = valid.includes(stance) ? stance : "Standard";
+  renderAll();
+}
+
 function calculateParkFoodAndBeverageLedger(park, attendance, ownerPlayer, globalAveragePrice, prestige, guestRevenueFactor = 1) {
   const restaurants = park.rides.filter(ride => ride.category === "facility" &&
     ride.facilityRole === "restaurant" && isRideOperational(ride));
@@ -4074,8 +4266,16 @@ function calculateParkFoodAndBeverageLedger(park, attendance, ownerPlayer, globa
   const placeMakingIndex = metrics.placeMakingIndex;
   const revenueMultiplier = ownerPlayer?.revenueMult || 1;
   const foodProfitMultiplier = ownerPlayer?.legend.id === "milton_hershey" ? 1.06 : 1;
-  const hungryPoolShare = FOOD_AND_BEVERAGE_RULES.baseHungryPoolShare +
-    FOOD_AND_BEVERAGE_RULES.placeMakingHungryPoolBonus * placeMakingIndex;
+  const pricingState = getParkTicketPricingState(park, ownerPlayer);
+  const stance = getParkMealPricingStance(park);
+  const stanceDemandMultiplier = stance === "Value" ? 1.05 : (stance === "Premium" ? (
+      pricingState.priceRatio <= 1.05 ? 1.25 : 0.92
+    ) : 1.0);
+  const stanceRevenueMultiplier = stance === "Value" ? 0.85 : (stance === "Premium" ? (
+      pricingState.priceRatio <= 1.05 ? 1.25 : 0.80
+    ) : 1.0);
+  const hungryPoolShare = (FOOD_AND_BEVERAGE_RULES.baseHungryPoolShare +
+    FOOD_AND_BEVERAGE_RULES.placeMakingHungryPoolBonus * placeMakingIndex) * stanceDemandMultiplier;
   const guestsPerUnit = attendance / venueCount;
   let totalMealsSold = 0, grossRevenue = 0, variableCogs = 0, fixedOpEx = 0;
   const venues = restaurants.map(restaurant => {
@@ -4095,7 +4295,7 @@ function calculateParkFoodAndBeverageLedger(park, attendance, ownerPlayer, globa
       Math.round(guestsPerUnit * hungryPoolShare * priceConversion)
     );
     const venueGrossRevenue = mealsSold * getRestaurantMealPrice(restaurant) /
-      1000000 * guestRevenueFactor;
+      1000000 * guestRevenueFactor * stanceRevenueMultiplier;
     const venueVariableCogs = mealsSold * FOOD_AND_BEVERAGE_RULES.costPerMeal / 1000000;
     const venueFixedOpEx = FOOD_AND_BEVERAGE_RULES.fixedOverheadPerVenue +
       guestsPerUnit / 1000000 * FOOD_AND_BEVERAGE_RULES.fixedOverheadPerMillionGuests;
@@ -4389,7 +4589,8 @@ function calculateParkScoreSummary(park, ownerPlayer = null) {
     gameState.hexByKey.get(park.hexKey),
     ownerPlayer
   );
-  const potentialAttendance = finalScore * 10000 * marketMultiplier;
+  const pricingState = getParkTicketPricingState(park, ownerPlayer, { finalScore });
+  const potentialAttendance = finalScore * 10000 * marketMultiplier * pricingState.attendanceMultiplier;
   const saturation = convertAttendanceWithSaturation(potentialAttendance);
   const infrastructure = calculateParkInfrastructureSupport(park, ownerPlayer, saturation.attendance);
   return {
@@ -4513,12 +4714,13 @@ function updateMaxRecord(recObj, val, entry) {
 /* --- 7. UI RENDERING & TILE INSPECTOR DRAWER --- */
 
 function switchSidebarTab(tab) {
-  ["parks", "rivals", "rd", "records"].forEach(t => {
+  ["parks", "rivals", "rd", "advisors", "records"].forEach(t => {
     document.getElementById(`tbTab${t.charAt(0).toUpperCase() + t.slice(1)}`).classList.toggle("active", t === tab);
   });
   document.getElementById("sidebarParksPane").style.display = tab === "parks" ? "block" : "none";
   document.getElementById("sidebarRivalsPane").style.display = tab === "rivals" ? "block" : "none";
   document.getElementById("sidebarRdPane").style.display = tab === "rd" ? "block" : "none";
+  document.getElementById("sidebarAdvisorsPane").style.display = tab === "advisors" ? "block" : "none";
   document.getElementById("sidebarRecordsPane").style.display = tab === "records" ? "block" : "none";
 }
 
@@ -4544,10 +4746,43 @@ function renderAll() {
   document.getElementById("hudAttendance").textContent = activePlayer.totalAttendance.toLocaleString();
   document.getElementById("lblRecPts").textContent = getRecordBonusValue();
 
+  renderAdvisorSidebar(activePlayer);
   renderLeftSidebar(inspectedPlayer);
   renderHexInspector();
   if (document.getElementById("parkZoneDrawer").classList.contains("open")) renderParkDrawer();
   requestAnimationFrame(drawMapCanvas);
+}
+
+function renderAdvisorSidebar(player) {
+  const pane = document.getElementById("sidebarAdvisorsPane");
+  if (!pane) return;
+  pane.innerHTML = ADVISOR_CATALOG.map(advisor => {
+    const advisorState = getAdvisorState(player, advisor.id);
+    const salary = getAdvisorAnnualSalary(player, advisor.id);
+    const isHired = !!advisorState?.hired;
+    const statusLabel = isHired
+      ? `Hired • Next Report in ${Math.max(1, 3 - ((gameState.year - advisorState.lastReportYear) % 3 || 3))} Turns`
+      : "Hire Advisor (3-Yr Contract)";
+    return `<div class="card" style="padding:.65rem;">
+      <div style="display:flex;align-items:center;gap:.75rem;">
+        <img src="${advisor.image}" alt="${advisor.name}" style="width:54px;height:54px;border-radius:12px;object-fit:cover;border:1px solid var(--border-color);background:#111827;" onerror="this.src='Images/technical_advisor.jpg'">
+        <div style="flex:1;min-width:0;">
+          <strong style="display:block;color:var(--accent-gold);font-size:.85rem;">${advisor.name}</strong>
+          <small style="color:var(--text-muted);display:block;">${advisor.title}</small>
+          <small style="color:var(--text-muted);display:block;">$${salary.toFixed(2)}M/yr</small>
+        </div>
+      </div>
+      <div style="font-size:.68rem;color:var(--text-muted);margin:.45rem 0;line-height:1.45;">${advisor.description}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:.3rem;">
+        <span class="badge ${isHired ? 'badge-green' : 'badge-gold'}">${statusLabel}</span>
+        ${isHired ? '<button class="btn-outline btn-sm" onclick="fireAdvisor(\'' + advisor.id + '\')">Fire</button>' : '<button class="btn-primary btn-sm" onclick="hireAdvisor(\'' + advisor.id + '\')">Hire</button>'}
+      </div>
+      <div style="margin-top:.55rem;padding:.45rem .5rem;background:rgba(15,23,42,.35);border:1px solid var(--border-color);border-radius:8px;font-size:.68rem;color:var(--text-main);line-height:1.5;">
+        <strong>Latest Dossier</strong><br>
+        ${advisorState?.latestReport || 'Position Vacant — No Audit Conducted'}
+      </div>
+    </div>`;
+  }).join("");
 }
 
 function renderLeftSidebar(inspectedPlayer) {
@@ -4670,6 +4905,33 @@ function renderParkDrawer() {
 
   let html = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.35rem;"><div><div style="font-size:.72rem;color:var(--text-muted);">Wood Coasters: <strong>${woodCounts.totalWood}/4</strong> (Classic: ${woodCounts.classicWood}/2) • Woods Cleared: <strong>${park.expansionsBought}/${park.maxExpansions}</strong></div><div style="margin-top:.28rem;display:flex;gap:.28rem;flex-wrap:wrap;">${summary.hasGuestServices ? '<span class="badge badge-green">ℹ️ Guest Services OK</span>' : '<span class="badge badge-red">⚠️ No Guest Services (-5%)</span>'}${summary.hasBalancedBonus ? '<span class="badge badge-green">🌟 Balanced (+10%)</span>' : ''}${summary.infrastructureBottleneck ? '<span class="badge badge-red">⚠ Infrastructure Bottleneck: Build more F&amp;B, Services, or Plazas!</span>' : ''}${(park.recordTags || []).map(t => `<span class="badge badge-gold">🏆 ${escapeHtml(t)}</span>`).join("")}</div></div>${!isRO ? `<button class="icon-btn" onclick="openRenameModal('park', '${park.id}')">✏️ Rename Park</button>` : ''}</div></div>`;
 
+  if (!isRO) {
+    const pricingState = getParkTicketPricingState(park, inspectedPlayer, summary);
+    html += `<div class="card" style="padding:.7rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+        <strong style="color:var(--accent-gold);">🎟️ Park Pricing</strong>
+        <span class="badge badge-gold">$${Number(park.ticketPrice || 45).toFixed(0)} gate</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:.45rem;justify-content:space-between;margin-bottom:.45rem;">
+        <span style="font-size:.72rem;color:var(--text-muted);">Ticket Price</span>
+        <div style="display:flex;align-items:center;gap:.25rem;">
+          <button class="btn-outline btn-sm" onclick="setParkTicketPrice('${park.id}', ${(Number(park.ticketPrice) || 45) - 5})">−</button>
+          <strong style="min-width:52px;text-align:center;color:var(--accent-gold);">$${Number(park.ticketPrice || 45).toFixed(0)}</strong>
+          <button class="btn-outline btn-sm" onclick="setParkTicketPrice('${park.id}', ${(Number(park.ticketPrice) || 45) + 5})">+</button>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem;">
+        <span style="font-size:.72rem;color:var(--text-muted);">Food & Merch</span>
+        <select onchange="setParkMealPricingStance('${park.id}', this.value)" style="min-width:120px;">
+          ${["Value", "Standard", "Premium"].map(option => `<option value="${option}" ${getParkMealPricingStance(park) === option ? "selected" : ""}>${option}</option>`).join("")}
+        </select>
+      </div>
+      <div style="font-size:.68rem;color:var(--text-muted);line-height:1.55;">
+        ${pricingState.priceRatio < 0.90 ? 'Guests are underpricing the park and driving extra volume.' : pricingState.priceRatio > 1.10 ? 'Guests are pushing back at the current gate price.' : 'Ticket pricing is close to the market sweet spot.'}
+      </div>
+    </div>`;
+  }
+
   // 1. SELECTED HEX TILE & RIDE INSPECTOR CARD
   const selTile = park.tiles.find(t => t.key === gameState.selectedCampusTileKey) || park.tiles[0];
   if (selTile) {
@@ -4750,7 +5012,7 @@ function renderParkDrawer() {
             ${ride.status === "needs_maintenance" ? `<button class="btn-gold btn-sm" onclick="payRideMaintenance('${park.id}','generic','${ride.id}')">🔧 Maint ($${(ride.totalInvestment * 0.2 * maintMult).toFixed(2)}M)</button>` : ''}
             ${ride.status === "needs_repair" ? `<button class="btn-gold btn-sm" onclick="payRideRepair('${park.id}','generic','${ride.id}')">🛠️ Repair ($${(ride.totalInvestment * 0.4 * maintMult).toFixed(2)}M)</button>` : ''}
             ${ride.status === "needs_inspection" ? `<button class="btn-gold btn-sm" onclick="payRideInspection('${park.id}','generic','${ride.id}')">🕵️ Inspect ($0.50M)</button>` : ''}
-            ${ride.category !== "facility" ? `<button class="btn-outline btn-sm" ${inspectedPlayer.cash < getRideBaseBuildCost(ride) * ECONOMIC_BALANCING_RULES.refurbishCostRate ? 'disabled' : ''} onclick="refurbishRide('${park.id}','${ride.id}')">🔄 Refurbish Ride ($${(getRideBaseBuildCost(ride) * ECONOMIC_BALANCING_RULES.refurbishCostRate).toFixed(2)}M)</button>` : ''}
+            ${ride.category !== "facility" ? `<button class="btn-outline btn-sm" ${inspectedPlayer.cash < getRideRefurbishCost(ride, inspectedPlayer) ? 'disabled' : ''} onclick="refurbishRide('${park.id}','${ride.id}')">🔄 Refurbish Ride ($${getRideRefurbishCost(ride, inspectedPlayer).toFixed(2)}M)</button>` : ''}
             <button class="icon-btn" onclick="openRenameModal('ride','${park.id}','generic','${ride.id}')">✏️ Rename</button>
             <button class="btn-danger btn-sm" style="margin-left:auto;" onclick="demolishSingleRide('${park.id}','generic','${ride.id}')">🗑️ Demolish / Replace</button>
           </div>` : ''}
@@ -5603,7 +5865,7 @@ function refurbishRide(parkId, rideId) {
   const park = player.parks.find(item => item.id === parkId);
   const ride = park?.rides.find(item => item.id === rideId);
   if (!park || !ride || ride.category === "facility") return;
-  const cost = +(getRideBaseBuildCost(ride) * ECONOMIC_BALANCING_RULES.refurbishCostRate).toFixed(2);
+  const cost = getRideRefurbishCost(ride, player);
   if (player.cash < cost) return;
   player.cash -= cost;
   setRideAge(park, ride, ECONOMIC_BALANCING_RULES.rideAgeGraceYears);
@@ -6032,8 +6294,7 @@ function executeAITurn(bot) {
     if (projectedAttendance >= 3000000) {
       for (const ride of park.rides) {
         if (ride.category === "facility" || (ride.age || 0) <= 15) continue;
-        const refurbishCost = getRideBaseBuildCost(ride) *
-          ECONOMIC_BALANCING_RULES.refurbishCostRate;
+        const refurbishCost = getRideRefurbishCost(ride, bot);
         if (bot.cash < refurbishCost) continue;
         bot.cash -= refurbishCost;
         setRideAge(park, ride, ECONOMIC_BALANCING_RULES.rideAgeGraceYears);
@@ -6306,6 +6567,7 @@ function resolveSeasonEnd() {
         }
       }
     }
+    processAdvisorReportsForPlayer(player);
   }
   recalculateGlobalRecords();
   for (const player of gameState.players) {
@@ -6386,6 +6648,12 @@ function resolveSeasonEnd() {
     const grossChainRevenue = chainGateRevenue + chainFoodGross;
     const corporateOverhead = grossChainRevenue * corporateOverheadRate;
     const chainRevenue = chainGateRevenue + chainFoodProfit - corporateOverhead - chainRideUpkeep;
+    for (const advisor of player.advisors || []) {
+      if (advisor.hired) {
+        const salary = getAdvisorAnnualSalary(player, advisor.id);
+        player.cash -= salary;
+      }
+    }
     player.cash += chainRevenue;
     attendanceRows.push({
       playerName: `${player.ceoName} (${player.chainName})`,
