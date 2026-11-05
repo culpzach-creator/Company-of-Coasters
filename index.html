@@ -347,6 +347,19 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="weenieModal">
+  <div class="modal-content weenie-modal-content">
+    <div class="modal-header">
+      <span id="weenieModalTitle">Themed Weenies</span>
+      <button class="btn-outline btn-sm" onclick="closeModal('weenieModal')" aria-label="Close weenie catalog">✕</button>
+    </div>
+    <div class="modal-body" id="weenieModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('weenieModal')">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="buyParkModal">
   <div class="modal-content" style="max-width:540px;">
     <div class="modal-header">
@@ -375,6 +388,19 @@
     <div class="modal-footer">
       <button class="btn-outline" onclick="closeModal('renameModal')">Cancel</button>
       <button class="btn-gold" onclick="saveRenameModal()">Save Name</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="advisorReportModal">
+  <div class="modal-content advisor-report-modal-content">
+    <div class="modal-header">
+      <span id="advisorReportModalTitle">Advisor Report</span>
+      <button class="btn-outline btn-sm" onclick="closeModal('advisorReportModal')" aria-label="Close advisor report">✕</button>
+    </div>
+    <div class="modal-body" id="advisorReportModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn-gold" onclick="closeModal('advisorReportModal')">Close Report</button>
     </div>
   </div>
 </div>

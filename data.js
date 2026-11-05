@@ -271,7 +271,7 @@ const ECONOMIC_BALANCING_RULES = {
   rideMinimumCondition: 0.40,
   annualRideUpkeepRate: 0.02,
   annualUpkeepCreepPerYear: 0.025,
-  refurbishCostRate: 0.35,
+  refurbishCostRate: 0.25,
   duplicateScoreMultipliers: [1.00, 0.70, 0.40],
   infrastructureAttendanceThreshold: 1000000,
   infrastructureSupportShareThreshold: 0.25,
@@ -311,13 +311,9 @@ const HARMONY_TIERS = {
 };
 
 const FOOD_AND_BEVERAGE_RULES = {
-  minMealPrice: 5,
+  minMealPrice: 10,
   maxMealPrice: 25,
-  defaultMealPrice: 14,
-  baselineMarketPrice: 14.5,
-  fixedPriceWeight: 0.55,
-  globalAverageWeight: 0.45,
-  themeBonusPerTier: 0.85,
+  defaultMealPrice: 10,
   annualCapacityPerVenue: 450000,
   costPerMeal: 4.2,
   fixedOverheadPerVenue: 0.32,
@@ -354,7 +350,7 @@ const FACILITY_CATALOG = [
     spaces: 1,
     lifespan: 30,
     immuneToIssues: true,
-    desc: "Set meal prices from $5 to $25. Each venue can sell up to 400,000 meals per year. Serves cleared tiles within 2 hexes; themeable at 1/2 Ride Scenery cost."
+    desc: "Set meal prices from $10 to $25. Each venue can sell up to 400,000 meals per year. Serves cleared tiles within 2 hexes; themeable at 1/2 Ride Scenery cost."
   },
   {
     id: "guest_services",
@@ -472,6 +468,16 @@ const LAND_THEMES = [
   { id: "space", name: "Spaceport", badgeColor: "#bae6fd", borderColor: "#0369a1", sceneryAssets: { 0: "theme-pack/space/tier-0", 1: "theme-pack/space/tier-1", 2: "theme-pack/space/tier-2", 3: "theme-pack/space/tier-3", 4: "theme-pack/space/tier-4" } },
   { id: "jungle", name: "Jungle Expedition", badgeColor: "#a7f3d0", borderColor: "#047857", sceneryAssets: { 0: "theme-pack/jungle/tier-0", 1: "theme-pack/jungle/tier-1", 2: "theme-pack/jungle/tier-2", 3: "theme-pack/jungle/tier-3", 4: "theme-pack/jungle/tier-4" } }
 ];
+
+const WEENIE_CATALOG = [
+  { id: "castle", name: "Fantasy Castle", themeId: "medieval", assetId: "castleKeep", assetScale: 0.075 },
+  { id: "cathedral", name: "Ruined Cathedral", themeId: "gothic", assetId: "cathedralRuin", assetScale: 0.09 },
+  { id: "rocket", name: "Rocket Ship", themeId: "space", assetId: "rocket", assetScale: 0.085 },
+  { id: "saloon", name: "Saloon", themeId: "western", assetId: null, assetScale: 0.085 },
+  { id: "fort", name: "Frontier Fort", themeId: "frontier", assetId: "stockadeFort", assetScale: 0.09 },
+  { id: "bigtop", name: "Circus Tent", themeId: "classic", assetId: "bigTop", assetScale: 0.12 },
+  { id: "temple", name: "Mayan Temple", themeId: "jungle", assetId: "stepPyramid", assetScale: 0.09 }
+].map(weenie => ({ ...weenie, baseCost: 25, techPoints: 25, spaces: 1 }));
 
 // Per-Hex Ground Tile Scenery Costs & Base Points
 const TILE_SCENERY_TIERS = [

@@ -192,7 +192,7 @@ function placeThemeAssets(pack,tier,R,seed){
   return {assets:out,decals,u};
 }
 function drawThemeGround(ctx,cx,cy,R,pack,border){ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/180*(60*i+30);ctx[i?'lineTo':'moveTo'](cx+R*Math.cos(a),cy+R*Math.sin(a)*0.58);}ctx.closePath();
-  ctx.fillStyle=pack.ground;ctx.fill();ctx.lineWidth=Math.max(1.5,R*0.03);ctx.strokeStyle=border||pack.border;ctx.stroke();}
+  ctx.fillStyle=pack.ground;ctx.fill();if(border!==false){ctx.lineWidth=Math.max(1.5,R*0.03);ctx.strokeStyle=border||pack.border;ctx.stroke();}}
 function drawThemeDecals(ctx,cx,cy,pack,pl,tm){pl.decals.forEach(d=>pack.assets[d.id].draw(ctx,cx+d.x,cy+d.y,pl.u,d.v,tm||0));}
 /* layer: 'back' (y<0, draw BEFORE the ride sprite), 'front' (y>=0, draw AFTER it) or omit for all, sorted by y */
 function drawThemeAssets(ctx,cx,cy,pack,pl,tm,layer){pl.assets.filter(o=>layer==='back'?o.y<0:layer==='front'?o.y>=0:true).sort((a,b)=>a.y-b.y).forEach(o=>pack.assets[o.id].draw(ctx,cx+o.x,cy+o.y,pl.u,o.v,tm||0));}
@@ -397,7 +397,7 @@ function placeThemeAssets(pack,tier,R,seed){
   return {assets:out,decals,u};
 }
 function drawThemeGround(ctx,cx,cy,R,pack,border){ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/180*(60*i+30);ctx[i?'lineTo':'moveTo'](cx+R*Math.cos(a),cy+R*Math.sin(a)*0.58);}ctx.closePath();
-  ctx.fillStyle=pack.ground;ctx.fill();ctx.lineWidth=Math.max(1.5,R*0.03);ctx.strokeStyle=border||pack.border;ctx.stroke();}
+  ctx.fillStyle=pack.ground;ctx.fill();if(border!==false){ctx.lineWidth=Math.max(1.5,R*0.03);ctx.strokeStyle=border||pack.border;ctx.stroke();}}
 function drawThemeDecals(ctx,cx,cy,pack,pl,tm){pl.decals.forEach(d=>pack.assets[d.id].draw(ctx,cx+d.x,cy+d.y,pl.u,d.v,tm||0));}
 /* layer: 'back' (y<0, draw BEFORE the ride sprite), 'front' (y>=0, draw AFTER it) or omit for all, sorted by y */
 function drawThemeAssets(ctx,cx,cy,pack,pl,tm,layer){pl.assets.filter(o=>layer==='back'?o.y<0:layer==='front'?o.y>=0:true).sort((a,b)=>a.y-b.y).forEach(o=>pack.assets[o.id].draw(ctx,cx+o.x,cy+o.y,pl.u,o.v,tm||0));}
@@ -624,7 +624,7 @@ function placeThemeAssets(pack,tier,R,seed){
   return {assets:out,decals,u};
 }
 function drawThemeGround(ctx,cx,cy,R,pack,border){ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/180*(60*i+30);ctx[i?'lineTo':'moveTo'](cx+R*Math.cos(a),cy+R*Math.sin(a)*0.58);}ctx.closePath();
-  ctx.fillStyle=pack.ground;ctx.fill();ctx.lineWidth=Math.max(1.5,R*0.03);ctx.strokeStyle=border||pack.border;ctx.stroke();}
+  ctx.fillStyle=pack.ground;ctx.fill();if(border!==false){ctx.lineWidth=Math.max(1.5,R*0.03);ctx.strokeStyle=border||pack.border;ctx.stroke();}}
 function drawThemeDecals(ctx,cx,cy,pack,pl){pl.decals.forEach(d=>pack.assets[d.id].draw(ctx,cx+d.x,cy+d.y,pl.u,d.v,0));}
 /* layer: 'back' (y<0, draw BEFORE the ride sprite), 'front' (y>=0, draw AFTER it) or omit for all, sorted by y */
 function drawThemeAssets(ctx,cx,cy,pack,pl,tm,layer){pl.assets.filter(o=>layer==='back'?o.y<0:layer==='front'?o.y>=0:true).sort((a,b)=>a.y-b.y).forEach(o=>pack.assets[o.id].draw(ctx,cx+o.x,cy+o.y,pl.u,o.v,tm||0));}
@@ -821,7 +821,7 @@ function placeThemeAssets(pack,tier,R,seed){
   return {assets:out,decals,u};
 }
 function drawThemeGround(ctx,cx,cy,R,pack,border){ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/180*(60*i+30);ctx[i?'lineTo':'moveTo'](cx+R*Math.cos(a),cy+R*Math.sin(a)*0.58);}ctx.closePath();
-  ctx.fillStyle=pack.ground;ctx.fill();ctx.lineWidth=Math.max(1.5,R*0.03);ctx.strokeStyle=border||pack.border;ctx.stroke();}
+  ctx.fillStyle=pack.ground;ctx.fill();if(border!==false){ctx.lineWidth=Math.max(1.5,R*0.03);ctx.strokeStyle=border||pack.border;ctx.stroke();}}
 function drawThemeDecals(ctx,cx,cy,pack,pl,tm){pl.decals.forEach(d=>pack.assets[d.id].draw(ctx,cx+d.x,cy+d.y,pl.u,d.v,tm||0));}
 /* layer: 'back' (y<0, draw BEFORE the ride sprite), 'front' (y>=0, draw AFTER it) or omit for all, sorted by y */
 function drawThemeAssets(ctx,cx,cy,pack,pl,tm,layer){pl.assets.filter(o=>layer==='back'?o.y<0:layer==='front'?o.y>=0:true).sort((a,b)=>a.y-b.y).forEach(o=>pack.assets[o.id].draw(ctx,cx+o.x,cy+o.y,pl.u,o.v,tm||0));}
@@ -1040,7 +1040,7 @@ function placeThemeAssets(pack,tier,R,seed){
   return {assets:out,decals,u};
 }
 function drawThemeGround(ctx,cx,cy,R,pack,border){ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/180*(60*i+30);ctx[i?'lineTo':'moveTo'](cx+R*Math.cos(a),cy+R*Math.sin(a)*0.58);}ctx.closePath();
-  ctx.fillStyle=pack.ground;ctx.fill();ctx.lineWidth=Math.max(1.5,R*0.03);ctx.strokeStyle=border||pack.border;ctx.stroke();}
+  ctx.fillStyle=pack.ground;ctx.fill();if(border!==false){ctx.lineWidth=Math.max(1.5,R*0.03);ctx.strokeStyle=border||pack.border;ctx.stroke();}}
 function drawThemeDecals(ctx,cx,cy,pack,pl,tm){pl.decals.forEach(d=>pack.assets[d.id].draw(ctx,cx+d.x,cy+d.y,pl.u,d.v,tm||0));}
 /* layer: 'back' (y<0, draw BEFORE the ride sprite), 'front' (y>=0, draw AFTER it) or omit for all, sorted by y */
 function drawThemeAssets(ctx,cx,cy,pack,pl,tm,layer){pl.assets.filter(o=>layer==='back'?o.y<0:layer==='front'?o.y>=0:true).sort((a,b)=>a.y-b.y).forEach(o=>pack.assets[o.id].draw(ctx,cx+o.x,cy+o.y,pl.u,o.v,tm||0));}
@@ -1244,7 +1244,7 @@ function placeThemeAssets(pack,tier,R,seed){
   return {assets:out,decals,u};
 }
 function drawThemeGround(ctx,cx,cy,R,pack,border){ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/180*(60*i+30);ctx[i?'lineTo':'moveTo'](cx+R*Math.cos(a),cy+R*Math.sin(a)*0.58);}ctx.closePath();
-  ctx.fillStyle=pack.ground;ctx.fill();ctx.lineWidth=Math.max(1.5,R*0.03);ctx.strokeStyle=border||pack.border;ctx.stroke();}
+  ctx.fillStyle=pack.ground;ctx.fill();if(border!==false){ctx.lineWidth=Math.max(1.5,R*0.03);ctx.strokeStyle=border||pack.border;ctx.stroke();}}
 function drawThemeDecals(ctx,cx,cy,pack,pl,tm){pl.decals.forEach(d=>pack.assets[d.id].draw(ctx,cx+d.x,cy+d.y,pl.u,d.v,tm||0));}
 /* layer: 'back' (y<0, draw BEFORE the ride sprite), 'front' (y>=0, draw AFTER it) or omit for all, sorted by y */
 function drawThemeAssets(ctx,cx,cy,pack,pl,tm,layer){pl.assets.filter(o=>layer==='back'?o.y<0:layer==='front'?o.y>=0:true).sort((a,b)=>a.y-b.y).forEach(o=>pack.assets[o.id].draw(ctx,cx+o.x,cy+o.y,pl.u,o.v,tm||0));}
@@ -1424,7 +1424,7 @@ function placeThemeAssets(pack,tier,R,seed){
   return {assets:out,decals,u};
 }
 function drawThemeGround(ctx,cx,cy,R,pack,border){ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/180*(60*i+30);ctx[i?'lineTo':'moveTo'](cx+R*Math.cos(a),cy+R*Math.sin(a)*0.58);}ctx.closePath();
-  ctx.fillStyle=pack.ground;ctx.fill();ctx.lineWidth=Math.max(1.5,R*0.03);ctx.strokeStyle=border||pack.border;ctx.stroke();}
+  ctx.fillStyle=pack.ground;ctx.fill();if(border!==false){ctx.lineWidth=Math.max(1.5,R*0.03);ctx.strokeStyle=border||pack.border;ctx.stroke();}}
 function drawThemeDecals(ctx,cx,cy,pack,pl,tm){pl.decals.forEach(d=>pack.assets[d.id].draw(ctx,cx+d.x,cy+d.y,pl.u,d.v,tm||0));}
 /* layer: 'back' (y<0, draw BEFORE the ride sprite), 'front' (y>=0, draw AFTER it) or omit for all, sorted by y */
 function drawThemeAssets(ctx,cx,cy,pack,pl,tm,layer){pl.assets.filter(o=>layer==='back'?o.y<0:layer==='front'?o.y>=0:true).sort((a,b)=>a.y-b.y).forEach(o=>pack.assets[o.id].draw(ctx,cx+o.x,cy+o.y,pl.u,o.v,tm||0));}
