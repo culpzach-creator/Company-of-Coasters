@@ -15,7 +15,7 @@ let draftState = {
 
 let gameState = {
   year: 1,
-  maxYears: 200,
+  maxYears: 50,
   winAttendance: 50000000,
   players: [],
   activePlayerIdx: 0,
@@ -226,7 +226,7 @@ function modelExistsInOtherChainPark(player, currentParkId, modelId) {
 function getPlayerParkPurchaseMultiplier(player) {
   let m = 1.0;
   if (player.legend.id === "michael_eisner") m *= 0.70;
-  if (player.legend.id === "roland_mack") m *= 1.20;
+  if (player.legend.id === "rolland_mack") m *= 1.20;
   if (player.legend.id === "angus_wynne") m *= 0.50;
   return m;
 }
@@ -239,7 +239,7 @@ function getPlayerPlotSceneryMultiplier(player, isUpg) {
   let m = 1.0;
   if (player.legend.id === "jim_reid") m *= 1.15;
   if (player.legend.id === "john_arie") m *= 1.10;
-  if (isUpg && player.legend.id === "roland_mack") m *= 0.95;
+  if (isUpg && player.legend.id === "rolland_mack") m *= 0.95;
   if (isUpg && player.legend.id === "angus_wynne") m *= 1.10;
   if (hasCustomTrait(player, "pos_plot_scenery")) m *= 0.90;
   if (hasCustomTrait(player, "neg_plot_scenery")) m *= 1.10;
@@ -256,7 +256,7 @@ function getTileSceneryUpgradeCost(player, currentLevel, nextTier) {
 function getPlayerRideSceneryMultiplier(player, isUpg) {
   let m = 1.0;
   if (player.legend.id === "john_arie") m *= 1.10;
-  if (isUpg && player.legend.id === "roland_mack") m *= 0.95;
+  if (isUpg && player.legend.id === "rolland_mack") m *= 0.95;
   if (isUpg && player.legend.id === "angus_wynne") m *= 1.10;
   if (hasCustomTrait(player, "pos_ride_scenery")) m *= 0.90;
   if (hasCustomTrait(player, "neg_ride_scenery")) m *= 1.10;
@@ -286,7 +286,7 @@ function getPlayerRideBuildMultiplier(player, park, model, cat) {
   }
   if (cat === "flat") {
     if (player.legend.id === "michael_eisner" || player.legend.id === "hugo_herschend") mult *= 1.10;
-    if (player.legend.id === "john_arie") { mult *= 0.85; notes.push("John Arie Jr. -15% Flat"); }
+    if (player.legend.id === "john_arie") { mult *= 0.85; notes.push("John Arie -15% Flat"); }
     if (hasCustomTrait(player, "pos_flat_disc")) mult *= 0.92;
     if (hasCustomTrait(player, "neg_flat_tax")) mult *= 1.08;
   } else if (cat === "coaster") {
@@ -729,7 +729,7 @@ function createInitialParkForPlayer(parkName, legend, playerId, hexObj, themeId 
   hexObj.parkId = parkId;
   hexObj.ownerId = playerId;
 
-  const extraExp = legend.id === "roland_mack" ? 8 : 0;
+  const extraExp = legend.id === "rolland_mack" ? 8 : 0;
   const { tiles, maxExpansions } = generate49HexCampusDiamond("starting", extraExp);
 
   const starterTheme = getLandTheme(themeId);
@@ -818,7 +818,7 @@ function createInitialParkForPlayer(parkName, legend, playerId, hexObj, themeId 
 }
 
 function addLegendFreeShow(park, legend) {
-  if (legend.id !== "george_milley") return false;
+  if (legend.id !== "george_millay") return false;
   const model = TRACKED_RIDE_CATALOG.find(item => item.id === "stage_show");
   if (!model || countParkModelOccurrences(park, model.id) >= 3) return false;
   const primaryTile = park.tiles.find(tile =>
@@ -853,8 +853,6 @@ function addLegendFreeShow(park, legend) {
     techPoints: model.points
   };
   primaryTile.rideId = show.id;
-  secondTile.rideId = show.id;
-  secondTile.isSecondaryHex = true;
   park.rides.push(show);
   setRideAge(park, show, 0);
   return true;
@@ -862,7 +860,15 @@ function addLegendFreeShow(park, legend) {
 
 function finalizeSetupAndLaunchGame() {
   const mode = document.getElementById("setupMode").value;
+  const gameLength = document.getElementById("setupGameLength").value;
+  const startingCashInput = Number(document.getElementById("setupStartingCash").value);
+  const startingCash = Number.isFinite(startingCashInput)
+    ? Math.min(1000, Math.max(1, startingCashInput))
+    : 30;
   gameState.tutorialEnabled = !document.getElementById("setupDisableTutorial").checked;
+  gameState.maxYears = gameLength === "unlimited"
+    ? Infinity
+    : Math.max(1, parseInt(gameLength, 10) || 50);
   buildUSHexGrid();
   gameState.year = 1;
   gameState.players = [];
@@ -888,7 +894,7 @@ function finalizeSetupAndLaunchGame() {
       isAI: false,
       difficulty: "human",
       revenueMult: 1.0,
-      cash: 30.0,
+      cash: startingCash,
       totalAttendance: 0,
       ridesBuiltThisTurn: 0,
       advisors: ADVISOR_CATALOG.map(advisor => ({
@@ -907,11 +913,18 @@ function finalizeSetupAndLaunchGame() {
     const botDiff = document.getElementById("setupBotDifficulty").value;
     const diffMultMap = { easy: 0.90, medium: 1.10, hard: 1.30 };
     const remLegs = PREMADE_LEGENDS.filter(l => !draftState.takenLegendIds.has(l.id));
+    for (let i = remLegs.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [remLegs[i], remLegs[j]] = [remLegs[j], remLegs[i]];
+    }
     for (let i = 0; i < botCount; i++) {
-      const leg = remLegs[i % remLegs.length];
+      const leg = remLegs[i];
+      if (!leg) throw new Error("Not enough available legends to assign unique AI leaders.");
       draftState.takenLegendIds.add(leg.id);
       const pid = `bot_${i + 1}`;
       const sHex = pickRandomStartingHex();
+      const availableParkNames = shuffleAIParkNames(leg);
+      const initialParkName = availableParkNames.shift();
       gameState.players.push({
         id: pid,
         color: CHAIN_COLORS[(draftState.draftedPlayers.length + i) % CHAIN_COLORS.length],
@@ -922,9 +935,10 @@ function finalizeSetupAndLaunchGame() {
         isAI: true,
         difficulty: botDiff,
         revenueMult: diffMultMap[botDiff],
-        cash: 30.0,
+        cash: startingCash,
         totalAttendance: 0,
         ridesBuiltThisTurn: 0,
+        availableParkNames,
         advisors: ADVISOR_CATALOG.map(advisor => ({
           ...advisor,
           hired: false,
@@ -932,7 +946,7 @@ function finalizeSetupAndLaunchGame() {
           lastReportYear: 0,
           latestReport: "Position Vacant — No Audit Conducted"
         })),
-        parks: [createInitialParkForPlayer(leg.defaultPark, leg, pid, sHex, getPreferredLandThemeId(leg))]
+        parks: [createInitialParkForPlayer(initialParkName, leg, pid, sHex, getPreferredLandThemeId(leg))]
       });
     }
   }
@@ -3319,7 +3333,7 @@ function getPreferredLandThemeId(legend) {
     walt_disney: "classic",
     michael_eisner: "classic",
     jim_reid: "western",
-    roland_mack: "space",
+    rolland_mack: "space",
     hugo_herschend: "frontier",
     john_arie: "classic",
     angus_wynne: "western",
@@ -3328,7 +3342,7 @@ function getPreferredLandThemeId(legend) {
     jay_stein: "space",
     mark_woodburry: "gothic",
     walter_knott: "frontier",
-    george_milley: "medieval",
+    george_millay: "medieval",
     dick_kinzel: "western"
   };
   return preferences[legend?.id] || "classic";
@@ -3496,12 +3510,14 @@ function syncCampusLayerVisibility() {
 
 function getEffectiveTileThemeLevel(tile) {
   if (!tile || tile.state !== "cleared") return 0;
+  if (tile.isWeenie) return 4;
   const expected = tile.zoneId || "generic";
   return tile.themedForZoneId === expected ? (tile.themeLevel || 0) : 0;
 }
 
 function getEffectiveRideThemeLevel(ride) {
   if (!ride) return 0;
+  if (ride.facilityRole === "weenie") return 4;
   const expected = ride.zoneId || "generic";
   return ride.themedForZoneId === expected ? (ride.themeLevel || 0) : 0;
 }
@@ -3540,9 +3556,8 @@ function drawParkCampusMap(ctx) {
           seed
         );
         if (weenieTileKeys.has(t.key)) {
-          layout.assets = layout.assets.filter(
-            asset => themePack.pack.assets[asset.id].cat !== "landmark"
-          );
+          layout.assets = [];
+          layout.decals = [];
         }
         themePack.drawThemeDecals(ctx, t.px, t.py, themePack.pack, layout, 0);
         themePack.drawThemeAssets(ctx, t.px, t.py, themePack.pack, layout, 0);
@@ -3589,6 +3604,30 @@ function drawParkCampusMap(ctx) {
     if (r.spaces === 2 && r.secondaryTileKey) {
       const t2 = tileByKey.get(r.secondaryTileKey);
       if (t2) {
+        if (r.modelId === "dark_ride") {
+          const orientation = getMultiTileRideOrientation(t1, t2);
+          const midX = (t1.px + t2.px) / 2;
+          const midY = (t1.py + t2.py) / 2;
+          const options = {
+            accent: accentColor,
+            name: r.name,
+            t: isDown ? undefined : performance.now() / 1000
+          };
+          if (orientation === "side") {
+            drawDarkRideSide(ctx, midX, midY, CAMPUS_HEX_R, options);
+          } else {
+            drawDarkRideDiag(ctx, midX, midY, CAMPUS_HEX_R, {
+              ...options,
+              dir: orientation
+            });
+          }
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
+            midX, midY + CAMPUS_HEX_R * 0.62);
+          continue;
+        }
         if (["rapids", "log_flume"].includes(r.modelId) ||
           (r.category === "coaster" && r.modelId === "classic_wood")) {
           const phase = 0;
@@ -3697,6 +3736,27 @@ function drawParkCampusMap(ctx) {
       } else if (r.modelId === "stage_show") {
         drawTheater(ctx, t1.px, t1.py, CAMPUS_HEX_R * 0.9, {
           accent: accentColor, tile: false, t: performance.now() / 1000
+        });
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+      } else if (r.modelId === "flying_theater") {
+        drawFlyingTheater(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+          accent: accentColor, name: r.name
+        });
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+      } else if (r.modelId === "demolition_derby") {
+        drawDemolitionDerby(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+          accent: accentColor, t: isDown ? undefined : performance.now() / 1000
+        });
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+      } else if (r.modelId === "antique_cars") {
+        drawAntiqueCars(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+          accent: accentColor, t: isDown ? undefined : performance.now() / 1000
         });
         ctx.fillStyle = "#0f172a";
         ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
@@ -3882,7 +3942,7 @@ function drawCampusWeenie(ctx, ride, tile) {
   if (definition.assetId) {
     const asset = themePack.pack.assets[definition.assetId];
     if (!asset) throw new Error(`Missing weenie illustration: ${definition.assetId}`);
-    asset.draw(ctx, cx, cy, scale, seed, 0);
+    asset.draw(ctx, cx, cy, scale, seed, getLandTheme(definition.themeId).borderColor);
     return;
   }
 
@@ -4012,7 +4072,7 @@ function getRideOwner(ride) {
 }
 
 function getRideBaseBuildCost(ride) {
-  if (ride.facilityRole === "weenie") return Number(ride.baseBuildCost) || 25;
+  if (ride.facilityRole === "weenie") return Number(ride.baseBuildCost) || 50;
   const definition = getRideModelById(ride.modelId, ride.category);
   return Number(definition?.baseCost) ||
     Number(definition?.cost) ||
@@ -4479,7 +4539,7 @@ function evaluateThemedLandBreakdown(park, zone, ownerPlayer = null, amenityCove
   for (const t of landTiles) {
     const lv = getEffectiveTileThemeLevel(t);
     if (lv < minTileTheme) minTileTheme = lv;
-    const scenic = TILE_SCENERY_TIERS[lv].points * 1.25; // 1.25x Zoned Tile Multiplier
+    const scenic = t.isWeenie ? 0 : TILE_SCENERY_TIERS[lv].points * 1.25; // 1.25x Zoned Tile Multiplier
     tileScenicRaw += scenic;
     pointsByTile.set(t.key, { scenic, other: 0, weenieTech: 0 });
   }
@@ -4581,7 +4641,7 @@ function calculateParkInfrastructureSupport(park, ownerPlayer, estimatedAttendan
   for (const tile of park.tiles || []) {
     if (tile.state !== "cleared" || tile.isEntrance) continue;
     const level = getEffectiveTileThemeLevel(tile);
-    supportPoints += TILE_SCENERY_TIERS[level].points * (tile.zoneId ? 1.25 : 1);
+    if (!tile.isWeenie) supportPoints += TILE_SCENERY_TIERS[level].points * (tile.zoneId ? 1.25 : 1);
   }
   for (const ride of park.rides || []) {
     if (!isRideOperational(ride)) continue;
@@ -4637,7 +4697,7 @@ function calculateParkScoreSummary(park, ownerPlayer = null) {
   const genericPointsByTile = new Map();
   let genScenic = 0;
   for (const t of genericTiles) {
-    const pts = TILE_SCENERY_TIERS[getEffectiveTileThemeLevel(t)].points;
+    const pts = t.isWeenie ? 0 : TILE_SCENERY_TIERS[getEffectiveTileThemeLevel(t)].points;
     genericPointsByTile.set(t.key, { scenic: pts, other: 0 });
     genScenic += pts;
   }
@@ -4926,6 +4986,21 @@ function openPendingAdvisorReportsModal() {
   openAdvisorReportsModal(reports);
 }
 
+function getParkMealPriceText(park) {
+  const prices = park.rides
+    .filter(ride => ride.facilityRole === "restaurant")
+    .map(getRestaurantMealPrice);
+  if (!prices.length) return "No restaurants";
+  const low = Math.min(...prices), high = Math.max(...prices);
+  return low === high ? `$${low}` : `$${low}–$${high}`;
+}
+
+function getChainPriceRange(prices) {
+  if (!prices.length) return "—";
+  const low = Math.min(...prices), high = Math.max(...prices);
+  return low === high ? `$${low}` : `$${low}–$${high}`;
+}
+
 function renderLeftSidebar(inspectedPlayer) {
   const isRO = gameState.inspectedPlayerIdx !== gameState.activePlayerIdx;
   document.getElementById("inspectionNoticeBox").innerHTML = isRO
@@ -4938,9 +5013,12 @@ function renderLeftSidebar(inspectedPlayer) {
     const summary = calculateParkScoreSummary(park, inspectedPlayer);
     const hexObj = gameState.hexByKey.get(park.hexKey);
     const totMult = getTotalHexAttendanceMultiplier(hexObj, inspectedPlayer);
+    const parkPricing = isRO
+      ? `<div style="font-size:.7rem;color:var(--accent-gold);margin-top:.22rem;">Gate: $${Number(park.ticketPrice || 45).toFixed(0)} • Food: ${escapeHtml(getParkMealPriceText(park))}</div>`
+      : "";
     const card = document.createElement("div");
     card.className = `card ${park.id === gameState.selectedParkId ? 'active-card' : ''}`;
-    card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><strong style="cursor:pointer;" onclick="focusParkOnMap('${park.id}')">🎡 ${escapeHtml(park.name)}</strong><span class="badge badge-gold">${summary.finalScore.toFixed(1)}p</span></div><div style="font-size:.7rem;color:var(--text-muted);margin-top:.18rem;">📍 ${hexObj ? escapeHtml(hexObj.regionName) : ''} • <strong style="color:var(--accent-teal);">${totMult}x Market</strong> • Saturation: <strong>${(summary.marketSaturationEfficiency * 100).toFixed(0)}%</strong> ${!summary.hasGuestServices ? '<span class="badge badge-red">No Guest Svc (-5%)</span>' : '<span class="badge badge-green">ℹ️ OK</span>'}</div>${summary.infrastructureBottleneck ? '<div class="badge badge-red" style="white-space:normal;margin-top:.3rem;">⚠ Infrastructure Bottleneck: Build more F&amp;B, Services, or Plazas!</div>' : ''}<div style="display:flex;gap:.35rem;margin-top:.4rem;"><button class="btn-primary btn-sm" style="flex:1;" onclick="enterParkCampusView('${park.id}')">🔍 Open 49-Hex Campus</button></div>`;
+    card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><strong style="cursor:pointer;" onclick="focusParkOnMap('${park.id}')">🎡 ${escapeHtml(park.name)}</strong><span class="badge badge-gold">${summary.finalScore.toFixed(1)}p</span></div><div style="font-size:.7rem;color:var(--text-muted);margin-top:.18rem;">📍 ${hexObj ? escapeHtml(hexObj.regionName) : ''} • <strong style="color:var(--accent-teal);">${totMult}x Market</strong> • Saturation: <strong>${(summary.marketSaturationEfficiency * 100).toFixed(0)}%</strong> ${!summary.hasGuestServices ? '<span class="badge badge-red">No Guest Svc (-5%)</span>' : '<span class="badge badge-green">ℹ️ OK</span>'}</div>${parkPricing}${summary.infrastructureBottleneck ? '<div class="badge badge-red" style="white-space:normal;margin-top:.3rem;">⚠ Infrastructure Bottleneck: Build more F&amp;B, Services, or Plazas!</div>' : ''}<div style="display:flex;gap:.35rem;margin-top:.4rem;"><button class="btn-primary btn-sm" style="flex:1;" onclick="enterParkCampusView('${park.id}')">🔍 Open 49-Hex Campus</button></div>`;
     parkListEl.appendChild(card);
   }
 
@@ -4949,6 +5027,10 @@ function renderLeftSidebar(inspectedPlayer) {
   const sorted = [...gameState.players].map((p, idx) => ({ p, idx })).sort((a, b) => b.p.totalAttendance - a.p.totalAttendance);
   for (const { p, idx } of sorted) {
     const pct = Math.min(100, (p.totalAttendance / gameState.winAttendance) * 100);
+    const chainTicketPrices = p.parks.map(park => Number(park.ticketPrice || 45));
+    const chainMealPrices = p.parks.flatMap(park => park.rides
+      .filter(ride => ride.facilityRole === "restaurant")
+      .map(getRestaurantMealPrice));
     const card = document.createElement("div");
     card.className = `card ${idx === gameState.inspectedPlayerIdx ? 'active-card' : ''}`;
     card.style.cursor = "pointer";
@@ -4959,7 +5041,7 @@ function renderLeftSidebar(inspectedPlayer) {
       switchSidebarTab("parks");
       renderAll();
     };
-    card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:.38rem;"><span style="width:10px;height:10px;border-radius:50%;background:${p.color};display:inline-block;"></span><strong>${escapeHtml(p.chainName)}</strong></div><span style="font-size:.75rem;color:var(--accent-green);font-weight:700;">$${p.cash.toFixed(2)}M</span></div><div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem;margin-top:.1rem;"><span style="font-size:.68rem;color:var(--accent-gold);">CEO: ${escapeHtml(p.ceoName)} (${p.parks.length} Parks)</span><button class="btn-outline btn-sm" onclick="event.stopPropagation();openLegendInfoModal(${idx})" aria-label="View ${escapeHtml(p.legend.name)} legend info">👑 Legend Info</button></div><div style="font-size:.72rem;color:var(--accent-teal);margin-top:.18rem;">Att: <strong>${p.totalAttendance.toLocaleString()}</strong> (${pct.toFixed(1)}%)</div>`;
+    card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:.38rem;">${getLegendPortraitHTML(p.legend, "legend-avatar-thumb")}<strong>${escapeHtml(p.chainName)}</strong></div><span style="font-size:.75rem;color:var(--accent-green);font-weight:700;">$${p.cash.toFixed(2)}M</span></div><div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem;margin-top:.1rem;"><span style="font-size:.68rem;color:var(--accent-gold);">CEO: ${escapeHtml(p.ceoName)} (${p.parks.length} Parks)</span><button class="btn-outline btn-sm" onclick="event.stopPropagation();openLegendInfoModal(${idx})" aria-label="View ${escapeHtml(p.legend.name)} legend info">👑 Legend Info</button></div><div style="font-size:.72rem;color:var(--accent-teal);margin-top:.18rem;">Att: <strong>${p.totalAttendance.toLocaleString()}</strong> (${pct.toFixed(1)}%) • Gate: ${getChainPriceRange(chainTicketPrices)} • Food: ${getChainPriceRange(chainMealPrices)}</div>`;
     lbEl.appendChild(card);
   }
 
@@ -5012,7 +5094,7 @@ function renderHexInspector() {
     const market = getHexMarketDetails(hex, owner);
     const rivalParks = getOpponentCannibalizationSummary(hex, owner.id);
     const summary = calculateParkScoreSummary(park, owner);
-    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><strong style="color:var(--accent-gold);font-size:.92rem;">🎡 ${escapeHtml(park.name)}</strong><span class="badge badge-teal">${market.total}x Att. Mod</span></div><div style="font-size:.72rem;color:var(--text-muted);margin-top:.12rem;">Owner: <strong>${escapeHtml(owner.chainName)}</strong> • ${escapeHtml(hex.regionName)} (${trait.name} ${market.base}x + Cluster ${market.cluster.bonus}x − Rival drain ${market.rivalPenalty}x; ${rivalParks.adjacent} adjacent, ${rivalParks.nearby} at distance 2)</div><div style="margin-top:.4rem;display:flex;justify-content:space-between;align-items:center;"><span>Score: <strong>${summary.finalScore.toFixed(1)} pts</strong></span><div style="display:flex;gap:.3rem;"><button class="btn-primary btn-sm" onclick="enterParkCampusView('${park.id}')">🔍 Open 49-Hex Campus</button></div></div>`;
+    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><strong style="color:var(--accent-gold);font-size:.92rem;">🎡 ${escapeHtml(park.name)}</strong><span class="badge badge-teal">${market.total}x Att. Mod</span></div><div style="display:flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--text-muted);margin-top:.12rem;">${getLegendPortraitHTML(owner.legend, "legend-avatar-thumb")}<span>Owner: <strong>${escapeHtml(owner.chainName)}</strong> • ${escapeHtml(hex.regionName)} (${trait.name} ${market.base}x + Cluster ${market.cluster.bonus}x − Rival drain ${market.rivalPenalty}x; ${rivalParks.adjacent} adjacent, ${rivalParks.nearby} at distance 2)</span></div><div style="font-size:.72rem;color:var(--accent-gold);margin-top:.18rem;">Gate: $${Number(park.ticketPrice || 45).toFixed(0)} • Food: ${escapeHtml(getParkMealPriceText(park))}</div><div style="margin-top:.4rem;display:flex;justify-content:space-between;align-items:center;"><span>Score: <strong>${summary.finalScore.toFixed(1)} pts</strong></span><div style="display:flex;gap:.3rem;"><button class="btn-primary btn-sm" onclick="enterParkCampusView('${park.id}')">🔍 Open 49-Hex Campus</button></div></div>`;
   } else {
     const market = getHexMarketDetails(hex, activePlayer);
     const rivalParks = getOpponentCannibalizationSummary(hex, activePlayer.id);
@@ -5091,8 +5173,8 @@ function renderParkDrawer() {
       // Cleared Buildable Tile Inspector
       const themeMismatch = selTile.themeLevel > 0 && effTileLv === 0;
       html += `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.75rem;margin-bottom:.45rem;">
-        <span>Ground Scenery: <strong>${TILE_SCENERY_TIERS[effTileLv].name}</strong> (+${(TILE_SCENERY_TIERS[effTileLv].points * (tileZone ? 1.25 : 1.0)).toFixed(2)}p) ${themeMismatch ? '<span class="badge badge-red">Rezoned (Reset to 0)</span>' : ''}</span>
-        ${(!isRO && nextTileTier) ? `<button class="btn-outline btn-sm" onclick="upgradeCampusTileScenery('${park.id}','${selTile.key}')">🎨 +Tile Theme ($${nextTileCost}M)</button>` : ''}
+        <span>Ground Scenery: <strong>${selTile.isWeenie ? "Immersive (Weenie)" : TILE_SCENERY_TIERS[effTileLv].name}</strong> (+${(selTile.isWeenie ? 0 : TILE_SCENERY_TIERS[effTileLv].points * (tileZone ? 1.25 : 1.0)).toFixed(2)}p) ${themeMismatch ? '<span class="badge badge-red">Rezoned (Reset to 0)</span>' : ''}</span>
+        ${(!isRO && nextTileTier && !selTile.isWeenie) ? `<button class="btn-outline btn-sm" onclick="upgradeCampusTileScenery('${park.id}','${selTile.key}')">🎨 +Tile Theme ($${nextTileCost}M)</button>` : ''}
       </div>`;
 
       if (ride) {
@@ -5349,7 +5431,7 @@ function upgradeCampusTileScenery(parkId, tileKey) {
   const player = gameState.players[gameState.activePlayerIdx];
   const park = player.parks.find(pk => pk.id === parkId);
   const tile = park.tiles.find(t => t.key === tileKey);
-  if (!tile || tile.state !== "cleared") return;
+  if (!tile || tile.state !== "cleared" || tile.isWeenie) return;
 
   const currentZoneKey = tile.zoneId || "generic";
   const effLv = getEffectiveTileThemeLevel(tile);
@@ -5369,7 +5451,7 @@ function upgradeCampusTileScenery(parkId, tileKey) {
 
 function getThemedLandTileUpgrade(park, zone, player) {
   const tiles = park.tiles.filter(tile =>
-    tile.state === "cleared" && tile.zoneId === zone.id &&
+    tile.state === "cleared" && !tile.isWeenie && tile.zoneId === zone.id &&
     getEffectiveTileThemeLevel(tile) < TILE_SCENERY_TIERS.length - 1
   );
   const cost = tiles.reduce((total, tile) => {
@@ -5490,7 +5572,7 @@ function canBuildRideModelInPark(park, model, cat) {
   if (!isModelEraAvailable(model.era)) return { allowed: false, reason: `Unlocks Yr ${ERA_UNLOCK_YEARS[model.era]}` };
   if (cat === "flat") return countParkModelOccurrences(park, model.id) >= 1 ? { allowed: false, reason: "Max 1/park" } : { allowed: true, reason: "" };
   if (cat === "tracked") {
-    const cap = getParkOwner(park)?.legend.id === "george_milley" && model.id === "stage_show"
+    const cap = getParkOwner(park)?.legend.id === "george_millay" && model.id === "stage_show"
       ? 3
       : (model.maxPerPark || 1);
     return countParkModelOccurrences(park, model.id) >= cap ? { allowed: false, reason: `Max ${cap}/park` } : { allowed: true, reason: "" };
@@ -5583,7 +5665,7 @@ function buildWeenie(parkId, tileKey, weenieId) {
     zoneId: zone.id,
     primaryTileKey: tile.key,
     secondaryTileKey: null,
-    themeLevel: 0,
+    themeLevel: 4,
     themedForZoneId: zone.id,
     totalInvestment: definition.baseCost,
     age: 0,
@@ -5593,6 +5675,8 @@ function buildWeenie(parkId, tileKey, weenieId) {
   player.cash -= definition.baseCost;
   park.rides.push(ride);
   tile.rideId = ride.id;
+  tile.isWeenie = true;
+  ride.themedForZoneId = zone.id;
   tile.age = 0;
   syncParkPlotsMirror(park);
   updateParkHarmonyMilestones(park, player);
@@ -5749,7 +5833,11 @@ function renderRidePreview(model, cat) {
     sky_fly: "drawSkyFly", top_spin: "drawTopSpin", disco: "drawDiskO",
     log_flume: "drawFlumeSide", rapids: "drawRapidsSide", stage_show: "drawTheater",
     toilets: "drawRestrooms", guest_services: "drawGuestServices", train: "drawTrainStation",
-    classic_wood: "drawWoodCoasterSide"
+    classic_wood: "drawWoodCoasterSide",
+    antique_cars: "drawAntiqueCars",
+    demolition_derby: "drawDemolitionDerby",
+    dark_ride: "drawDarkRideSide",
+    flying_theater: "drawFlyingTheater"
   };
   const drawRide = window[drawNames[model.id]];
   if (!drawRide) {
@@ -6046,7 +6134,7 @@ function upgradeRideScenery(parkId, plotId, rideId) {
   const player = gameState.players[gameState.activePlayerIdx];
   const park = player.parks.find(pk => pk.id === parkId);
   const ride = park.rides.find(r => r.id === rideId);
-  if (!ride) return;
+  if (!ride || ride.facilityRole === "weenie") return;
   const effLv = getEffectiveRideThemeLevel(ride);
   const nextL = effLv + 1;
   if (nextL >= RIDE_SCENERY_TIERS.length) return;
@@ -6131,7 +6219,12 @@ function removeRideFromCampus(park, rideId) {
   const idx = park.rides.findIndex(r => r.id === rideId);
   if (idx === -1) return;
   for (const t of park.tiles) {
-    if (t.rideId === rideId) { t.rideId = null; t.age = undefined; t.isSecondaryHex = false; }
+    if (t.rideId === rideId) {
+      t.rideId = null;
+      t.age = undefined;
+      t.isSecondaryHex = false;
+      t.isWeenie = false;
+    }
   }
   park.rides.splice(idx, 1);
   syncParkPlotsMirror(park);
@@ -6197,7 +6290,7 @@ function getAILegendStrategyProfile(bot) {
     jim_reid: { targetThemeTier: 1, coasterFocus: 0.75, trackedFocus: 0.15, flatFocus: 0.10, initialRideThemeTier: 1, reserve: 3 },
     hugo_herschend: { targetThemeTier: 3, coasterFocus: 0.25, trackedFocus: 0.50, flatFocus: 0.25, initialRideThemeTier: 2, reserve: 5 },
     john_arie: { targetThemeTier: 1, coasterFocus: 0.20, trackedFocus: 0.15, flatFocus: 0.65, initialRideThemeTier: 1, reserve: 3 },
-    roland_mack: { targetThemeTier: 3, coasterFocus: 0.45, trackedFocus: 0.40, flatFocus: 0.15, initialRideThemeTier: 2, reserve: 6 },
+    rolland_mack: { targetThemeTier: 3, coasterFocus: 0.45, trackedFocus: 0.40, flatFocus: 0.15, initialRideThemeTier: 2, reserve: 6 },
     matt_ouimet: { targetThemeTier: 2, coasterFocus: 0.45, trackedFocus: 0.35, flatFocus: 0.20, initialRideThemeTier: 1, reserve: 2, oneRidePerTurn: true },
     angus_wynne: { targetThemeTier: 1, coasterFocus: 0.45, trackedFocus: 0.25, flatFocus: 0.30, initialRideThemeTier: 1, reserve: 5, expansionist: true }
   };
@@ -6446,6 +6539,18 @@ function canAIExpandChain(bot) {
     bot.parks.every(park => countAIParkAttractions(park) >= 3);
 }
 
+function shuffleAIParkNames(legend) {
+  const names = [...(legend.parkNames || [])];
+  if (names.length !== 6 || new Set(names).size !== 6) {
+    throw new Error(`${legend.fullName} must have six unique AI park names.`);
+  }
+  for (let i = names.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [names[i], names[j]] = [names[j], names[i]];
+  }
+  return names;
+}
+
 function getAIMandatoryParkTarget(year) {
   if (year >= 25) return 3;
   if (year >= 15) return 2;
@@ -6477,7 +6582,8 @@ function getAIExpansionSavingsReserve(bot) {
 }
 
 function buyAIPark(bot, mandatory = false) {
-  if (!canAIExpandChain(bot)) return false;
+  if (bot.parks.length >= 6 || !canAIExpandChain(bot) ||
+      !bot.availableParkNames || !bot.availableParkNames.length) return false;
   const candidates = getAIExpansionCandidates(bot);
   for (const candidate of candidates) {
     let tier, cost, expansionCost;
@@ -6504,8 +6610,9 @@ function buyAIPark(bot, mandatory = false) {
 
     bot.cash -= cost;
     const { tiles, maxExpansions } = generate49HexCampusDiamond(tier, 0);
+    const parkName = bot.availableParkNames[0];
     const park = {
-      id: nextUid("park"), name: generateRandomParkName(), hexKey: candidate.hex.key,
+      id: nextUid("park"), name: parkName, hexKey: candidate.hex.key,
       tier, maxExpansions, expansionsBought: 0, expansionCost,
       eisnerDiscountRidesLeft: bot.legend.id === "michael_eisner" ? 2 : 0,
       lastAttendance: 0, lastRollLabel: "—", yearsSinceLastAddition: 0,
@@ -6515,6 +6622,7 @@ function buyAIPark(bot, mandatory = false) {
     candidate.hex.parkId = park.id;
     candidate.hex.ownerId = bot.id;
     bot.parks.push(park);
+    bot.availableParkNames.shift();
     initializeAIPurchasedPark(bot, park);
     addLog(`${bot.ceoName} acquired "${park.name}" in ${candidate.hex.regionName} ($${cost.toFixed(2)}M)!`);
     return true;
@@ -6713,13 +6821,13 @@ function executeAITurn(bot) {
 
     const targetTier = Math.min(profile.targetThemeTier,
       gameState.year < 12 ? 1 : (gameState.year < 25 ? 2 :
-        (["walt_disney", "roland_mack"].includes(bot.legend.id) ? 4 : 3)));
+        (["walt_disney", "rolland_mack"].includes(bot.legend.id) ? 4 : 3)));
     const sceneryTargets = [];
     for (const zone of park.zones) {
       for (const tile of park.tiles.filter(item => item.zoneId === zone.id && item.state === "cleared")) {
         if (!tile.rideId) continue;
         const level = getEffectiveTileThemeLevel(tile);
-        if (level < targetTier) sceneryTargets.push({ type: "tile", target: tile, level });
+        if (!tile.isWeenie && level < targetTier) sceneryTargets.push({ type: "tile", target: tile, level });
       }
       for (const ride of park.rides.filter(item => item.zoneId === zone.id && item.status === "open")) {
         const level = getEffectiveRideThemeLevel(ride);
@@ -7152,10 +7260,17 @@ function finalizeYearAndStartNextTurn() {
   }
   closeModal("yearEndModal");
   const winners = gameState.players.filter(p => p.totalAttendance >= gameState.winAttendance);
-  if (winners.length > 0 || gameState.year >= gameState.maxYears) {
-    const top = [...gameState.players].sort((a, b) => b.totalAttendance - a.totalAttendance)[0];
+  const reachedTurnLimit = gameState.year >= gameState.maxYears;
+  if (winners.length > 0 || reachedTurnLimit) {
+    const contenders = winners.length ? winners : gameState.players;
+    const topAttendance = Math.max(...contenders.map(player => player.totalAttendance));
+    const topPlayers = contenders.filter(player => player.totalAttendance === topAttendance);
+    const winnerNames = topPlayers.map(player => `${player.ceoName} (${player.chainName})`).join(", ");
+    const result = winners.length
+      ? "reaching 50M chainwide attendance"
+      : `leading chainwide attendance at the ${gameState.year}-turn limit`;
     gameState.gameOver = true;
-    alert(`🏆 VICTORY! ${top.ceoName} (${top.chainName}) wins in Year ${gameState.year} with ${top.totalAttendance.toLocaleString()} guests!`);
+    alert(`🏆 GAME OVER! ${winnerNames} ${topPlayers.length === 1 ? "wins" : "tie"} with ${topAttendance.toLocaleString()} guests in Year ${gameState.year} by ${result}.`);
     renderAll();
     openPendingAdvisorReportsModal();
     return;
@@ -7229,6 +7344,10 @@ function openLegendInfoModal(playerIdx = gameState.activePlayerIdx) {
           <div class="legend-empire-stat"><span>Current Treasury</span><strong class="money-value">$${player.cash.toFixed(2)}M</strong></div>
           <div class="legend-empire-stat"><span>Flagship Park</span><strong>${escapeHtml(flagship?.name || "—")}</strong></div>
         </div>
+        <h4 style="color:var(--accent-gold);margin:.7rem 0 .35rem;">Park Pricing</h4>
+        <div class="legend-dossier-perks">${player.parks.map(park =>
+          `<div><strong>${escapeHtml(park.name)}:</strong> Gate $${Number(park.ticketPrice || 45).toFixed(0)} · Food ${escapeHtml(getParkMealPriceText(park))}</div>`
+        ).join("")}</div>
       </div>
     </div>`;
   document.getElementById("legendInfoModal").classList.add("active");

@@ -47,159 +47,168 @@ const US_ASCII_ROWS = [
 const PREMADE_LEGENDS = [
   {
     id: "walt_disney",
-    name: "Walt Disney",
+    fullName: "Walt Disney",
+    name: "Walt",
     title: "The Immersive Visionary",
     img: "Images/walt_disney.jpg",
     defaultChain: "Walt Disney Attractions",
     defaultPark: "Disneyland",
-    desc: "+100% Harmony bonus (Doubled). Maintenance odds increased to 12% & Broken odds to 6%."
+    desc: "+100% Harmony bonus (Doubled). Maintenance odds increased to 12% & Broken odds to 6%.",
+    parkNames: ["Mickeyland", "Magical Kingdom", "City of Tomorrow", "Frontier Adventures", "Tomorrow World", "Imagination Kingdom"]
   },
   {
     id: "michael_eisner",
-    name: "Michael Eisner",
+    fullName: "Michael Eisner",
+    name: "Michael",
     title: "The Rapid Expansionist",
     img: "Images/michael_eisner.jpg",
     defaultChain: "EuroDisney Corp",
     defaultPark: "Disney-MGM Studios",
-    desc: "New parks cost 30% less; first 2 rides built in a purchased park get 40% off. Flat rides cost +10%."
+    desc: "New parks cost 30% less; first 2 rides built in a purchased park get 40% off. Flat rides cost +10%.",
+    parkNames: ["Euro Mickeyland", "Tokyo Mickeyland", "Hollywood Backlot", "Animal Empire", "Mickey Sea", "Backlot Adventures"]
   },
   {
     id: "matt_ouimet",
+    fullName: "Matt Ouimet",
     name: "Matt",
     title: "The Paced Quality Builder",
     img: "Images/matt_ouimet.jpg",
     defaultChain: "Cedar Fair Entertainment",
     defaultPark: "Cedar Point",
     desc: "5% discount on the first attraction added during each turn.",
-    parkNames: ["Carowinds Resort", "Monarch Island", "Monarch Dominion", "Wonderland North", "California's Great Midway", "Gilroy Botanical Gardens"]
+    parkNames: ["Canada's funland", "Carothrills", "Queen's Dominion", "Queen's Island", "Great America", "Planets's of Fun"]
   },
   {
     id: "jim_reid",
+    fullName: "Jim Reid",
     name: "Jim",
     title: "The Thrill & Clone Mogul",
     img: "Images/jim_reid.jpg",
     defaultChain: "Six Flags Entertainment",
     defaultPark: "Six Flags Great Adventure",
     desc: "15% ride discount if that model already exists in another park in your chain. Plot scenery costs +15%.",
-    parkNames: ["Thrill Flags Magic Mountain", "Thrill Flags Great Adventure", "Thrill Flags Great America", "Thrill Flags Fiesta Texas", "Thrill Flags New England", "Thrill Flags Discovery Kingdom"]
+    parkNames: ["Seven Flags Great Adventure", "Seven Flags Magic Mountain", "Seven Flags Discovery Kingdom", "Seven Flags Great America", "Seven Flags Atlantis", "Seven Flags Great Escape"]
   },
   {
-    id: "roland_mack",
-    name: "Lukas",
+    id: "rolland_mack",
+    fullName: "Rolland Mack",
+    name: "Rolland",
     title: "The R&D & Mega-Campus Engineer",
     img: "Images/rolland_mack.jpg",
     defaultChain: "Mack Leisure Group",
     defaultPark: "Europa-Park",
     desc: "Initial park gets +2 extra expansion plots (4 total). Scenic upgrades cost 5% less. Buying extra parks costs +20%.",
-    parkNames: ["Continental-Park", "Nordic-Waterworld", "Americana-Park", "Pacifica-Park", "Bavaria-Park", "Mediterranea-Park"]
+    parkNames: ["Europa Park", "Rulertica", "Americana Park", "Africana Park", "Asiantica", "Latinica"]
   },
   {
     id: "hugo_herschend",
-    name: "Hugo Herschend",
+    fullName: "Hugo Herschend",
+    name: "Hugo",
     title: "The Nostalgia & Artisan Operator",
     img: "Images/hugo_herschend.jpg",
     defaultChain: "Herschend Family Ent.",
     defaultPark: "Silver Dollar City",
-    desc: "Stage Show, River Rapids & Park Train receive a +20% point bonus. Flat rides cost +10%."
+    desc: "Stage Show, River Rapids & Park Train receive a +20% point bonus. Flat rides cost +10%.",
+    parkNames: ["Silver Dime City", "Dollywind", "Glowwood Caverns", "Indiana Kingdom", "Thrilling Adventures", "Salt Mine Caverns"]
   },
   {
     id: "john_arie",
-    name: "John Arie Jr.",
-    title: "The Flat-Ride & Value Hustler",
-    img: "Images/john_arie.jpg",
-    defaultChain: "Fun Spot America",
-    defaultPark: "Fun Spot Orlando",
-    desc: "Flat rides cost 15% less. All Plot & Ride scenery costs +10%."
-  },
-  {
-    id: "angus_wynne",
-    name: "Angus",
-    title: "The Regional Flag Pioneer",
-    img: "Images/angus_wynne.jpg",
-    defaultChain: "Great Southwest Corp",
-    defaultPark: "Six Flags Over Texas",
-    desc: "New parks cost 50% less. Classic era rides gain +10% points. Scenery upgrades cost +10%.",
-    parkNames: ["Six Banners Over Texas", "Six Banners Over Georgia", "Six Banners Over Mid-America", "Six Banners AstroWorld", "Six Banners Over the Gulf", "Six Banners Over the Carolinas"]
-  },
-  {
-    id: "anton_pieck",
-    name: "Willem",
-    title: "The Fairytale & Folklore Artist",
-    img: "Images/anton_pieck.jpg",
-    defaultChain: "Pieck Storybook Parks",
-    defaultPark: "Fairytale Gardens",
-    desc: "Harmony requires just 2 attractions per land. Rides are twice as likely to become Cult Classics. Attraction construction costs 5% more.",
-    parkNames: ["Sprookjeswald", "Grimmwood Forest", "Fablehaven", "Mythos Woods", "Andersen Gardens", "Avalon Hollow"]
-  },
-  {
-    id: "milton_hershey",
-    name: "Arthur",
-    title: "The Confectionery Baron",
-    img: "Images/milton_hershey.jpg",
-    defaultChain: "Hershey Leisure",
-    defaultPark: "Chocolate World",
-    desc: "F&B profits increase by 6%. Annual ride upkeep costs 50% more.",
-    parkNames: ["Cocoa Valley Park", "Sweetwater Confectionery Park", "Cocoa Avenue Gardens", "Sugar Mill Pleasure Grounds", "Caramel Valley Resort", "Peppermint Point"]
-  },
-  {
-    id: "jay_stein",
-    name: "Jay",
-    title: "The Studio Backlot Mogul",
-    img: "Images/jay_stein.jpg",
-    defaultChain: "Stein Entertainment",
-    defaultPark: "Studio Adventure",
-    desc: "Ride scenery generates 8% more points. Rides age 5% faster.",
-    parkNames: ["Global Studios Florida", "Global Studios Hollywood", "Global Mediterranea", "Global Studios Europe", "Global Studios Chicago", "Global Studios Texas"]
-  },
-  {
-    id: "mark_woodburry",
-    name: "Mark",
-    title: "The Seasonal & Portal Innovator",
-    img: "Images/mark_woodbury.jpg",
-    defaultChain: "Woodburry Parks",
-    defaultPark: "Woodburry Adventure Park",
-    desc: "A park gets 2% more attendance in years when it adds an attraction. Rides age 4% faster.",
-    parkNames: ["Epic Portals Universe", "Isles of Adventure", "Global Studios Osaka", "Global Studios Beijing", "Krakatoa Volcano Bay", "Global Kids Resort"]
-  },
-  {
-    id: "walter_knott",
-    name: "Walter",
-    title: "The Ghost Town Pioneer",
-    img: "Images/walter_knott.jpg",
-    defaultChain: "Knott Family Parks",
-    defaultPark: "Knott's Berry Farm",
-    desc: "Light theming is free for campus tiles (not rides). Clearing expansion tiles costs 15% more.",
-    parkNames: ["Walter's Boysenberry Farm", "Calico Silver Ghost Town", "Buena Vista Peach Orchard", "Sierra Timber Country", "Mojave Gold Rush Camp", "Golden State Apple Valley"]
-  },
-  {
-    id: "george_milley",
-    name: "George",
-    title: "The Marine & Waterpark Showman",
-    img: "Images/george_milley.jpg",
-    defaultChain: "Milley Entertainment",
-    defaultPark: "Ocean Adventure",
-    desc: "Every new park receives a free Stage Show. Build up to 3 Stage Shows per park.",
-    parkNames: ["OceanWorld San Diego", "OceanWorld Orlando", "OceanWorld San Antonio", "OceanWorld Ohio", "Splash 'n Wild Orlando", "Splash 'n Wild Emerald Pointe"]
-  },
-  {
-    id: "dick_kinzel",
-    name: "Dick",
-    title: "The Coaster Wars Titan",
-    img: "Images/dick_kinzel.jpg",
-    defaultChain: "Kinzel Amusements",
-    defaultPark: "Great Lakes Park",
-    desc: "Rides holding one or more world records generate 20% more ride points.",
-    parkNames: ["Sandusky Point", "Valleyfair Grounds", "Lehigh Park", "Worlds of Thrills", "Michigan's Coaster Coast", "Geauga Lakefront"]
-  },
-  {
-    id: "john_arie",
+    fullName: "John Arie",
     name: "John",
     title: "The Roadside Thrill Maverick",
     img: "Images/john_arie.jpg",
     defaultChain: "Fun Spot America",
     defaultPark: "Fun Spot Orlando",
     desc: "Flat rides cost 15% less. All Plot & Ride scenery costs +10%.",
-    parkNames: ["Thrill Spot Orlando", "Thrill Spot Kissimmee", "Thrill Spot Atlanta", "Thrill Spot Chicago", "Thrill Spot Dallas", "Thrill Spot Myrtle Beach"]
+    parkNames: ["Fun Time America", "Fun Time Adventures", "Fun Time Arieland", "Fun Time Old Town", "Fun Time Karting World", "Fun Time Thrills"]
+  },
+  {
+    id: "angus_wynne",
+    fullName: "Angus Wynne",
+    name: "Angus",
+    title: "The Regional Flag Pioneer",
+    img: "Images/angus_wynne.jpg",
+    defaultChain: "Great Southwest Corp",
+    defaultPark: "Six Flags Over Texas",
+    desc: "New parks cost 50% less. Classic era rides gain +10% points. Scenery upgrades cost +10%.",
+    parkNames: ["Wild West Astro World", "Wild West Texas", "Wild West Over Georgia", "Wild West Over Mid America", "Wild West Fiesta", "Wild West Frontier"]
+  },
+  {
+    id: "anton_pieck",
+    fullName: "Anton Pieck",
+    name: "Anton",
+    title: "The Fairytale & Folklore Artist",
+    img: "Images/anton_pieck.jpg",
+    defaultChain: "Pieck Storybook Parks",
+    defaultPark: "Fairytale Gardens",
+    desc: "Harmony requires just 2 attractions per land. Rides are twice as likely to become Cult Classics. Attraction construction costs 5% more.",
+    parkNames: ["Efthoven", "Droomvelt", "Ravelein", "Strumpvloot", "Vandeschein", "Veigelhalen"]
+  },
+  {
+    id: "milton_hershey",
+    fullName: "Milton Hershey",
+    name: "Milton",
+    title: "The Confectionery Baron",
+    img: "Images/milton_hershey.jpg",
+    defaultChain: "Hershey Leisure",
+    defaultPark: "Chocolate World",
+    desc: "F&B profits increase by 6%. Annual ride upkeep costs 50% more.",
+    parkNames: ["Cocoa Paradise", "Chocolate World", "Candyland USA", "Cocoaland", "Sugarland", "Chocolate Gardens"]
+  },
+  {
+    id: "jay_stein",
+    fullName: "Jay Stein",
+    name: "Jay",
+    title: "The Studio Backlot Mogul",
+    img: "Images/jay_stein.jpg",
+    defaultChain: "Stein Entertainment",
+    defaultPark: "Studio Adventure",
+    desc: "Ride scenery generates 8% more points. Rides age 5% faster.",
+    parkNames: ["Global Studios", "Global Pictures Park", "Global Asia", "Global Action Park", "Global Studios Europe", "Global Backlot Thrills"]
+  },
+  {
+    id: "mark_woodburry",
+    fullName: "Mark Woodburry",
+    name: "Mark",
+    title: "The Seasonal & Portal Innovator",
+    img: "Images/mark_woodbury.jpg",
+    defaultChain: "Woodburry Parks",
+    defaultPark: "Woodburry Adventure Park",
+    desc: "A park gets 2% more attendance in years when it adds an attraction. Rides age 4% faster.",
+    parkNames: ["Islands of Wonder", "Fantastic Universe", "Celestial Realms", "Kids Resort", "Land of Dreams", "World of Heros"]
+  },
+  {
+    id: "walter_knott",
+    fullName: "Walter Knott",
+    name: "Walter",
+    title: "The Ghost Town Pioneer",
+    img: "Images/walter_knott.jpg",
+    defaultChain: "Knott Family Parks",
+    defaultPark: "Knott's Berry Farm",
+    desc: "Light theming is free for campus tiles (not rides). Clearing expansion tiles costs 15% more.",
+    parkNames: ["Knott's Vineyard", "Knott's Scary Adventure", "Knott's Thrill Garden", "Knott's California Dreams", "Knott's Boardwalk", "Knott's Wilderness Trail"]
+  },
+  {
+    id: "george_millay",
+    fullName: "George Millay",
+    name: "George",
+    title: "The Marine & Waterpark Showman",
+    img: "Images/george_milley.jpg",
+    defaultChain: "Milley Entertainment",
+    defaultPark: "Ocean Adventure",
+    desc: "Every new park receives a free Stage Show. Build up to 3 Stage Shows per park.",
+    parkNames: ["Seven Seas Oralndo", "Seven Seas San Antonio", "Seven Seas San Diego", "Seven Seas Mid America", "Seven Seas Gulf Coast", "Seven Seas West Coast"]
+  },
+  {
+    id: "dick_kinzel",
+    fullName: "Dick Kinzel",
+    name: "Dick",
+    title: "The Coaster Wars Titan",
+    img: "Images/dick_kinzel.jpg",
+    defaultChain: "Kinzel Amusements",
+    defaultPark: "Great Lakes Park",
+    desc: "Rides holding one or more world records generate 20% more ride points.",
+    parkNames: ["Cedar Lake", "Valleythrills", "Dorneyville", "Michigan Point", "Cedar Creek", "Pinewood Point"]
   }
 ];
 
@@ -394,7 +403,7 @@ const TRACKED_RIDE_CATALOG = [
   { id: "log_flume", name: "Log Flume", era: "classic", subType: "family", cost: 5.5, points: 6.5, researchCost: 1.5, spaces: 2, lifespan: 20, maxPerPark: 1, hasLength: true, baseLen: 1000, maxLen: 4000, lenStep: 200, lenCost: 0.5, lenPts: 1.0, hasHeight: true, baseHeight: 40, maxHeight: 120, heightStep: 10, heightCost: 0.5, heightPts: 0.75 },
   { id: "rapids", name: "River Rapids", era: "modern", subType: "family", cost: 6.5, points: 7.5, researchCost: 2.0, spaces: 2, lifespan: 20, maxPerPark: 1, hasLength: true, baseLen: 1000, maxLen: 4000, lenStep: 200, lenCost: 0.5, lenPts: 1.0, hasHeight: true, baseHeight: 10, maxHeight: 50, heightStep: 10, heightCost: 0.75, heightPts: 1.0 },
   { id: "dark_ride", name: "Dark Ride", era: "modern", subType: "family", cost: 7.0, points: 8.5, researchCost: 2.5, spaces: 2, lifespan: 20, maxPerPark: 2, hasLength: true, baseLen: 400, maxLen: 1400, lenStep: 100, lenCost: 1.0, lenPts: 1.5 },
-  { id: "flying_theater", name: "Flying Theater", era: "advanced", subType: "thrill", cost: 12.0, points: 16.5, researchCost: 4.0, spaces: 2, lifespan: 25, maxPerPark: 1 }
+  { id: "flying_theater", name: "Flying Theater", era: "advanced", subType: "thrill", cost: 12.0, points: 16.5, researchCost: 4.0, spaces: 1, lifespan: 25, maxPerPark: 1 }
 ];
 
 const RAW_COASTERS = [
@@ -458,7 +467,7 @@ const STARTING_UNLOCKED_IDS = [
    CAMPUS 49-HEX DISTRICT GRID & ZONING CONSTANTS (v1.8)
    ============================================================================ */
 
-// These logical asset keys resolve to procedural canvas packs in themePacks.js.
+// These logical asset keys resolve to procedural canvas packs in themePacks.js and regionalThemePacks.js.
 const LAND_THEMES = [
   { id: "classic", name: "Classic Midway", badgeColor: "#fde68a", borderColor: "#a16207", sceneryAssets: { 0: "theme-pack/classic/tier-0", 1: "theme-pack/classic/tier-1", 2: "theme-pack/classic/tier-2", 3: "theme-pack/classic/tier-3", 4: "theme-pack/classic/tier-4" } },
   { id: "frontier", name: "Frontier Wilderness", badgeColor: "#bbf7d0", borderColor: "#15803d", sceneryAssets: { 0: "theme-pack/frontier/tier-0", 1: "theme-pack/frontier/tier-1", 2: "theme-pack/frontier/tier-2", 3: "theme-pack/frontier/tier-3", 4: "theme-pack/frontier/tier-4" } },
@@ -466,7 +475,11 @@ const LAND_THEMES = [
   { id: "medieval", name: "Medieval Kingdom", badgeColor: "#ddd6fe", borderColor: "#6d28d9", sceneryAssets: { 0: "theme-pack/medieval/tier-0", 1: "theme-pack/medieval/tier-1", 2: "theme-pack/medieval/tier-2", 3: "theme-pack/medieval/tier-3", 4: "theme-pack/medieval/tier-4" } },
   { id: "gothic", name: "Gothic Manor", badgeColor: "#cbd5e1", borderColor: "#475569", sceneryAssets: { 0: "theme-pack/gothic/tier-0", 1: "theme-pack/gothic/tier-1", 2: "theme-pack/gothic/tier-2", 3: "theme-pack/gothic/tier-3", 4: "theme-pack/gothic/tier-4" } },
   { id: "space", name: "Spaceport", badgeColor: "#bae6fd", borderColor: "#0369a1", sceneryAssets: { 0: "theme-pack/space/tier-0", 1: "theme-pack/space/tier-1", 2: "theme-pack/space/tier-2", 3: "theme-pack/space/tier-3", 4: "theme-pack/space/tier-4" } },
-  { id: "jungle", name: "Jungle Expedition", badgeColor: "#a7f3d0", borderColor: "#047857", sceneryAssets: { 0: "theme-pack/jungle/tier-0", 1: "theme-pack/jungle/tier-1", 2: "theme-pack/jungle/tier-2", 3: "theme-pack/jungle/tier-3", 4: "theme-pack/jungle/tier-4" } }
+  { id: "jungle", name: "Jungle Expedition", badgeColor: "#a7f3d0", borderColor: "#047857", sceneryAssets: { 0: "theme-pack/jungle/tier-0", 1: "theme-pack/jungle/tier-1", 2: "theme-pack/jungle/tier-2", 3: "theme-pack/jungle/tier-3", 4: "theme-pack/jungle/tier-4" } },
+  { id: "fiesta", name: "Latin Festival", badgeColor: "#fed7aa", borderColor: "#a8664a", sceneryAssets: { 0: "theme-pack/fiesta/tier-0", 1: "theme-pack/fiesta/tier-1", 2: "theme-pack/fiesta/tier-2", 3: "theme-pack/fiesta/tier-3", 4: "theme-pack/fiesta/tier-4" } },
+  { id: "german", name: "German Village", badgeColor: "#fef3c7", borderColor: "#8c8374", sceneryAssets: { 0: "theme-pack/german/tier-0", 1: "theme-pack/german/tier-1", 2: "theme-pack/german/tier-2", 3: "theme-pack/german/tier-3", 4: "theme-pack/german/tier-4" } },
+  { id: "alps", name: "Alpine Village", badgeColor: "#e0f2fe", borderColor: "#9db4c2", sceneryAssets: { 0: "theme-pack/alps/tier-0", 1: "theme-pack/alps/tier-1", 2: "theme-pack/alps/tier-2", 3: "theme-pack/alps/tier-3", 4: "theme-pack/alps/tier-4" } },
+  { id: "nordic", name: "Nordic Village", badgeColor: "#d1fae5", borderColor: "#5f736c", sceneryAssets: { 0: "theme-pack/nordic/tier-0", 1: "theme-pack/nordic/tier-1", 2: "theme-pack/nordic/tier-2", 3: "theme-pack/nordic/tier-3", 4: "theme-pack/nordic/tier-4" } }
 ];
 
 const WEENIE_CATALOG = [
@@ -476,8 +489,12 @@ const WEENIE_CATALOG = [
   { id: "saloon", name: "Saloon", themeId: "western", assetId: null, assetScale: 0.085 },
   { id: "fort", name: "Frontier Fort", themeId: "frontier", assetId: "stockadeFort", assetScale: 0.09 },
   { id: "bigtop", name: "Circus Tent", themeId: "classic", assetId: "bigTop", assetScale: 0.12 },
-  { id: "temple", name: "Mayan Temple", themeId: "jungle", assetId: "stepPyramid", assetScale: 0.09 }
-].map(weenie => ({ ...weenie, baseCost: 25, techPoints: 25, spaces: 1 }));
+  { id: "temple", name: "Mayan Temple", themeId: "jungle", assetId: "stepPyramid", assetScale: 0.09 },
+  { id: "church", name: "Festival Church", themeId: "fiesta", assetId: "festivalChurch", assetScale: 1 },
+  { id: "festhaus", name: "Festhaus", themeId: "german", assetId: "festhaus", assetScale: 1 },
+  { id: "mountain", name: "Snowy Mountain", themeId: "alps", assetId: "mountain", assetScale: 1 },
+  { id: "longhouse", name: "Viking Longhouse", themeId: "nordic", assetId: "longhouse", assetScale: 1 }
+].map(weenie => ({ ...weenie, baseCost: 50, techPoints: 25, spaces: 1 }));
 
 // Per-Hex Ground Tile Scenery Costs & Base Points
 const TILE_SCENERY_TIERS = [

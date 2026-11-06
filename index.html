@@ -175,12 +175,25 @@
             <input type="number" id="setupBotCount" value="3" min="1" max="7">
           </div>
           <div id="singlePlayerDiffBox" class="form-group">
-            <label>AI Skill Level (Cash Modifiers)</label>
+            <label>AI Skill Level (Revenue Modifiers)</label>
             <select id="setupBotDifficulty">
-              <option value="easy">Easy (AI gets 0.90x Cash)</option>
-              <option value="medium" selected>Medium (AI gets 1.10x Cash)</option>
-              <option value="hard">Hard (AI gets 1.30x Cash)</option>
+              <option value="easy">Easy (AI gets 0.90x Revenue)</option>
+              <option value="medium" selected>Medium (AI gets 1.10x Revenue)</option>
+              <option value="hard">Hard (AI gets 1.30x Revenue)</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label for="setupGameLength">Game Length</label>
+            <select id="setupGameLength">
+              <option value="30">30 turns</option>
+              <option value="50" selected>50 turns</option>
+              <option value="100">100 turns</option>
+              <option value="unlimited">Unlimited (until a chain reaches 50M)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="setupStartingCash">Starting Cash (millions)</label>
+            <input type="number" id="setupStartingCash" value="30" min="1" max="1000" step="5">
           </div>
           <div id="multiplayerCountBox" class="form-group" style="display:none;">
             <label>Total Human Players (2 to 8)</label>
@@ -254,6 +267,10 @@
                     <option value="gothic">Gothic</option>
                     <option value="space">Space</option>
                     <option value="jungle">Jungle</option>
+                    <option value="fiesta">Fiesta</option>
+                    <option value="german">German</option>
+                    <option value="alps">Alps</option>
+                    <option value="nordic">Nordic</option>
                   </select>
                 </div>
               </div>
@@ -446,6 +463,9 @@
 
 <script src="data.js"></script>
 <script src="sprites.js"></script>
+<script src="regionalFlatRideSprites.js"></script>
+<script src="regionalTrackedRideSprites.js"></script>
+<script src="regionalThemePacks.js"></script>
 <script src="themePacks.js"></script>
 <script src="engine.js"></script>
 </body>

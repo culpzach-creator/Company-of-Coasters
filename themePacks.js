@@ -1433,4 +1433,13 @@ function drawThemedTile(ctx,cx,cy,R,pack,tier,seed,tm,border,rideFn){drawThemeGr
 return { pack: JUNGLE_PACK, placeThemeAssets, drawThemeGround, drawThemeDecals, drawThemeAssets };
 })();
 
-const THEME_PACKS = Object.freeze({ classic: CLASSIC_THEME_PACK, frontier: FRONTIER_THEME_PACK, western: WESTERN_THEME_PACK, medieval: MEDIEVAL_THEME_PACK, gothic: GOTHIC_THEME_PACK, space: SPACE_THEME_PACK, jungle: JUNGLE_THEME_PACK });
+const THEME_PACKS = Object.freeze({
+  classic: CLASSIC_THEME_PACK,
+  frontier: FRONTIER_THEME_PACK,
+  western: WESTERN_THEME_PACK,
+  medieval: MEDIEVAL_THEME_PACK,
+  gothic: GOTHIC_THEME_PACK,
+  space: SPACE_THEME_PACK,
+  jungle: JUNGLE_THEME_PACK,
+  ...REGIONAL_THEME_PACKS
+});
