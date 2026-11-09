@@ -179,6 +179,26 @@ header {
   pointer-events: none;
   transform-origin: 0 0;
 }
+.campus-view-toggle { display: flex; gap: .25rem; align-items: center; }
+.campus-view-toggle button.active { border-color: var(--accent-gold); color: var(--accent-gold); }
+.campus-land-card.locked { background: rgba(148, 163, 184, .1); }
+.campus-land-theme-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-top: .4rem;
+  color: var(--text-muted);
+  font-size: .72rem;
+}
+.campus-land-theme { max-width: 62%; padding: .3rem; font-size: .7rem; }
+.campus-expansion-copy { margin-top: .3rem; color: var(--text-muted); font-size: .72rem; }
+.campus-expansion-button { width: 100%; margin-top: .4rem; }
+.map-stage.campus-view-strategic .campus-sprite-layer { visibility: hidden !important; }
+.map-stage.campus-view-scenic .campus-tile-outline,
+.map-stage.campus-view-scenic .hex-ride-score { display: none !important; }
+.map-stage.campus-view-scenic .campus-hex.selected,
+.map-stage.campus-view-scenic .campus-hex.brush-selected { filter: none; }
 .campus-sprite-layer.animations-paused *,
 .campus-sprite-layer.animations-paused *::before,
 .campus-sprite-layer.animations-paused *::after {

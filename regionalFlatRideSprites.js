@@ -20,14 +20,14 @@ const FR={
     if(!o.noTop)FR.poly(g,pts.map(p=>Pj(p[0],p[1],z0+h)),o.top||shade(col,0.16));},
   hex(g,cx,cy,R,fill,stroke){g.beginPath();for(let i=0;i<6;i++){const a=Math.PI/180*(60*i+30);g[i?'lineTo':'moveTo'](cx+R*Math.cos(a),cy+R*Math.sin(a)*0.58);}g.closePath();g.fillStyle=fill;g.fill();g.lineWidth=Math.max(1.5,R*0.03);g.strokeStyle=stroke;g.stroke();},
   /* bake each layer once per (ride, size, accent); draw(g,Pj,S,part,t) is the ride's own drawer */
-  layers(key,R,Wf,Hf,oyf,draw){FR._c=FR._c||{};if(FR._c[key])return FR._c[key];const sc=Math.max(1,Math.min(2,(typeof devicePixelRatio==='number'?devicePixelRatio:1))),W=Math.ceil(Wf*R),H=Math.ceil(Hf*R),oy=oyf*R,S=R*0.066,res={w:W,h:H,ox:W/2,oy};
+  layers(key,R,Wf,Hf,oyf,draw){FR._c=FR._c||{};const sc=getBakeScale(),cacheKey=[key,Math.round(R*sc),sc].join('|');if(FR._c[cacheKey])return FR._c[cacheKey];const W=Math.ceil(Wf*R),H=Math.ceil(Hf*R),oy=oyf*R,S=R*0.066,res={w:W,h:H,ox:W/2,oy};
     ['back','hub','front','still'].forEach(p=>{const cv=document.createElement('canvas');cv.width=Math.ceil(W*sc);cv.height=Math.ceil(H*sc);const g=cv.getContext('2d');g.scale(sc,sc);const Pj=FR.proj(W/2,oy,S);
-      if(p==='still'){draw(g,Pj,S,'back');draw(g,Pj,S,'cars_back',0);draw(g,Pj,S,'hub');draw(g,Pj,S,'cars_front',0);draw(g,Pj,S,'front');}else draw(g,Pj,S,p);res[p]=cv;});return FR._c[key]=res;},
+      if(p==='still'){draw(g,Pj,S,'back');draw(g,Pj,S,'cars_back',0);draw(g,Pj,S,'hub');draw(g,Pj,S,'cars_front',0);draw(g,Pj,S,'front');}else draw(g,Pj,S,p);res[p]=cv;});      return FR._c[cacheKey]=res;},
   render(ctx,cx,cy,R,key,Wf,Hf,oyf,draw,t){const L=FR.layers(key,R,Wf,Hf,oyf,draw);if(t==null){ctx.drawImage(L.still,cx-L.ox,cy-L.oy,L.w,L.h);return;}
     const S=R*0.066,Pj=FR.proj(cx,cy,S),bl=n=>ctx.drawImage(L[n],cx-L.ox,cy-L.oy,L.w,L.h);bl('back');draw(ctx,Pj,S,'cars_back',t);bl('hub');draw(ctx,Pj,S,'cars_front',t);bl('front');}
 };
 /* car atlas: each (colour, heading) pose is drawn once, lazily; per frame a car is a single drawImage */
-FR.atlas=function(S,w,h,ox,oy,n,fn){const sc=Math.max(1,Math.min(2,(typeof devicePixelRatio==='number'?devicePixelRatio:1))),cache={};return function(i,psi){const k=Math.round((((psi%6.2832)+6.2832)%6.2832)/6.2832*n)%n,key=i*1000+k;let e=cache[key];if(!e){const cv=document.createElement('canvas');cv.width=Math.ceil(w*sc);cv.height=Math.ceil(h*sc);const g=cv.getContext('2d');g.scale(sc,sc);fn(g,FR.proj(ox,oy,S),i,k/n*6.2832);e=cache[key]={cv,w,h,ox,oy};}return e;};};
+FR.atlas=function(S,w,h,ox,oy,n,fn){const sc=getBakeScale(),cache={};return function(i,psi){const k=Math.round((((psi%6.2832)+6.2832)%6.2832)/6.2832*n)%n,key=[i*1000+k,Math.round(S*sc)].join('|');let e=cache[key];if(!e){const cv=document.createElement('canvas');cv.width=Math.ceil(w*sc);cv.height=Math.ceil(h*sc);const g=cv.getContext('2d');g.scale(sc,sc);fn(g,FR.proj(ox,oy,S),i,k/n*6.2832);e=cache[key]={cv,w,h,ox,oy};}return e;};};
 FR._d={};
 /* ---------------- Demolition Derby ---------------- */
 const DD={rP:7.0,rIn:2.8,rOut:6.3,H:0.9,rc:4.55,N:6};

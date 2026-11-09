@@ -1,3 +1,10 @@
+function getBakeScale() {
+  const dpr = typeof devicePixelRatio === "number" && Number.isFinite(devicePixelRatio)
+    ? devicePixelRatio
+    : 1;
+  return Math.max(3.5, Math.min(4.5, dpr * 2.5));
+}
+
 function shade(hex, amt) {
   const n = parseInt(hex.slice(1), 16);
   const r = n >> 16, g = (n >> 8) & 255, b = n & 255;

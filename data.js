@@ -185,7 +185,7 @@ const PREMADE_LEGENDS = [
     img: "Images/walter_knott.jpg",
     defaultChain: "Knott Family Parks",
     defaultPark: "Knott's Berry Farm",
-    desc: "Light theming is free for campus tiles (not rides). Clearing expansion tiles costs 15% more.",
+    desc: "Light land scenery upgrades are free (ride theming is unaffected).",
     parkNames: ["Knott's Vineyard", "Knott's Scary Adventure", "Knott's Thrill Garden", "Knott's California Dreams", "Knott's Boardwalk", "Knott's Wilderness Trail"]
   },
   {
@@ -406,6 +406,22 @@ const TRACKED_RIDE_CATALOG = [
   { id: "flying_theater", name: "Flying Theater", era: "advanced", subType: "thrill", cost: 12.0, points: 16.5, researchCost: 4.0, spaces: 1, lifespan: 25, maxPerPark: 1 }
 ];
 
+const LEGENDARY_RIDE_CATALOG = [
+  {
+    id: "legendary_splash_mountain",
+    name: "Legendary Splash Mountain",
+    era: "classic",
+    subType: "family",
+    cost: 80,
+    points: 40,
+    spaces: 2,
+    lifespan: 30,
+    unlockModelId: "log_flume",
+    occupiesModelId: "log_flume",
+    uniqueGameWide: true
+  }
+];
+
 const RAW_COASTERS = [
   ["classic_wood","Classic Wood","wood","classic",15,4.5,0,2000,3600,100,.5,60,120,10,.5,false,0,0,0,false],
   ["wild_mouse","Classic Wild Mouse","steel","classic",15,3.5,0,1500,3500,100,.5,50,100,10,.5,false,0,0,0,false],
@@ -424,17 +440,49 @@ const RAW_COASTERS = [
   ["launch","Launch Coaster","steel","modern",20,10.0,3,2400,5000,100,1,80,200,10,1,true,2,20,1,false],
   ["hydro_launch","Hydro Launch","steel","modern",20,12.0,4,2800,5000,100,1,200,470,20,1,true,1,20,1,false],
   ["advanced_wood","Advanced Wood","wood","advanced",25,11.0,4,4000,8000,100,1,120,240,10,.5,true,0,20,1,false],
+  ["steel_hybrid","Steel Hybrid Coaster","steel","advanced",25,9.0,3,3200,5000,100,1,130,210,10,1,true,4,20,1,true],
   ["giga","Giga Coaster","steel","advanced",25,16.0,4,4500,7000,100,1,310,370,10,1,true,0,20,1,false],
   ["strata","Strata Coaster","steel","advanced",25,20.0,7,4500,8000,200,1,420,500,10,2,true,0,20,1,false],
   ["axis","Axis Coaster","steel","advanced",25,12.0,7,2200,4000,100,1,150,250,20,1,true,3,20,1,false],
   ["exa","EXA Coaster","steel","advanced",25,25.0,10,5000,10000,100,2,600,600,20,3,true,0,20,1,false]
 ];
 
-const COASTER_CATALOG = RAW_COASTERS.map(c => ({
-  id: c[0], name: c[1], track: c[2], gen: c[3], era: c[3], lifespan: c[4], cost: c[5], researchCost: c[6],
-  baseLen: c[7], maxLen: c[8], lenStep: c[9], lenCost: c[10], baseHeight: c[11], maxHeight: c[12], heightStep: c[13], heightCost: c[14],
-  canInvert: c[15], baseInv: c[16], maxInv: c[17], invCost: c[18], fixed: c[19]
-}));
+const COASTER_STAT_CURVES = {
+  mine_train: { cH: 0.16, rH: 1.170, cL: 0.18, rL: 1.125, pH: 0.55, pL: 0.50, pI: 0 },
+  wooden: { cH: 0.22, rH: 1.150, cL: 0.24, rL: 1.110, pH: 0.70, pL: 0.65, pI: 0 },
+  modern_wood: { cH: 0.25, rH: 1.140, cL: 0.26, rL: 1.108, pH: 0.78, pL: 0.72, pI: 0 },
+  steel_looper: { cH: 0.26, rH: 1.135, cL: 0.28, rL: 1.115, cI: 0.38, rI1: 1.18, rI2: 1.55, pH: 0.72, pL: 0.68, pI: 1.35 },
+  inverted: { cH: 0.32, rH: 1.135, cL: 0.34, rL: 1.115, cI: 0.45, rI1: 1.18, rI2: 1.55, pH: 0.80, pL: 0.75, pI: 1.45 },
+  dive: { cH: 0.38, rH: 1.130, cL: 0.38, rL: 1.130, cI: 0.52, rI1: 1.20, rI2: 1.58, pH: 0.90, pL: 0.70, pI: 1.40 },
+  launch: { cH: 0.34, rH: 1.125, cL: 0.35, rL: 1.110, cI: 0.46, rI1: 1.18, rI2: 1.55, pH: 0.85, pL: 0.80, pI: 1.40 },
+  hybrid: { cH: 0.35, rH: 1.120, cL: 0.34, rL: 1.105, cI: 0.48, rI1: 1.18, rI2: 1.55, pH: 0.92, pL: 0.85, pI: 1.50 },
+  hyper: { cH: 0.35, rH: 1.115, cL: 0.36, rL: 1.100, pH: 1.05, pL: 0.95, pI: 0 },
+  giga: { cH: 0.42, rH: 1.098, cL: 0.44, rL: 1.092, pH: 1.20, pL: 1.10, pI: 0 }
+};
+
+const COASTER_STAT_CURVE_BY_MODEL = {
+  classic_wood: "wooden", wild_mouse: "mine_train", classic_looper: "steel_looper",
+  classic_hyper: "hyper", swinging: "steel_looper", modern_wood: "modern_wood",
+  modern_looper: "steel_looper", invert: "inverted", dive: "dive", flying: "inverted",
+  boomerang: "inverted", wing: "inverted", "4d_coaster": "inverted", hyper: "hyper",
+  launch: "launch", hydro_launch: "launch", advanced_wood: "modern_wood",
+  steel_hybrid: "hybrid", giga: "giga", strata: "giga", axis: "steel_looper", exa: "giga"
+};
+const NON_INVERTING_COASTER_IDS = new Set([
+  "classic_wood", "wild_mouse", "modern_wood", "advanced_wood",
+  "classic_hyper", "hyper", "giga", "strata", "exa"
+]);
+
+const COASTER_CATALOG = RAW_COASTERS.map(c => {
+  const statCurve = COASTER_STAT_CURVES[COASTER_STAT_CURVE_BY_MODEL[c[0]]];
+  if (!statCurve) throw new Error(`Missing stat curve for coaster: ${c[0]}`);
+  return {
+    id: c[0], name: c[1], track: c[2], gen: c[3], era: c[3], lifespan: c[4], cost: c[5], researchCost: c[6],
+    baseLen: c[7], initialSliderMaxLen: c[8], lenStep: 250, baseHeight: c[11], initialSliderMaxHeight: c[12], heightStep: 10,
+    canInvert: c[15] && !NON_INVERTING_COASTER_IDS.has(c[0]), baseInv: c[16], initialSliderMaxInv: c[17],
+    statCurve: { ...statCurve, baseH: c[11], baseL: c[7], baseI: c[16], canInvert: c[15] && !NON_INVERTING_COASTER_IDS.has(c[0]) }
+  };
+});
 
 const WEATHER_ROLL_TABLE = [
   { roll: 1, mult: 0.92, label: "Cool & Rainy (0.92x)" },
@@ -496,7 +544,7 @@ const WEENIE_CATALOG = [
   { id: "longhouse", name: "Viking Longhouse", themeId: "nordic", assetId: "longhouse", assetScale: 1 }
 ].map(weenie => ({ ...weenie, baseCost: 50, techPoints: 25, spaces: 1 }));
 
-// Per-Hex Ground Tile Scenery Costs & Base Points
+// Per-tile scenery costs and points; land upgrades price at 10x these costs.
 const TILE_SCENERY_TIERS = [
   { level: 0, name: "Un-themed", cost: 0,    upgradeCost: 0,    points: 0    },
   { level: 1, name: "Light",     cost: 0.50, upgradeCost: 0.50, points: 0.5  },
@@ -514,13 +562,93 @@ const LAND_HARMONY_TIERS = {
   4: { bonus: 0.50, label: "Immersive Harmony (+50%)" }
 };
 
-// Park Size Configurations (Cleared Starter Hexes vs. Woods Expansion Cap)
-const PARK_SIZE_SPECS = {
-  small:    { clearedCount: 11, maxWoodsExpansions: 14, baseClearCost: 0.60 },
-  medium:   { clearedCount: 19, maxWoodsExpansions: 18, baseClearCost: 0.50 },
-  starting: { clearedCount: 19, maxWoodsExpansions: 18, baseClearCost: 0.50 },
-  large:    { clearedCount: 29, maxWoodsExpansions: 20, baseClearCost: 0.40 }
+// Pointy-top land slots in axial coordinates; each land has 12 buildable hexes.
+const CAMPUS_LAND_SHAPES = {
+  A: [
+    { q: 0, r: 0 }, { q: 1, r: 0 }, { q: 2, r: 0 },
+    { q: -1, r: 1 }, { q: 0, r: 1 }, { q: 1, r: 1 }, { q: 2, r: 1 },
+    { q: -1, r: 2 }, { q: 0, r: 2 }, { q: 1, r: 2 },
+    { q: -1, r: 3 }, { q: 0, r: 3 }
+  ],
+  B_WEST: [
+    { q: 0, r: 0 }, { q: 1, r: 0 }, { q: 2, r: 0 },
+    { q: -1, r: 1 }, { q: 0, r: 1 }, { q: 1, r: 1 },
+    { q: -2, r: 2 }, { q: -1, r: 2 }, { q: 0, r: 2 },
+    { q: -2, r: 3 }, { q: -1, r: 3 }, { q: 0, r: 3 }
+  ],
+  B_EAST: [
+    { q: 0, r: 0 }, { q: 1, r: 0 }, { q: 2, r: 0 },
+    { q: 0, r: 1 }, { q: 1, r: 1 }, { q: 2, r: 1 },
+    { q: 0, r: 2 }, { q: 1, r: 2 }, { q: 2, r: 2 },
+    { q: -1, r: 3 }, { q: 0, r: 3 }, { q: 1, r: 3 }
+  ]
 };
+
+const CAMPUS_PARK_LAYOUTS = {
+  small: {
+    entrance: { q: -1, r: 5 },
+    lands: [
+      { id: "south_entry", name: "South Entry Plaza", shape: "A", q: 0, r: 1, unlocked: true, color: "#f97316" },
+      { id: "west_wing", name: "West Wing", shape: "B_WEST", q: -2, r: 0, unlocked: true, color: "#7dd3fc" },
+      { id: "north_expansion", name: "North Expansion", shape: "A", q: 2, r: -3, unlocked: false, color: "#94a3b8" },
+      { id: "east_wing", name: "East Wing", shape: "B_EAST", q: 3, r: 0, unlocked: false, color: "#94a3b8" }
+    ],
+    waterFeatures: []
+  },
+  medium: {
+    entrance: { q: -1, r: 6 },
+    lands: [
+      { id: "south_entry", name: "South Center Entry Land", shape: "A", q: 0, r: 2, unlocked: true, color: "#f97316" },
+      { id: "north_center", name: "North Center Land", shape: "A", q: 2, r: -2, unlocked: true, color: "#7dd3fc" },
+      { id: "southwest_wing", name: "Southwest Wing", shape: "A", q: -4, r: 3, unlocked: true, color: "#86efac" },
+      { id: "southeast_wing", name: "Southeast Wing", shape: "A", q: 3, r: 3, unlocked: true, color: "#f9a8d4" },
+      { id: "northwest_expansion", name: "Northwest Expansion", shape: "A", q: -2, r: -1, unlocked: false, color: "#94a3b8" },
+      { id: "northeast_expansion", name: "Northeast Expansion", shape: "A", q: 5, r: -1, unlocked: false, color: "#94a3b8" }
+    ],
+    waterFeatures: [
+      { id: "west_pond", q: -2.7, r: 2.8, width: 1.05, height: 0.62 },
+      { id: "east_pond", q: 5.3, r: 2.8, width: 1.05, height: 0.62 }
+    ]
+  },
+  starting_rolland: {
+    entrance: { q: -1, r: 6 },
+    lands: [
+      ...[
+        { id: "south_entry", name: "South Center Entry Land", shape: "A", q: 0, r: 2, unlocked: true, color: "#f97316" },
+        { id: "north_center", name: "North Center Land", shape: "A", q: 2, r: -2, unlocked: true, color: "#7dd3fc" },
+        { id: "southwest_wing", name: "Southwest Wing", shape: "A", q: -4, r: 3, unlocked: true, color: "#86efac" },
+        { id: "southeast_wing", name: "Southeast Wing", shape: "A", q: 3, r: 3, unlocked: true, color: "#f9a8d4" },
+        { id: "northwest_expansion", name: "Northwest Expansion", shape: "A", q: -2, r: -1, unlocked: false, color: "#94a3b8" },
+        { id: "northeast_expansion", name: "Northeast Expansion", shape: "A", q: 5, r: -1, unlocked: false, color: "#94a3b8" }
+      ],
+      { id: "extra_northwest_expansion", name: "Extra Northwest Expansion", shape: "A", q: 0, r: -5, unlocked: false, color: "#94a3b8" },
+      { id: "extra_northeast_expansion", name: "Extra Northeast Expansion", shape: "A", q: 7, r: -5, unlocked: false, color: "#94a3b8" }
+    ],
+    waterFeatures: [
+      { id: "west_pond", q: -2.7, r: 2.8, width: 1.05, height: 0.62 },
+      { id: "east_pond", q: 5.3, r: 2.8, width: 1.05, height: 0.62 }
+    ]
+  },
+  large: {
+    entrance: { q: -1, r: 8 },
+    lands: [
+      { id: "south_entry", name: "South Entry Land", shape: "A", q: 0, r: 4, unlocked: true, color: "#f97316" },
+      { id: "lower_west", name: "Lower-West Land", shape: "A", q: -2, r: 2, unlocked: true, color: "#86efac" },
+      { id: "upper_west", name: "Upper-West Land", shape: "A", q: 0, r: -2, unlocked: true, color: "#a16207" },
+      { id: "lower_east", name: "Lower-East Land", shape: "A", q: 4, r: 2, unlocked: true, color: "#f9a8d4" },
+      { id: "upper_east", name: "Upper-East Land", shape: "A", q: 6, r: -2, unlocked: true, color: "#4ade80" },
+      { id: "north_center", name: "North Center Land", shape: "B_WEST", q: 5, r: -5, unlocked: true, color: "#7dd3fc" },
+      { id: "far_northwest_expansion", name: "Far Northwest Expansion", shape: "A", q: 0, r: -6, unlocked: false, color: "#94a3b8" },
+      { id: "far_northeast_expansion", name: "Far Northeast Expansion", shape: "A", q: 10, r: -6, unlocked: false, color: "#94a3b8" }
+    ],
+    waterFeatures: [
+      { id: "central_lagoon", q: 1, r: 1, width: 3.2, height: 2.2 },
+      { id: "upper_pond", q: 5.7, r: -2.2, width: 0.95, height: 0.62 }
+    ]
+  }
+};
+
+const CAMPUS_EXPANSION_COST = 5;
 
 // Weighted climate has a long-run average of approximately 0.92x.
 const GLOBAL_TOURISM_TABLE = [

@@ -93,7 +93,7 @@ function drDraw(g,cx,cy,R,o,mode){const L=drLayout(R,mode,o.dir),S=L.S,Pj=FD.pro
   /* queue posts in front of the facade */
   const fo=L.face==='end'?W2(L.Ltot/2+1.3,0):W2(aSm,L.bsign*(L.Wsm/2+1.3)),fu=L.face==='end'?[-s,c]:[c,s];let pts=[];for(let k=-2;k<=2;k++){const sp=L.face==='end'?L.Wsm*0.3:L.L1*0.28,x=fo[0]+fu[0]*k*sp*0.9,y=fo[1]+fu[1]*k*sp*0.9;pts.push([x,y]);}
   pts=pts.sort((p,q)=>(p[0]+p[1])-(q[0]+q[1]));pts.forEach((p,i)=>{const b=Pj(p[0],p[1],0),t=Pj(p[0],p[1],1.0);if(i)FD.ln(g,Pj(pts[i-1][0],pts[i-1][1],0.85),Pj(p[0],p[1],0.85),A,S*0.07);FD.ln(g,b,t,'#d9b44a',S*0.1);FD.ell(g,t[0],t[1],S*0.12,S*0.12,'#f0d27a');});}
-function darkRideSprite(R,mode,dir,accent,style,name,scale){darkRideSprite._c=darkRideSprite._c||{};const sc=scale||Math.max(1,Math.min(2,(typeof devicePixelRatio==='number'?devicePixelRatio:1))),key=[mode,dir,R,accent,style,name,sc].join('|');if(darkRideSprite._c[key])return darkRideSprite._c[key];
+function darkRideSprite(R,mode,dir,accent,style,name,scale){darkRideSprite._c=darkRideSprite._c||{};const sc=scale||getBakeScale(),key=[mode,dir,Math.round(R*sc),R,accent,style,name,sc].join('|');if(darkRideSprite._c[key])return darkRideSprite._c[key];
   const side=mode==='side',W=Math.ceil((side?3.4:2.4)*R),H=Math.ceil((side?1.9:2.0)*R),oy=(side?1.15:1.25)*R,cv=document.createElement('canvas');cv.width=Math.ceil(W*sc);cv.height=Math.ceil(H*sc);const g=cv.getContext('2d');g.scale(sc,sc);
   drDraw(g,W/2,oy,R,{accent,style,name,dir},mode);return darkRideSprite._c[key]={canvas:cv,ox:W/2,oy,w:W,h:H};}
 function drawRideActivity(ctx,cx,cy,R,options,span,yOffset){
@@ -141,7 +141,7 @@ function ftDraw(g,cx,cy,R,A,name){const S=R*0.08,Pj=FD.proj(cx,cy,S),I=Pj,hx=4.8
     for(let k=0;k<=22;k++){const t=k/22*Math.PI,x=W/2+(W/2-2.4)*Math.cos(t),y=wh*10+(H-wh*10-2.4)*Math.sin(t);if(y<8)continue;gg.beginPath();gg.arc(x,y,1.25,0,7);gg.fillStyle='#fff3b0';gg.fill();}},hx*20,(wh+ab)*10);}
 /* ground circles (tile-local px) for placeThemeAssets(..., {avoid: flyingTheaterFootprint(R)}) */
 function flyingTheaterFootprint(R){const u=R*0.08,P=(X,Y)=>[(X-Y)*0.7*u,(X+Y)*0.35*u],c=[];for(let Y=-2.8;Y<=2.2;Y+=1.5)[-3.6,-1.2,1.2,3.6].forEach(X=>{const p=P(X,Y);c.push({x:p[0],y:p[1],r:2.3*u});});[-4,-1.4,1.4,4].forEach(X=>{const p=P(X,3.1);c.push({x:p[0],y:p[1],r:1.9*u});});return c;}
-function flyingTheaterSprite(R,accent,name,scale){flyingTheaterSprite._c=flyingTheaterSprite._c||{};const sc=scale||Math.max(1,Math.min(2,(typeof devicePixelRatio==='number'?devicePixelRatio:1))),key=[R,accent,name,sc].join('|');if(flyingTheaterSprite._c[key])return flyingTheaterSprite._c[key];
+function flyingTheaterSprite(R,accent,name,scale){flyingTheaterSprite._c=flyingTheaterSprite._c||{};const sc=scale||getBakeScale(),key=[Math.round(R*sc),R,accent,name,sc].join('|');if(flyingTheaterSprite._c[key])return flyingTheaterSprite._c[key];
   const W=Math.ceil(1.8*R),H=Math.ceil(1.6*R),oy=1.05*R,cv=document.createElement('canvas');cv.width=Math.ceil(W*sc);cv.height=Math.ceil(H*sc);const g=cv.getContext('2d');g.scale(sc,sc);ftDraw(g,W/2,oy,R,accent,name);return flyingTheaterSprite._c[key]={canvas:cv,ox:W/2,oy,w:W,h:H};}
 function drawFlyingTheater(ctx,cx,cy,R,o){o=o||{};const s=flyingTheaterSprite(R,o.accent||'#38bdf8',o.name||'');ctx.drawImage(s.canvas,cx-s.ox,cy-s.oy,s.w,s.h);drawRideActivity(ctx,cx,cy,R,o,0.24,0.16);}
 /* ===== END FLYING THEATER + DARK RIDE ===== */

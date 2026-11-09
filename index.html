@@ -98,6 +98,10 @@
       <div class="map-pill">
         <span id="mapModeIndicator" style="font-weight:700;color:var(--accent-gold);">🌎 Contiguous US Population Hex Map</span>
         <button class="btn-primary btn-sm" id="btnExitParkView" style="display:none;" onclick="exitParkCampusView()">⬅ Back to US Map</button>
+        <div class="campus-view-toggle" id="campusViewToggle" style="display:none;" role="group" aria-label="Campus view mode">
+          <button type="button" class="btn-outline btn-sm active" id="btnScenicView" aria-pressed="true" onclick="toggleCampusViewMode('scenic')">🎡 Scenic View</button>
+          <button type="button" class="btn-outline btn-sm" id="btnStrategicView" aria-pressed="false" onclick="toggleCampusViewMode('strategic')">🗺️ Strategic View</button>
+        </div>
       </div>
 
       <div class="map-legend-box" id="usMapTraitLegend">
@@ -199,6 +203,11 @@
             <label>Total Human Players (2 to 8)</label>
             <input type="number" id="setupHumanCount" value="2" min="2" max="8">
           </div>
+        </div>
+        <div class="form-group" style="margin-top:.2rem;">
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;color:var(--text-main);">
+            <input type="checkbox" id="setupUnlockAllTechnology" style="width:auto;"> Unlock All Technology (all rides researched and available from Year 1)
+          </label>
         </div>
         <div class="form-group" style="margin-top:.2rem;">
           <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;color:var(--text-main);">
@@ -320,6 +329,7 @@
         <button class="tab-btn active" id="buildTabFlat" onclick="switchBuildCategory('flat')">🎠 Flat Rides (1 Slot)</button>
         <button class="tab-btn" id="buildTabTracked" onclick="switchBuildCategory('tracked')">🚣 Tracked & Shows (2 Slots)</button>
         <button class="tab-btn" id="buildTabCoaster" onclick="switchBuildCategory('coaster')">🎢 Roller Coasters (2 Slots)</button>
+        <button class="tab-btn" id="buildTabLegendary" onclick="switchBuildCategory('legendary')">🏆 Legendary Rides</button>
         <button class="tab-btn" id="buildTabFacility" onclick="switchBuildCategory('facility')">🚻 Facilities (1 Slot)</button>
       </div>
       <div class="ride-split-layout">
@@ -463,10 +473,20 @@
 
 <script src="data.js"></script>
 <script src="sprites.js"></script>
+<script src="macroLandPacks.js"></script>
+<script src="additionalMacroLandPacks.js"></script>
+<script src="newMacroLandPacks.js"></script>
+<script src="finalMacroLandPacks.js"></script>
+<script src="hybridCoasterPack.js"></script>
+<script src="modernLogFlumePack.js"></script>
+<script src="legendarySplashMountainPack.js"></script>
+<script src="rideSkinPacks.js"></script>
 <script src="regionalFlatRideSprites.js"></script>
 <script src="regionalTrackedRideSprites.js"></script>
 <script src="regionalThemePacks.js"></script>
 <script src="themePacks.js"></script>
+<script src="advancedFlatRideSkinPacks.js"></script>
+<script src="dropTowerSkinPack.js"></script>
 <script src="engine.js"></script>
 </body>
 </html>

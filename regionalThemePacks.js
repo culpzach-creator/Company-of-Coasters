@@ -530,9 +530,8 @@ function regionalWeenieMeasure(canvas, radius, pixelScale) {
 }
 function regionalWeenieSprite(theme, radius, accent) {
   regionalWeenieSprite.cache = regionalWeenieSprite.cache || {};
-  const pixelScale = Math.max(1, Math.min(2,
-    typeof devicePixelRatio === "number" ? devicePixelRatio : 1));
-  const key = [theme, radius, accent, pixelScale].join("|");
+  const pixelScale = getBakeScale();
+  const key = [theme, Math.round(radius * pixelScale), radius, accent, pixelScale].join("|");
   if (regionalWeenieSprite.cache[key]) return regionalWeenieSprite.cache[key];
   const initialUnitScale = 0.09;
   let canvas = regionalWeenieBake(theme, radius, accent, initialUnitScale, pixelScale);
