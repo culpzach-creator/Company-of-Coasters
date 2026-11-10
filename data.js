@@ -349,7 +349,7 @@ const FACILITY_CATALOG = [
   },
   {
     id: "restaurant",
-    name: "Park Restaurant",
+    name: "Diner / Park Restaurant",
     facilityRole: "restaurant",
     era: "classic",
     cost: 2.0,
@@ -374,14 +374,30 @@ const FACILITY_CATALOG = [
     lifespan: 30,
     immuneToIssues: true,
     desc: "Satisfies Park-Wide Guest Services Need (1 needed per park in any zone; prevents -5% Park Score Penalty)."
+  },
+  {
+    id: "theater",
+    name: "Theater",
+    facilityRole: "theater",
+    era: "classic",
+    cost: 4.5,
+    points: 0,
+    supportPoints: 0,
+    researchCost: 0,
+    spaces: 1,
+    lifespan: 30,
+    immuneToIssues: true,
+    desc: "A high-capacity live show venue. Manufacturer independent."
   }
 ];
 
 const FLAT_RIDE_CATALOG = [
+  { id: "crazy_bus", name: "Crazy Bus", era: "classic", subType: "family", cost: 1.5, points: 2.5, researchCost: 0, spaces: 1 },
   { id: "scrambler", name: "Scrambler", era: "classic", subType: "family", cost: 1.5, points: 2.5, researchCost: 0, spaces: 1 },
   { id: "carousel", name: "Carousel", era: "classic", subType: "family", cost: 1.5, points: 2.5, researchCost: 0, spaces: 1 },
   { id: "flyer", name: "Flyer", era: "classic", subType: "family", cost: 1.5, points: 2.5, researchCost: 0, spaces: 1 },
   { id: "bumper_cars", name: "Bumper Cars", era: "classic", subType: "family", cost: 1.5, points: 2.5, researchCost: 0, spaces: 1 },
+  { id: "teacups", name: "Teacups", era: "classic", subType: "family", cost: 1.5, points: 2.5, researchCost: 0, spaces: 1 },
   { id: "chair_swings", name: "Chair Swings", era: "classic", subType: "family", cost: 2.0, points: 3.0, researchCost: 0, spaces: 1 },
   { id: "enterprise", name: "Enterprise", era: "classic", subType: "thrill", cost: 2.0, points: 3.0, researchCost: 0, spaces: 1 },
   { id: "pirate_ship", name: "Pirate Ship", era: "classic", subType: "family", cost: 2.5, points: 3.5, researchCost: 0, spaces: 1 },
@@ -392,6 +408,7 @@ const FLAT_RIDE_CATALOG = [
   { id: "claw", name: "Claw", era: "modern", subType: "thrill", cost: 3.0, points: 4.0, researchCost: 0, spaces: 1 },
   { id: "top_spin", name: "Top Spin", era: "modern", subType: "thrill", cost: 3.0, points: 4.5, researchCost: 2.0, spaces: 1 },
   { id: "disco", name: "Disco", era: "modern", subType: "family", cost: 4.0, points: 5.5, researchCost: 2.0, spaces: 1 },
+  { id: "nebulaz", name: "Nebulaz", era: "modern", subType: "thrill", cost: 4.0, points: 5.5, researchCost: 2.0, spaces: 1 },
   { id: "demolition_derby", name: "Demolition Derby", era: "advanced", subType: "family", cost: 4.0, points: 5.0, researchCost: 2.0, spaces: 1, immuneToIssues: true },
   { id: "giant_discovery", name: "Giant Discovery", era: "advanced", subType: "thrill", cost: 4.0, points: 5.5, researchCost: 2.0, spaces: 1, immuneToIssues: true },
   { id: "sky_fly", name: "Sky Fly", era: "advanced", subType: "thrill", cost: 4.0, points: 5.5, researchCost: 2.0, spaces: 1, immuneToIssues: true },
@@ -419,15 +436,30 @@ const LEGENDARY_RIDE_CATALOG = [
     unlockModelId: "log_flume",
     occupiesModelId: "log_flume",
     uniqueGameWide: true
+  },
+  {
+    id: "legendary_space_mountain",
+    name: "Legendary Space Mountain",
+    era: "modern",
+    subType: "thrill",
+    cost: 80,
+    points: 40,
+    spaces: 2,
+    lifespan: 30,
+    unlockModelId: "mine_train",
+    occupiesModelId: "mine_train",
+    uniqueGameWide: true
   }
 ];
 
 const RAW_COASTERS = [
+  ["mine_train","Mine Train","steel","classic",15,5.0,0,1800,3200,100,.5,55,120,10,.5,false,0,0,0,false],
   ["classic_wood","Classic Wood","wood","classic",15,4.5,0,2000,3600,100,.5,60,120,10,.5,false,0,0,0,false],
   ["wild_mouse","Classic Wild Mouse","steel","classic",15,3.5,0,1500,3500,100,.5,50,100,10,.5,false,0,0,0,false],
   ["classic_looper","Classic Looper","steel","classic",15,5.0,2,2200,4000,100,.25,70,150,10,.25,true,1,20,1,false],
   ["classic_hyper","Classic Hyper","steel","classic",15,11.0,2,3500,5500,100,1,200,230,10,.5,false,0,0,0,false],
   ["swinging","Swinging Coaster","steel","classic",15,6.0,1,2200,4000,100,.25,70,170,10,.25,false,0,0,0,false],
+  ["spinning_coaster","Spinning Coaster","steel","modern",20,7.0,2,1800,3500,100,.5,60,130,10,.5,false,0,0,0,false],
   ["modern_wood","Modern Wood","wood","modern",20,7.0,3,2800,5000,100,.5,90,160,10,.5,false,0,0,0,false],
   ["modern_looper","Modern Looper","steel","modern",20,9.0,3,3200,5000,100,1,130,210,10,1,true,4,20,1,false],
   ["invert","Inverted Coaster","steel","modern",20,8.5,3,2500,4000,100,1,110,170,10,1,true,3,20,1,false],
@@ -461,15 +493,16 @@ const COASTER_STAT_CURVES = {
 };
 
 const COASTER_STAT_CURVE_BY_MODEL = {
-  classic_wood: "wooden", wild_mouse: "mine_train", classic_looper: "steel_looper",
+  mine_train: "mine_train", classic_wood: "wooden", wild_mouse: "mine_train", classic_looper: "steel_looper",
   classic_hyper: "hyper", swinging: "steel_looper", modern_wood: "modern_wood",
+  spinning_coaster: "steel_looper",
   modern_looper: "steel_looper", invert: "inverted", dive: "dive", flying: "inverted",
   boomerang: "inverted", wing: "inverted", "4d_coaster": "inverted", hyper: "hyper",
   launch: "launch", hydro_launch: "launch", advanced_wood: "modern_wood",
   steel_hybrid: "hybrid", giga: "giga", strata: "giga", axis: "steel_looper", exa: "giga"
 };
 const NON_INVERTING_COASTER_IDS = new Set([
-  "classic_wood", "wild_mouse", "modern_wood", "advanced_wood",
+  "mine_train", "classic_wood", "wild_mouse", "spinning_coaster", "modern_wood", "advanced_wood",
   "classic_hyper", "hyper", "giga", "strata", "exa"
 ]);
 
@@ -483,6 +516,161 @@ const COASTER_CATALOG = RAW_COASTERS.map(c => {
     statCurve: { ...statCurve, baseH: c[11], baseL: c[7], baseI: c[16], canInvert: c[15] && !NON_INVERTING_COASTER_IDS.has(c[0]) }
   };
 });
+
+const MANUFACTURERS = {
+  zampini: {
+    id: "zampini", name: "Zampini", origin: "🇮🇹 Italy",
+    flatCostMod: 0.10, costMod: 0, issueMod: -0.10, capMult: 1.0, capRound: "ceil", pointsMod: 0,
+    smoothnessRule: "normal", desc: "+10% Flat Ride Cost • -10% Issue Chance",
+    coasters: [],
+    flats: ["antique_cars", "bumper_cars", "giant_discovery", "top_spin", "claw", "nebulaz", "disco", "crazy_bus", "air_race", "carousel", "scrambler", "teacups", "demolition_derby", "ferris_wheel", "chair_swings", "flyer", "log_flume"]
+  },
+  intramax: {
+    id: "intramax", name: "Intramax", origin: "🇨🇭 Switzerland",
+    costMod: 0, issueMod: 0.05, capMult: 1.0, capRound: "ceil", pointsMod: 0.03,
+    smoothnessRule: "normal", desc: "+3% Ride Points • +5% Issue Chance",
+    coasters: ["launch", "hyper", "giga", "strata", "exa", "hydro_launch", "invert", "modern_looper", "mine_train"],
+    flats: ["drop_tower", "rapids", "log_flume", "flying_theater", "dark_ride"]
+  },
+  bh: {
+    id: "bh", name: "B&H", origin: "🇨🇭 Switzerland",
+    costMod: 0.20, issueMod: -0.20, capMult: 1.5, capRound: "ceil", pointsMod: 0,
+    smoothnessRule: "normal", desc: "+20% Cost • -20% Issue Chance • 1.5x Capacity",
+    coasters: ["flying", "dive", "wing", "hyper", "giga", "invert", "strata", "modern_looper"],
+    flats: []
+  },
+  gerstmann: {
+    id: "gerstmann", name: "Gerstmann", origin: "🇩🇪 Germany",
+    costMod: 0, issueMod: 0, capMult: 1.0, capRound: "ceil", pointsMod: 0,
+    smoothnessRule: "normal", desc: "Standard Baseline Engineering",
+    coasters: ["launch", "modern_looper", "dive", "spinning_coaster"],
+    flats: ["air_race", "flyer"]
+  },
+  macht: {
+    id: "macht", name: "Macht", origin: "🇩🇪 Germany",
+    costMod: 0.10, issueMod: -0.15, capMult: 1.1, capRound: "ceil", pointsMod: 0,
+    smoothnessRule: "no_rough", desc: "+10% Cost • -15% Issue Chance • 1.1x Capacity • No Rough Rides",
+    coasters: ["launch", "hyper", "modern_looper", "spinning_coaster", "mine_train"],
+    flats: ["log_flume", "rapids", "dark_ride", "flying_theater", "teacups", "carousel", "chair_swings", "antique_cars", "demolition_derby"]
+  },
+  velkona: {
+    id: "velkona", name: "Velkona", origin: "🇳🇱 Netherlands",
+    costMod: -0.05, issueMod: 0, capMult: 0.6, capRound: "ceil", pointsMod: 0,
+    smoothnessRule: "always_smooth", desc: "All Rides Smooth • -5% Cost • 0.6x Capacity",
+    coasters: ["launch", "modern_looper", "hyper", "flying", "invert", "mine_train"],
+    flats: ["dark_ride", "flying_theater"]
+  },
+  rmc: {
+    id: "rmc", name: "Rusty Mountain", origin: "🇺🇸 USA",
+    costMod: -0.20, issueMod: 0.10, capMult: 0.6, capRound: "ceil", pointsMod: 0,
+    smoothnessRule: "always_smooth", desc: "All Rides Smooth • -20% Cost • 0.6x Capacity • +10% Issue Chance",
+    coasters: ["steel_hybrid", "advanced_wood"],
+    flats: []
+  },
+  sankyo: {
+    id: "sankyo", name: "Sankyo", origin: "🇯🇵 Japan",
+    costMod: -0.05, issueMod: 0.15, capMult: 1.0, capRound: "ceil", pointsMod: 0.05,
+    smoothnessRule: "normal", desc: "+5% Ride Points • -5% Cost • +15% Issue Chance",
+    coasters: ["4d_coaster", "launch", "modern_looper"],
+    flats: ["drop_tower", "claw"]
+  },
+  lawson: {
+    id: "lawson", name: "Lawson", origin: "🇺🇸 USA",
+    costMod: -0.15, issueMod: 0.15, capMult: 1.0, capRound: "ceil", pointsMod: 0,
+    smoothnessRule: "normal", desc: "-15% Cost • +15% Issue Chance",
+    coasters: [],
+    flats: ["flyer", "ferris_wheel", "claw", "bumper_cars", "drop_tower", "scrambler", "chair_swings"]
+  },
+  fbs: {
+    id: "fbs", name: "FBS Group", origin: "🇮🇹 Italy / US",
+    costMod: -0.20, issueMod: 0.10, capMult: 1.0, capRound: "ceil", pointsMod: 0,
+    smoothnessRule: "normal", desc: "-20% Cost • +10% Issue Chance",
+    coasters: ["spinning_coaster", "mine_train"],
+    flats: ["claw", "air_race", "bumper_cars", "disco", "crazy_bus", "carousel", "scrambler", "teacups", "demolition_derby", "ferris_wheel", "chair_swings", "antique_cars"]
+  },
+  hauss: {
+    id: "hauss", name: "Hauss", origin: "🇩🇪 Germany",
+    costMod: 0.05, issueMod: 0.05, capMult: 1.2, capRound: "ceil", pointsMod: 0,
+    smoothnessRule: "normal", desc: "+5% Cost • +5% Issue Chance • 1.2x Capacity",
+    coasters: [],
+    flats: ["top_spin", "bumper_cars", "claw", "giant_discovery", "enterprise", "drop_tower", "scrambler"]
+  },
+  polaris: {
+    id: "polaris", name: "Polaris", origin: "🇺🇸 USA",
+    costMod: -0.10, issueMod: 0, capMult: 0.8, capRound: "round", pointsMod: 0,
+    smoothnessRule: "normal", desc: "-10% Cost • 0.8x Capacity",
+    coasters: ["launch", "modern_looper", "hydro_launch"],
+    flats: []
+  },
+  gravityworks: {
+    id: "gravityworks", name: "Gravityworks", origin: "🇺🇸 USA",
+    costMod: 0, issueMod: 0, capMult: 1.0, capRound: "ceil", pointsMod: 0,
+    smoothnessRule: "no_fine", roughPointsMod: -0.15, smoothPointsMod: 0.15,
+    desc: "No Fine Rides • -15% Rough Points • +15% Smooth Points",
+    coasters: ["classic_wood", "modern_wood", "advanced_wood"],
+    flats: []
+  },
+  gtc: {
+    id: "gtc", name: "GTC", origin: "🇺🇸 USA",
+    costMod: 0, issueMod: 0, capMult: 1.0, capRound: "ceil", pointsMod: 0,
+    smoothnessRule: "no_rough", desc: "No Rough Rides",
+    coasters: ["classic_wood", "modern_wood", "advanced_wood"],
+    flats: []
+  }
+};
+
+const RIDE_CAPACITIES = {
+  mine_train: { cycleRiders: 28, parkCapacity: 520 },
+  classic_wood: { cycleRiders: 24, parkCapacity: 540 },
+  modern_wood: { cycleRiders: 24, parkCapacity: 600 },
+  advanced_wood: { cycleRiders: 24, parkCapacity: 620 },
+  steel_hybrid: { cycleRiders: 24, parkCapacity: 640 },
+  spinning_coaster: { cycleRiders: 20, parkCapacity: 480 },
+  modern_looper: { cycleRiders: 28, parkCapacity: 600 },
+  invert: { cycleRiders: 28, parkCapacity: 620 },
+  launch: { cycleRiders: 24, parkCapacity: 580 },
+  hydro_launch: { cycleRiders: 20, parkCapacity: 560 },
+  dive: { cycleRiders: 24, parkCapacity: 580 },
+  wing: { cycleRiders: 24, parkCapacity: 600 },
+  flying: { cycleRiders: 28, parkCapacity: 560 },
+  "4d_coaster": { cycleRiders: 20, parkCapacity: 520 },
+  hyper: { cycleRiders: 32, parkCapacity: 680 },
+  giga: { cycleRiders: 48, parkCapacity: 750 },
+  strata: { cycleRiders: 24, parkCapacity: 640 },
+  exa: { cycleRiders: 54, parkCapacity: 820 },
+  crazy_bus: { cycleRiders: 12, parkCapacity: 220 },
+  flyer: { cycleRiders: 16, parkCapacity: 260 },
+  antique_cars: { cycleRiders: 20, parkCapacity: 320 },
+  bumper_cars: { cycleRiders: 24, parkCapacity: 340 },
+  demolition_derby: { cycleRiders: 24, parkCapacity: 350 },
+  teacups: { cycleRiders: 24, parkCapacity: 380 },
+  scrambler: { cycleRiders: 24, parkCapacity: 380 },
+  air_race: { cycleRiders: 24, parkCapacity: 380 },
+  drop_tower: { cycleRiders: 16, parkCapacity: 420 },
+  nebulaz: { cycleRiders: 32, parkCapacity: 440 },
+  claw: { cycleRiders: 24, parkCapacity: 440 },
+  enterprise: { cycleRiders: 28, parkCapacity: 450 },
+  chair_swings: { cycleRiders: 32, parkCapacity: 460 },
+  disco: { cycleRiders: 24, parkCapacity: 480 },
+  top_spin: { cycleRiders: 28, parkCapacity: 480 },
+  giant_discovery: { cycleRiders: 30, parkCapacity: 500 },
+  ferris_wheel: { cycleRiders: 48, parkCapacity: 560 },
+  carousel: { cycleRiders: 48, parkCapacity: 620 },
+  log_flume: { cycleRiders: 45, parkCapacity: 780 },
+  legendary_splash_mountain: { cycleRiders: 45, parkCapacity: 780 },
+  rapids: { cycleRiders: 54, parkCapacity: 860 },
+  flying_theater: { cycleRiders: 72, parkCapacity: 920 },
+  dark_ride: { cycleRiders: 80, parkCapacity: 950 },
+  stage_show: { cycleRiders: 120, parkCapacity: 1200 },
+  restaurant: { cycleRiders: 25, parkCapacity: 250 },
+  diner: { cycleRiders: 25, parkCapacity: 250 },
+  theater: { cycleRiders: 120, parkCapacity: 1200 },
+  weenie: { cycleRiders: 30, parkCapacity: 300 },
+  toilets: { cycleRiders: 0, parkCapacity: 0 },
+  guest_services: { cycleRiders: 0, parkCapacity: 0 }
+};
+
+const LAND_THEME_MULTIPLIERS = { 0: 0, 1: 0.10, 2: 0.22, 3: 0.38, 4: 0.60 };
 
 const WEATHER_ROLL_TABLE = [
   { roll: 1, mult: 0.92, label: "Cool & Rainy (0.92x)" },

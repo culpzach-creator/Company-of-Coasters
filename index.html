@@ -35,7 +35,7 @@
       <span class="hud-value cash" id="hudCash">$30.00M</span>
     </div>
     <div class="hud-stat">
-      <span class="hud-label">Attendance (Goal: 50M)</span>
+      <span class="hud-label">Chain Attendance / Capacity</span>
       <span class="hud-value att" id="hudAttendance">0</span>
     </div>
     <button class="btn-gold" id="btnEndTurn" onclick="endPlayerTurn()">End Turn ➔</button>
@@ -326,11 +326,10 @@
     </div>
     <div class="modal-body ride-modal-body">
       <div class="tabs ride-category-tabs">
-        <button class="tab-btn active" id="buildTabFlat" onclick="switchBuildCategory('flat')">🎠 Flat Rides (1 Slot)</button>
-        <button class="tab-btn" id="buildTabTracked" onclick="switchBuildCategory('tracked')">🚣 Tracked & Shows (2 Slots)</button>
         <button class="tab-btn" id="buildTabCoaster" onclick="switchBuildCategory('coaster')">🎢 Roller Coasters (2 Slots)</button>
+        <button class="tab-btn active" id="buildTabFlat" onclick="switchBuildCategory('flat')">🎠 Flat Rides</button>
         <button class="tab-btn" id="buildTabLegendary" onclick="switchBuildCategory('legendary')">🏆 Legendary Rides</button>
-        <button class="tab-btn" id="buildTabFacility" onclick="switchBuildCategory('facility')">🚻 Facilities (1 Slot)</button>
+        <button class="tab-btn" id="buildTabFacility" onclick="switchBuildCategory('facility')">🏢 Facilities</button>
       </div>
       <div class="ride-split-layout">
         <div id="buildCatalogSection" class="ride-catalog-list" aria-label="Available attractions"></div>
@@ -487,6 +486,10 @@
 <script src="themePacks.js"></script>
 <script src="advancedFlatRideSkinPacks.js"></script>
 <script src="dropTowerSkinPack.js"></script>
+<script src="modernRiverRapidsPack.js"></script>
+<script src="modernInvertedCoasterPack.js"></script>
+<script src="nebulazSkinPack.js"></script>
+<script src="legendarySpaceMountainPack.js"></script>
 <script src="engine.js"></script>
 </body>
 </html>

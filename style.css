@@ -1009,6 +1009,48 @@ select {
 .ride-list-copy small { font-size: .66rem; color: var(--text-muted); }
 .ride-list-badges { display: flex; flex-wrap: wrap; gap: .2rem; }
 .ride-list-badges .badge { font-size: .58rem; padding: .12rem .3rem; }
+.manufacturer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: .45rem; }
+.manufacturer-card {
+ display: flex;
+ flex-direction: column;
+ align-items: flex-start;
+ gap: .18rem;
+ width: 100%;
+ padding: .55rem;
+ border: 1px solid var(--border-color);
+ border-radius: 9px;
+ background: #fff;
+ color: var(--text-main);
+ text-align: left;
+ cursor: pointer;
+}
+.manufacturer-card:hover { border-color: var(--accent-blue); background: #f0f9ff; }
+.manufacturer-card strong { font-size: .78rem; }
+.manufacturer-card > span,
+.manufacturer-card small { font-size: .63rem; color: var(--text-muted); }
+.manufacturer-traits { display: flex; flex-wrap: wrap; gap: .2rem; }
+.manufacturer-traits i {
+ padding: .1rem .24rem;
+ border: 1px solid var(--border-color);
+ border-radius: 999px;
+ background: #f8fafc;
+ color: var(--accent-blue);
+ font-size: .57rem;
+ font-style: normal;
+}
+.manufacturer-description { line-height: 1.35; }
+.manufacturer-back { margin-bottom: .4rem; }
+.manufacturer-selected { margin: 0 0 .45rem; color: var(--text-muted); font-size: .68rem; font-weight: 700; }
+.park-capacity-line {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ gap: .35rem;
+ margin-top: .3rem;
+ color: var(--text-muted);
+ font-size: .66rem;
+}
+#hudAttendance { font-size: .74rem; white-space: nowrap; }
 .ride-inspector-pane { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
 .ride-preview-showcase { display: flex; flex: 0 0 138px; align-items: center; gap: .9rem; padding: .25rem .35rem .65rem; border-bottom: 1px solid var(--border-color); }
 .ride-preview-graphic {
