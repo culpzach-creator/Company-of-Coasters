@@ -35,8 +35,12 @@
       <span class="hud-value cash" id="hudCash">$30.00M</span>
     </div>
     <div class="hud-stat">
-      <span class="hud-label">Chain Attendance / Capacity</span>
+      <span class="hud-label">Chain Attendance (Annual)</span>
       <span class="hud-value att" id="hudAttendance">0</span>
+    </div>
+    <div class="hud-stat">
+      <span class="hud-label">Chain Capacity (Annual Max)</span>
+      <span class="hud-value capacity" id="hudCapacity">0</span>
     </div>
     <button class="btn-gold" id="btnEndTurn" onclick="endPlayerTurn()">End Turn ➔</button>
     <button class="btn-outline btn-sm" onclick="openSetupModal()">New Game</button>
@@ -156,7 +160,20 @@
 </div>
 
 <!-- MODALS -->
-<div class="modal-backdrop active" id="setupModal">
+<div class="modal-backdrop active" id="homeModal">
+  <div class="modal-content home-menu">
+    <div class="home-logo" aria-hidden="true">🎢</div>
+    <h1>Company of Coasters</h1>
+    <p>Build your theme park empire.</p>
+    <div class="home-actions">
+      <button class="btn-gold" onclick="openSetupModal()">New Game</button>
+      <button class="btn-outline" disabled>Multiplayer <small>Coming soon</small></button>
+      <button class="btn-outline" disabled>Settings <small>Coming soon</small></button>
+      <button class="btn-outline" disabled>Tutorial <small>Coming soon</small></button>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop" id="setupModal">
   <div class="modal-content setup-modal-content">
     <div class="modal-header"><span>🎢 Company of Coasters — Game Setup</span></div>
     <div class="modal-body setup-modal-body">
@@ -164,19 +181,16 @@
         <div class="setup-step-heading">
           <span class="badge badge-gold">STEP 1 OF 2</span>
           <h2>Game Options</h2>
-          <p>Choose your game mode and opponent settings before drafting your park leader.</p>
+          <p>Choose your game settings before selecting players.</p>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;">
           <div class="form-group">
-            <label>Game Mode</label>
-            <select id="setupMode" onchange="toggleSetupModeUI()">
-              <option value="single">Single Player (vs AI Bots)</option>
-              <option value="hotseat">Live Pass &amp; Play Multiplayer (2–8 Players)</option>
+            <label for="setupMap">Map</label>
+            <select id="setupMap">
+              <option value="america">America</option>
+              <option value="world" disabled>World (coming soon)</option>
+              <option value="europe" disabled>Europe (coming soon)</option>
             </select>
-          </div>
-          <div id="singlePlayerCountBox" class="form-group">
-            <label>AI Bot Competitors (1 to 7)</label>
-            <input type="number" id="setupBotCount" value="3" min="1" max="7">
           </div>
           <div id="singlePlayerDiffBox" class="form-group">
             <label>AI Skill Level (Revenue Modifiers)</label>
@@ -197,11 +211,7 @@
           </div>
           <div class="form-group">
             <label for="setupStartingCash">Starting Cash (millions)</label>
-            <input type="number" id="setupStartingCash" value="30" min="1" max="1000" step="5">
-          </div>
-          <div id="multiplayerCountBox" class="form-group" style="display:none;">
-            <label>Total Human Players (2 to 8)</label>
-            <input type="number" id="setupHumanCount" value="2" min="2" max="8">
+            <input type="number" id="setupStartingCash" value="30" min="1" max="10000" step="any" required>
           </div>
         </div>
         <div class="form-group" style="margin-top:.2rem;">
@@ -215,10 +225,24 @@
           </label>
         </div>
         <div class="setup-step-actions">
-          <button class="btn-gold setup-next-button" onclick="showLegendSetupStep()">Next: Select Leader →</button>
+          <button class="btn-outline" onclick="showHomeScreen()">← Home</button>
+          <button class="btn-gold setup-next-button" onclick="showPlayerSetupStep()">Next: Players →</button>
         </div>
-      </div>
+      </section>
 
+      <section id="setupStepPlayers" class="setup-step" hidden>
+        <div class="setup-step-heading">
+          <span class="badge badge-gold">STEP 2 OF 2</span>
+          <h2>Players</h2>
+          <p>Select a player to choose their legend. AI legends are randomized without repeats.</p>
+        </div>
+        <div id="setupPlayerList" class="setup-player-list"></div>
+        <button id="setupAddPlayer" class="btn-outline" onclick="addSetupAIPlayer()">+ Add AI Player</button>
+        <div class="setup-step-actions">
+          <button class="btn-outline" onclick="showOptionsSetupStep()">← Back to Options</button>
+          <button class="btn-gold setup-next-button" onclick="startConfiguredGame()">Start Game →</button>
+        </div>
+      </section>
       <section id="setupStepLegend" class="setup-step" hidden>
         <div class="legend-select-layout">
           <aside class="legend-roster-pane">
@@ -280,13 +304,17 @@
                     <option value="german">German</option>
                     <option value="alps">Alps</option>
                     <option value="nordic">Nordic</option>
+                    <option value="americana">Americana</option>
+                    <option value="caribbean">Caribbean</option>
+                    <option value="retro">Retro-Future</option>
+                    <option value="tiki">Tiki</option>
                   </select>
                 </div>
               </div>
             </div>
             <div class="legend-action-bar">
-              <button class="btn-outline" onclick="showOptionsSetupStep()">← Back to Options</button>
-              <button class="btn-gold" id="btnConfirmDraftPlayer" onclick="confirmPlayerSetupStep()">Select Legend &amp; Start Game</button>
+              <button class="btn-outline" onclick="showPlayerSetupStep()">← Back to Players</button>
+              <button class="btn-gold" id="btnConfirmDraftPlayer" onclick="confirmPlayerSetupStep()">Confirm Player</button>
             </div>
           </section>
         </div>
@@ -472,6 +500,9 @@
 
 <script src="data.js"></script>
 <script src="sprites.js"></script>
+<script src="parkEntrancePack.js"></script>
+<script src="antiqueCarsSkinPack.js"></script>
+<script src="crazyBusSkinPack.js"></script>
 <script src="macroLandPacks.js"></script>
 <script src="additionalMacroLandPacks.js"></script>
 <script src="newMacroLandPacks.js"></script>
@@ -484,6 +515,9 @@
 <script src="regionalTrackedRideSprites.js"></script>
 <script src="regionalThemePacks.js"></script>
 <script src="themePacks.js"></script>
+<script src="revisedLandPacks.js"></script>
+<script src="newWeeniePacks.js"></script>
+<script src="mediumCampusScenery.js"></script>
 <script src="advancedFlatRideSkinPacks.js"></script>
 <script src="dropTowerSkinPack.js"></script>
 <script src="modernRiverRapidsPack.js"></script>

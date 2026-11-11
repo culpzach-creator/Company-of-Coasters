@@ -68,6 +68,7 @@ header {
 .hud-value { font-size: .88rem; font-weight: 700; color: var(--text-main); }
 .hud-value.cash { color: var(--accent-green); }
 .hud-value.att { color: var(--accent-teal); }
+.hud-value.capacity { color: var(--accent-blue); }
 .hud-value.year { color: var(--accent-gold); }
 
 .main-workspace { display: flex; flex: 1; overflow: hidden; position: relative; }
@@ -251,6 +252,7 @@ header {
   transform: translate(-50%, -50%) translateZ(0);
   animation: campus-ride-motion 2.4s ease-in-out infinite;
   filter: drop-shadow(0 1px 2px rgba(15, 23, 42, .65));
+  opacity: 0;
 }
 .hex-ride-sprite.static > img,
 .hex-ride-sprite.static > video {
@@ -824,6 +826,25 @@ select {
  height: 90vh;
  max-height: 90vh;
 }
+.home-menu { max-width: 500px; padding: 2rem; text-align: center; }
+.home-logo { font-size: 4rem; line-height: 1.1; }
+.home-menu h1 { margin: .5rem 0; }
+.home-menu p { color: var(--text-muted); margin-bottom: 1.5rem; }
+.home-actions { display: grid; gap: .65rem; }
+.home-actions button { min-height: 48px; }
+.home-actions small { margin-left: .5rem; }
+.setup-player-list { display: grid; gap: .5rem; overflow-y: auto; margin-bottom: .75rem; }
+.setup-player-row { display: flex; align-items: center; gap: .5rem; }
+.setup-player-select {
+ display: flex; align-items: center; gap: .75rem; width: 100%; padding: .5rem;
+ text-align: left; background: var(--bg-card); border: 1px solid var(--border-color);
+ border-radius: 8px; cursor: pointer;
+}
+.setup-player-select:hover { border-color: var(--accent-gold); }
+.setup-player-select span { display: flex; flex-direction: column; }
+.setup-player-select small { color: var(--text-muted); }
+.setup-player-select .setup-player-change { margin-left: auto; color: var(--accent-gold); font-size: .75rem; }
+.setup-step-actions { gap: .5rem; }
 .setup-modal-body {
  display: flex;
  flex-direction: column;
@@ -836,8 +857,10 @@ select {
 }
 .setup-step { flex: 1 1 auto; width: 100%; min-height: 0; }
 #setupStepConfig[hidden],
-#setupStepLegend[hidden] { display: none !important; }
+#setupStepLegend[hidden],
+#setupStepPlayers[hidden] { display: none !important; }
 #setupStepConfig { display: flex; flex-direction: column; }
+#setupStepPlayers { display: flex; flex-direction: column; }
 #setupStepLegend { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
 .setup-step-heading { margin: .25rem 0 1.1rem; }
 .setup-step-heading h2 { margin: .55rem 0 .2rem; }

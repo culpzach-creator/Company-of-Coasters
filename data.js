@@ -97,7 +97,7 @@ const PREMADE_LEGENDS = [
     img: "Images/rolland_mack.jpg",
     defaultChain: "Mack Leisure Group",
     defaultPark: "Europa-Park",
-    desc: "Initial park gets +2 extra expansion plots (4 total). Scenic upgrades cost 5% less. Buying extra parks costs +20%.",
+    desc: "Initial park gets 2 extra expansion lands. Scenic upgrades cost 5% less. Buying extra parks costs +20%.",
     parkNames: ["Europa Park", "Rulertica", "Americana Park", "Africana Park", "Asiantica", "Latinica"]
   },
   {
@@ -523,7 +523,7 @@ const MANUFACTURERS = {
     flatCostMod: 0.10, costMod: 0, issueMod: -0.10, capMult: 1.0, capRound: "ceil", pointsMod: 0,
     smoothnessRule: "normal", desc: "+10% Flat Ride Cost • -10% Issue Chance",
     coasters: [],
-    flats: ["antique_cars", "bumper_cars", "giant_discovery", "top_spin", "claw", "nebulaz", "disco", "crazy_bus", "air_race", "carousel", "scrambler", "teacups", "demolition_derby", "ferris_wheel", "chair_swings", "flyer", "log_flume"]
+    flats: ["antique_cars", "bumper_cars", "giant_discovery", "top_spin", "claw", "nebulaz", "disco", "crazy_bus", "air_race", "carousel", "scrambler", "teacups", "demolition_derby", "ferris_wheel", "chair_swings", "flyer", "log_flume", "pirate_ship"]
   },
   intramax: {
     id: "intramax", name: "Intramax", origin: "🇨🇭 Switzerland",
@@ -571,22 +571,30 @@ const MANUFACTURERS = {
     id: "sankyo", name: "Sankyo", origin: "🇯🇵 Japan",
     costMod: -0.05, issueMod: 0.15, capMult: 1.0, capRound: "ceil", pointsMod: 0.05,
     smoothnessRule: "normal", desc: "+5% Ride Points • -5% Cost • +15% Issue Chance",
-    coasters: ["4d_coaster", "launch", "modern_looper"],
+    coasters: ["4d_coaster", "launch", "modern_looper", "axis"],
     flats: ["drop_tower", "claw"]
+  },
+  vector_dynamics: {
+    id: "vector_dynamics", name: "Vector Dynamics", origin: "🇺🇸 USA",
+    costMod: 0, issueMod: 0, capMult: 1.0, capRound: "ceil", pointsMod: 0,
+    issueModAfterTurn: 15, issueModAfterTurnValue: 0.25,
+    smoothnessRule: "normal", desc: "Standard ride specifications • +25% Issue Chance after Turn 15",
+    coasters: ["classic_looper", "classic_hyper", "wild_mouse", "swinging", "boomerang", "4d_coaster"],
+    flats: ["log_flume", "rapids"]
   },
   lawson: {
     id: "lawson", name: "Lawson", origin: "🇺🇸 USA",
     costMod: -0.15, issueMod: 0.15, capMult: 1.0, capRound: "ceil", pointsMod: 0,
     smoothnessRule: "normal", desc: "-15% Cost • +15% Issue Chance",
     coasters: [],
-    flats: ["flyer", "ferris_wheel", "claw", "bumper_cars", "drop_tower", "scrambler", "chair_swings"]
+    flats: ["flyer", "ferris_wheel", "claw", "bumper_cars", "drop_tower", "scrambler", "chair_swings", "pirate_ship"]
   },
   fbs: {
     id: "fbs", name: "FBS Group", origin: "🇮🇹 Italy / US",
-    costMod: -0.20, issueMod: 0.10, capMult: 1.0, capRound: "ceil", pointsMod: 0,
-    smoothnessRule: "normal", desc: "-20% Cost • +10% Issue Chance",
+    costMod: -0.10, issueMod: 0.10, capMult: 1.0, capRound: "ceil", pointsMod: 0,
+    smoothnessRule: "normal", desc: "-10% Cost • +10% Issue Chance",
     coasters: ["spinning_coaster", "mine_train"],
-    flats: ["claw", "air_race", "bumper_cars", "disco", "crazy_bus", "carousel", "scrambler", "teacups", "demolition_derby", "ferris_wheel", "chair_swings", "antique_cars"]
+    flats: ["claw", "air_race", "bumper_cars", "disco", "crazy_bus", "carousel", "scrambler", "teacups", "demolition_derby", "ferris_wheel", "chair_swings", "antique_cars", "pirate_ship"]
   },
   hauss: {
     id: "hauss", name: "Hauss", origin: "🇩🇪 Germany",
@@ -715,7 +723,11 @@ const LAND_THEMES = [
   { id: "fiesta", name: "Latin Festival", badgeColor: "#fed7aa", borderColor: "#a8664a", sceneryAssets: { 0: "theme-pack/fiesta/tier-0", 1: "theme-pack/fiesta/tier-1", 2: "theme-pack/fiesta/tier-2", 3: "theme-pack/fiesta/tier-3", 4: "theme-pack/fiesta/tier-4" } },
   { id: "german", name: "German Village", badgeColor: "#fef3c7", borderColor: "#8c8374", sceneryAssets: { 0: "theme-pack/german/tier-0", 1: "theme-pack/german/tier-1", 2: "theme-pack/german/tier-2", 3: "theme-pack/german/tier-3", 4: "theme-pack/german/tier-4" } },
   { id: "alps", name: "Alpine Village", badgeColor: "#e0f2fe", borderColor: "#9db4c2", sceneryAssets: { 0: "theme-pack/alps/tier-0", 1: "theme-pack/alps/tier-1", 2: "theme-pack/alps/tier-2", 3: "theme-pack/alps/tier-3", 4: "theme-pack/alps/tier-4" } },
-  { id: "nordic", name: "Nordic Village", badgeColor: "#d1fae5", borderColor: "#5f736c", sceneryAssets: { 0: "theme-pack/nordic/tier-0", 1: "theme-pack/nordic/tier-1", 2: "theme-pack/nordic/tier-2", 3: "theme-pack/nordic/tier-3", 4: "theme-pack/nordic/tier-4" } }
+  { id: "nordic", name: "Nordic Village", badgeColor: "#d1fae5", borderColor: "#5f736c", sceneryAssets: { 0: "theme-pack/nordic/tier-0", 1: "theme-pack/nordic/tier-1", 2: "theme-pack/nordic/tier-2", 3: "theme-pack/nordic/tier-3", 4: "theme-pack/nordic/tier-4" } },
+  { id: "americana", name: "Americana", badgeColor: "#fef3c7", borderColor: "#9a633a" },
+  { id: "caribbean", name: "Caribbean", badgeColor: "#a5f3fc", borderColor: "#0e7490" },
+  { id: "retro", name: "Retro-Future", badgeColor: "#ddd6fe", borderColor: "#6d28d9" },
+  { id: "tiki", name: "Tiki", badgeColor: "#bbf7d0", borderColor: "#15803d" }
 ];
 
 const WEENIE_CATALOG = [
@@ -729,7 +741,11 @@ const WEENIE_CATALOG = [
   { id: "church", name: "Festival Church", themeId: "fiesta", assetId: "festivalChurch", assetScale: 1 },
   { id: "festhaus", name: "Festhaus", themeId: "german", assetId: "festhaus", assetScale: 1 },
   { id: "mountain", name: "Snowy Mountain", themeId: "alps", assetId: "mountain", assetScale: 1 },
-  { id: "longhouse", name: "Viking Longhouse", themeId: "nordic", assetId: "longhouse", assetScale: 1 }
+  { id: "longhouse", name: "Viking Longhouse", themeId: "nordic", assetId: "longhouse", assetScale: 1 },
+  { id: "courthouse", name: "Hill Valley Courthouse", themeId: "americana" },
+  { id: "city_hall", name: "Spanish Colonial City Hall", themeId: "caribbean" },
+  { id: "retro_mountain", name: "Retro-Future Space Mountain", themeId: "retro" },
+  { id: "tiki_pagoda", name: "Polynesian Tiki Pagoda", themeId: "tiki" }
 ].map(weenie => ({ ...weenie, baseCost: 50, techPoints: 25, spaces: 1 }));
 
 // Per-tile scenery costs and points; land upgrades price at 10x these costs.
@@ -750,7 +766,7 @@ const LAND_HARMONY_TIERS = {
   4: { bonus: 0.50, label: "Immersive Harmony (+50%)" }
 };
 
-// Pointy-top land slots in axial coordinates; each land has 12 buildable hexes.
+// Pointy-top axial slots for the four preset land silhouettes.
 const CAMPUS_LAND_SHAPES = {
   A: [
     { q: 0, r: 0 }, { q: 1, r: 0 }, { q: 2, r: 0 },
@@ -758,85 +774,88 @@ const CAMPUS_LAND_SHAPES = {
     { q: -1, r: 2 }, { q: 0, r: 2 }, { q: 1, r: 2 },
     { q: -1, r: 3 }, { q: 0, r: 3 }
   ],
-  B_WEST: [
+  B: [
     { q: 0, r: 0 }, { q: 1, r: 0 }, { q: 2, r: 0 },
     { q: -1, r: 1 }, { q: 0, r: 1 }, { q: 1, r: 1 },
     { q: -2, r: 2 }, { q: -1, r: 2 }, { q: 0, r: 2 },
     { q: -2, r: 3 }, { q: -1, r: 3 }, { q: 0, r: 3 }
   ],
-  B_EAST: [
+  C: [
+    { q: 0, r: 0 },
+    { q: -1, r: 1 }, { q: 0, r: 1 }, { q: 1, r: 1 },
+    { q: -2, r: 2 }, { q: -1, r: 2 }, { q: 0, r: 2 },
+    { q: -2, r: 3 }
+  ],
+  D: [
     { q: 0, r: 0 }, { q: 1, r: 0 }, { q: 2, r: 0 },
-    { q: 0, r: 1 }, { q: 1, r: 1 }, { q: 2, r: 1 },
-    { q: 0, r: 2 }, { q: 1, r: 2 }, { q: 2, r: 2 },
-    { q: -1, r: 3 }, { q: 0, r: 3 }, { q: 1, r: 3 }
+    { q: -1, r: 1 }, { q: 0, r: 1 }, { q: 1, r: 1 },
+    { q: -1, r: 2 }, { q: 0, r: 2 }
   ]
 };
 
 const CAMPUS_PARK_LAYOUTS = {
   small: {
-    entrance: { q: -1, r: 5 },
+    entrance: { q: -1, r: 6 },
     lands: [
-      { id: "south_entry", name: "South Entry Plaza", shape: "A", q: 0, r: 1, unlocked: true, color: "#f97316" },
-      { id: "west_wing", name: "West Wing", shape: "B_WEST", q: -2, r: 0, unlocked: true, color: "#7dd3fc" },
-      { id: "north_expansion", name: "North Expansion", shape: "A", q: 2, r: -3, unlocked: false, color: "#94a3b8" },
-      { id: "east_wing", name: "East Wing", shape: "B_EAST", q: 3, r: 0, unlocked: false, color: "#94a3b8" }
+      { id: "south_entry", name: "South Entry Land", shape: "A", q: -2, r: 1, unlocked: true, color: "#f2aa84" },
+      { id: "west_wing", name: "West Wing", shape: "B", q: 1, r: 2, unlocked: false, color: "#96dcf8" },
+      { id: "north_expansion", name: "North Expansion", shape: "C", q: 2, r: -2, mirrorX: true, unlocked: false, color: "#d1d1d1" },
+      { id: "east_expansion", name: "East Expansion", shape: "D", q: 3, r: 3, unlocked: false, color: "#d1d1d1" }
     ],
     waterFeatures: []
   },
   medium: {
     entrance: { q: -1, r: 6 },
     lands: [
-      { id: "south_entry", name: "South Center Entry Land", shape: "A", q: 0, r: 2, unlocked: true, color: "#f97316" },
-      { id: "north_center", name: "North Center Land", shape: "A", q: 2, r: -2, unlocked: true, color: "#7dd3fc" },
-      { id: "southwest_wing", name: "Southwest Wing", shape: "A", q: -4, r: 3, unlocked: true, color: "#86efac" },
-      { id: "southeast_wing", name: "Southeast Wing", shape: "A", q: 3, r: 3, unlocked: true, color: "#f9a8d4" },
-      { id: "northwest_expansion", name: "Northwest Expansion", shape: "A", q: -2, r: -1, unlocked: false, color: "#94a3b8" },
-      { id: "northeast_expansion", name: "Northeast Expansion", shape: "A", q: 5, r: -1, unlocked: false, color: "#94a3b8" }
+      { id: "south_entry", name: "South Center Entry Land", shape: "A", q: 0, r: 2, unlocked: true, color: "#f2aa84" },
+      { id: "northwest_wing", name: "Northwest Land", shape: "B", q: 0, r: -2, mirrorX: true, unlocked: false, color: "#8b1f7a" },
+      { id: "west_wing", name: "West Wing", shape: "D", q: -4, r: 2, unlocked: false, color: "#f2aa84" },
+      { id: "southwest_wing", name: "Southwest Wing", shape: "C", q: -3, r: 4, unlocked: false, color: "#84e291" },
+      { id: "east_wing", name: "East Wing", shape: "B", q: 3, r: 3, unlocked: false, color: "#e59edd" },
+      { id: "north_expansion", name: "North Expansion", shape: "A", q: 2, r: -2, unlocked: false, color: "#d1d1d1" },
+      { id: "northeast_expansion", name: "Northeast Expansion", shape: "C", q: 6, r: -1, mirrorX: true, unlocked: false, color: "#d1d1d1" }
     ],
     waterFeatures: [
-      { id: "west_pond", q: -2.7, r: 2.8, width: 1.05, height: 0.62 },
-      { id: "east_pond", q: 5.3, r: 2.8, width: 1.05, height: 0.62 }
+      { id: "central_river", q: -2, r: 3.5, width: 0.75, height: 1.8 }
     ]
   },
   starting_rolland: {
     entrance: { q: -1, r: 6 },
     lands: [
       ...[
-        { id: "south_entry", name: "South Center Entry Land", shape: "A", q: 0, r: 2, unlocked: true, color: "#f97316" },
-        { id: "north_center", name: "North Center Land", shape: "A", q: 2, r: -2, unlocked: true, color: "#7dd3fc" },
-        { id: "southwest_wing", name: "Southwest Wing", shape: "A", q: -4, r: 3, unlocked: true, color: "#86efac" },
-        { id: "southeast_wing", name: "Southeast Wing", shape: "A", q: 3, r: 3, unlocked: true, color: "#f9a8d4" },
-        { id: "northwest_expansion", name: "Northwest Expansion", shape: "A", q: -2, r: -1, unlocked: false, color: "#94a3b8" },
-        { id: "northeast_expansion", name: "Northeast Expansion", shape: "A", q: 5, r: -1, unlocked: false, color: "#94a3b8" }
+        { id: "south_entry", name: "South Center Entry Land", shape: "A", q: 0, r: 2, unlocked: true, color: "#f2aa84" },
+        { id: "northwest_wing", name: "Northwest Land", shape: "B", q: 0, r: -2, mirrorX: true, unlocked: false, color: "#8b1f7a" },
+        { id: "west_wing", name: "West Wing", shape: "D", q: -4, r: 2, unlocked: false, color: "#f2aa84" },
+        { id: "southwest_wing", name: "Southwest Wing", shape: "C", q: -3, r: 4, unlocked: false, color: "#84e291" },
+        { id: "east_wing", name: "East Wing", shape: "B", q: 3, r: 3, unlocked: false, color: "#e59edd" },
+        { id: "north_expansion", name: "North Expansion", shape: "A", q: 2, r: -2, unlocked: false, color: "#d1d1d1" },
+        { id: "northeast_expansion", name: "Northeast Expansion", shape: "C", q: 6, r: -1, mirrorX: true, unlocked: false, color: "#d1d1d1" }
       ],
-      { id: "extra_northwest_expansion", name: "Extra Northwest Expansion", shape: "A", q: 0, r: -5, unlocked: false, color: "#94a3b8" },
-      { id: "extra_northeast_expansion", name: "Extra Northeast Expansion", shape: "A", q: 7, r: -5, unlocked: false, color: "#94a3b8" }
+      { id: "extra_northwest_expansion", name: "Extra Northwest Expansion", shape: "C", q: -6, r: -1, mirrorX: true, unlocked: false, color: "#d1d1d1" },
+      { id: "extra_northeast_expansion", name: "Extra Northeast Expansion", shape: "D", q: 8, r: -4, unlocked: false, color: "#d1d1d1" }
     ],
-    waterFeatures: [
-      { id: "west_pond", q: -2.7, r: 2.8, width: 1.05, height: 0.62 },
-      { id: "east_pond", q: 5.3, r: 2.8, width: 1.05, height: 0.62 }
-    ]
+    waterFeatures: [{ id: "central_river", q: -2, r: 3.5, width: 0.75, height: 1.8 }]
   },
   large: {
     entrance: { q: -1, r: 8 },
     lands: [
-      { id: "south_entry", name: "South Entry Land", shape: "A", q: 0, r: 4, unlocked: true, color: "#f97316" },
-      { id: "lower_west", name: "Lower-West Land", shape: "A", q: -2, r: 2, unlocked: true, color: "#86efac" },
-      { id: "upper_west", name: "Upper-West Land", shape: "A", q: 0, r: -2, unlocked: true, color: "#a16207" },
-      { id: "lower_east", name: "Lower-East Land", shape: "A", q: 4, r: 2, unlocked: true, color: "#f9a8d4" },
-      { id: "upper_east", name: "Upper-East Land", shape: "A", q: 6, r: -2, unlocked: true, color: "#4ade80" },
-      { id: "north_center", name: "North Center Land", shape: "B_WEST", q: 5, r: -5, unlocked: true, color: "#7dd3fc" },
-      { id: "far_northwest_expansion", name: "Far Northwest Expansion", shape: "A", q: 0, r: -6, unlocked: false, color: "#94a3b8" },
-      { id: "far_northeast_expansion", name: "Far Northeast Expansion", shape: "A", q: 10, r: -6, unlocked: false, color: "#94a3b8" }
+      { id: "south_entry", name: "South Entry Land", shape: "A", q: -1, r: 4, unlocked: true, color: "#f2aa84" },
+      { id: "west_land", name: "West Land", shape: "B", q: 0, r: -3, unlocked: false, color: "#96dcf8" },
+      { id: "north_land", name: "North Land", shape: "A", q: 4, r: -5, unlocked: false, color: "#30cc59" },
+      { id: "northeast_land", name: "Northeast Land", shape: "C", q: 7, r: -4, unlocked: false, color: "#bef4ca" },
+      { id: "east_land", name: "East Land", shape: "D", q: 6, r: -1, unlocked: false, color: "#f2aa84" },
+      { id: "southeast_land", name: "Southeast Land", shape: "B", q: 4, r: 2, unlocked: false, color: "#96dcf8" },
+      { id: "southwest_land", name: "Southwest Land", shape: "C", q: -2, r: 2, mirrorX: true, unlocked: false, color: "#bef4ca" },
+      { id: "northwest_expansion", name: "Northwest Expansion", shape: "A", q: 1, r: -7, unlocked: false, color: "#d1d1d1" },
+      { id: "northeast_expansion", name: "Northeast Expansion", shape: "C", q: 9, r: -7, mirrorX: true, unlocked: false, color: "#d1d1d1" }
     ],
     waterFeatures: [
-      { id: "central_lagoon", q: 1, r: 1, width: 3.2, height: 2.2 },
-      { id: "upper_pond", q: 5.7, r: -2.2, width: 0.95, height: 0.62 }
+      { id: "central_lagoon", q: 0, r: 1, width: 5.5, height: 2.5 }
     ]
   }
 };
 
-const CAMPUS_EXPANSION_COST = 5;
+const CAMPUS_EXPANSION_COST = 4;
 
 // Weighted climate has a long-run average of approximately 0.92x.
 const GLOBAL_TOURISM_TABLE = [

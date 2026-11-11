@@ -342,7 +342,12 @@ function getRideManufacturer(model, category, manufacturerId = null) {
 }
 
 function getRideManufacturerIssueMultiplier(ride) {
-  return 1 + (MANUFACTURERS[ride.manufacturerId]?.issueMod || 0);
+  const manufacturer = MANUFACTURERS[ride.manufacturerId];
+  const delayedIssueMod = manufacturer?.issueModAfterTurn != null &&
+    gameState.year > manufacturer.issueModAfterTurn
+    ? manufacturer.issueModAfterTurnValue || 0
+    : 0;
+  return 1 + (manufacturer?.issueMod || 0) + delayedIssueMod;
 }
 
 function getManufacturerCapacity(baseCapacity, manufacturerId) {
@@ -363,9 +368,10 @@ function getRideCycleCapacity(modelId, manufacturerId = null) {
 }
 
 function getTotalParkCapacity(park) {
-  return 300 + (park.rides || [])
+  const dailyCapacity = 300 + (park.rides || [])
     .filter(isRideOperational)
     .reduce((capacity, ride) => capacity + getRideCapacity(ride), 0);
+  return dailyCapacity * 365;
 }
 
 function getTargetParkAttendance(potentialDemand, parkCapacity) {
@@ -401,6 +407,7 @@ function getPlayerHarmonyBonusMultiplier(player) {
 /* --- 3. SETUP & LEGEND DRAFT --- */
 
 function openSetupModal() {
+  document.getElementById("homeModal").classList.remove("active");
   draftState.currentHumanIdx = 0;
   draftState.draftedPlayers = [];
   draftState.takenLegendIds = new Set();
@@ -413,44 +420,91 @@ function openSetupModal() {
   document.getElementById("customLegendBuilderName").value = "Zachary Culp";
   document.getElementById("btnConfirmDraftPlayer").disabled = false;
   document.getElementById("setupStepConfig").hidden = false;
+  document.getElementById("setupStepPlayers").hidden = true;
   document.getElementById("setupStepLegend").hidden = true;
-  toggleSetupModeUI();
   document.getElementById("setupChainName").value = PREMADE_LEGENDS[0].defaultChain;
   document.getElementById("setupParkName").value = PREMADE_LEGENDS[0].defaultPark;
-  renderLegendSelection();
+  const candidates = PREMADE_LEGENDS.filter(legend => legend.id !== "walt_disney");
+  for (let i = candidates.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+  draftState.players = [
+    { legend: PREMADE_LEGENDS.find(legend => legend.id === "walt_disney"),
+      chainName: PREMADE_LEGENDS[0].defaultChain, parkName: PREMADE_LEGENDS[0].defaultPark,
+      startingThemeId: "classic" },
+    ...candidates.slice(0, 3).map(legend => ({ legend }))
+  ];
   document.getElementById("setupModal").classList.add("active");
 }
 
-function showLegendSetupStep() {
+function showHomeScreen() {
+  document.getElementById("setupModal").classList.remove("active");
+  document.getElementById("homeModal").classList.add("active");
+}
+
+function showPlayerSetupStep() {
+  const cash = document.getElementById("setupStartingCash");
+  if (!cash.reportValidity()) return;
   document.getElementById("setupStepConfig").hidden = true;
-  document.getElementById("setupStepLegend").hidden = false;
-  updateDraftHeadingText();
-  renderLegendSelection();
+  document.getElementById("setupStepLegend").hidden = true;
+  document.getElementById("setupStepPlayers").hidden = false;
+  renderSetupPlayers();
 }
 
 function showOptionsSetupStep() {
   document.getElementById("setupStepLegend").hidden = true;
+  document.getElementById("setupStepPlayers").hidden = true;
   document.getElementById("setupStepConfig").hidden = false;
 }
 
-function toggleSetupModeUI() {
-  const mode = document.getElementById("setupMode").value;
-  document.getElementById("singlePlayerCountBox").style.display = mode === "single" ? "block" : "none";
-  document.getElementById("singlePlayerDiffBox").style.display = mode === "single" ? "block" : "none";
-  document.getElementById("multiplayerCountBox").style.display = mode === "hotseat" ? "block" : "none";
-  updateDraftHeadingText();
+function renderSetupPlayers() {
+  document.getElementById("setupPlayerList").innerHTML = draftState.players.map((player, index) => `
+    <div class="setup-player-row">
+      <button class="setup-player-select" onclick="editSetupPlayer(${index})">
+        ${getLegendPortraitHTML(player.legend, "legend-roster-thumb")}
+        <span><strong>${index === 0 ? "You" : `AI Player ${index}`}</strong>
+        <small>${escapeHtml(player.legend.name)} · ${escapeHtml(player.legend.title)}</small></span>
+        <span class="setup-player-change">Choose legend →</span>
+      </button>
+      ${index >= 4 ? `<button class="btn-outline btn-sm" aria-label="Remove AI Player ${index}" onclick="removeSetupAIPlayer(${index})">Remove</button>` : ""}
+    </div>`).join("");
+  document.getElementById("setupAddPlayer").disabled = draftState.players.length >= 8;
 }
 
-function updateDraftHeadingText() {
-  const mode = document.getElementById("setupMode").value;
-  const totalHumans = mode === "single" ? 1 : Math.min(8, Math.max(2, parseInt(document.getElementById("setupHumanCount").value) || 2));
-  draftState.humanTargetCount = totalHumans;
-  document.getElementById("draftPlayerHeading").textContent = totalHumans === 1
-    ? "Select Your Legend"
-    : `Player ${draftState.currentHumanIdx + 1} of ${totalHumans}: Select a Legend`;
-  document.getElementById("btnConfirmDraftPlayer").textContent = (draftState.currentHumanIdx + 1 < totalHumans)
-    ? `Select Legend & Continue to Player ${draftState.currentHumanIdx + 2} →`
-    : "Select Legend & Start Game";
+function addSetupAIPlayer() {
+  if (draftState.players.length >= 8) return;
+  const used = new Set(draftState.players.map(player => player.legend.id));
+  const available = PREMADE_LEGENDS.filter(legend => !used.has(legend.id));
+  if (!available.length) throw new Error("No available legends for the new AI player.");
+  draftState.players.push({ legend: available[Math.floor(Math.random() * available.length)] });
+  renderSetupPlayers();
+}
+
+function removeSetupAIPlayer(index) {
+  if (index < 4 || index >= draftState.players.length) return;
+  draftState.players.splice(index, 1);
+  renderSetupPlayers();
+}
+
+function editSetupPlayer(index) {
+  const player = draftState.players[index];
+  if (!player) return;
+  draftState.editingPlayerIndex = index;
+  draftState.takenLegendIds = new Set(draftState.players.filter((_, i) => i !== index).map(item => item.legend.id));
+  draftState.selectedLegendId = player.legend.isCustom ? "custom" : player.legend.id;
+  draftState.customLegendData = player.legend.isCustom ? { ...player.legend } : null;
+  draftState.tempPosTraits = new Set((player.legend.traits || []).filter(id => CUSTOM_POS_TRAITS.some(trait => trait.id === id)));
+  draftState.tempNegTraits = new Set((player.legend.traits || []).filter(id => CUSTOM_NEG_TRAITS.some(trait => trait.id === id)));
+  document.getElementById("setupChainName").value = player.chainName || player.legend.defaultChain || "";
+  document.getElementById("setupParkName").value = player.parkName || player.legend.defaultPark || "";
+  document.getElementById("setupStartingTheme").value = player.startingThemeId || "classic";
+  document.querySelector(".legend-empire-fields").style.display = index === 0 ? "" : "none";
+  document.getElementById("draftPlayerHeading").textContent = index === 0 ? "Select Your Legend" : `AI Player ${index}: Select a Legend`;
+  document.getElementById("btnConfirmDraftPlayer").disabled = false;
+  document.getElementById("setupStepPlayers").hidden = true;
+  document.getElementById("setupStepLegend").hidden = false;
+  renderLegendSelection();
 }
 
 function getLegendPortraitHTML(legend, cssClass) {
@@ -483,7 +537,7 @@ function renderLegendSelection() {
   customRow.setAttribute("aria-selected", String(draftState.selectedLegendId === "custom"));
   customRow.innerHTML = `<span class="legend-roster-thumb custom-legend-thumb">✨</span><span class="legend-roster-copy"><strong>Custom Legend</strong><small>Build a leader with your own perks</small></span>`;
   customRow.onclick = selectCustomLegend;
-  roster.appendChild(customRow);
+  if (draftState.editingPlayerIndex === 0) roster.appendChild(customRow);
   renderLegendDetails();
 }
 
@@ -610,36 +664,29 @@ function selectPremadeLegend(legendId) {
 }
 
 function confirmPlayerSetupStep() {
-  updateDraftHeadingText();
   if (draftState.selectedLegendId === "custom" &&
     (draftState.tempPosTraits.size !== 2 || draftState.tempNegTraits.size !== 2)) return;
   const legendObj = draftState.selectedLegendId === "custom"
     ? { ...draftState.customLegendData }
     : { ...PREMADE_LEGENDS.find(l => l.id === draftState.selectedLegendId), isCustom: false, traits: [] };
-  const ceoName = legendObj.name || "CEO";
-  const chainName = document.getElementById("setupChainName").value.trim() || "ThrillCorp Chain";
-  const parkName = document.getElementById("setupParkName").value.trim() || "Adventure Park";
-  if (!legendObj.isCustom) draftState.takenLegendIds.add(legendObj.id);
-  const startingThemeId = document.getElementById("setupStartingTheme").value;
-  draftState.draftedPlayers.push({ ceoName, chainName, parkName, legend: legendObj, startingThemeId });
-  draftState.currentHumanIdx++;
-  if (draftState.currentHumanIdx < draftState.humanTargetCount) {
-    draftState.selectedLegendId = "walt_disney";
-    draftState.customLegendData = null;
-    const nextAvail = PREMADE_LEGENDS.find(l => !draftState.takenLegendIds.has(l.id));
-    if (nextAvail) {
-      draftState.selectedLegendId = nextAvail.id;
-      document.getElementById("setupChainName").value = nextAvail.defaultChain;
-      document.getElementById("setupParkName").value = nextAvail.defaultPark;
-    } else {
-      draftState.selectedLegendId = "custom";
-    }
-    updateDraftHeadingText();
-    document.getElementById("btnConfirmDraftPlayer").disabled = draftState.selectedLegendId === "custom";
-    renderLegendSelection();
-  } else {
-    finalizeSetupAndLaunchGame();
+  const player = draftState.players[draftState.editingPlayerIndex];
+  player.legend = legendObj;
+  if (draftState.editingPlayerIndex === 0) {
+    player.chainName = document.getElementById("setupChainName").value.trim() || "ThrillCorp Chain";
+    player.parkName = document.getElementById("setupParkName").value.trim() || "Adventure Park";
+    player.startingThemeId = document.getElementById("setupStartingTheme").value;
   }
+  showPlayerSetupStep();
+}
+
+function startConfiguredGame() {
+  if (!document.getElementById("setupStartingCash").reportValidity()) {
+    showOptionsSetupStep();
+    return;
+  }
+  const human = draftState.players[0];
+  draftState.draftedPlayers = [{ ...human, ceoName: human.legend.name }];
+  finalizeSetupAndLaunchGame();
 }
 
 function pickRandomStartingHex() {
@@ -712,8 +759,12 @@ function generateCampusParkLayout(tier, themeId = "classic") {
   const coordinateKeys = new Set();
   const lands = layout.lands.map(definition => {
     const shapeSlots = CAMPUS_LAND_SHAPES[definition.shape];
-    if (!shapeSlots || shapeSlots.length !== 12) {
-      throw new RangeError(`Invalid 12-hex campus land shape: ${definition.shape}`);
+    if (!shapeSlots?.length) {
+      throw new RangeError(`Invalid campus land shape: ${definition.shape}`);
+    }
+    const shapeKeys = new Set(shapeSlots.map(slot => `${slot.q},${slot.r}`));
+    if (shapeKeys.size !== shapeSlots.length) {
+      throw new RangeError(`Duplicate tile in campus land shape: ${definition.shape}`);
     }
     const land = {
       id: nextUid("zone"),
@@ -722,16 +773,18 @@ function generateCampusParkLayout(tier, themeId = "classic") {
       shape: definition.shape,
       q: definition.q,
       r: definition.r,
+      mirrorX: !!definition.mirrorX,
       themeId,
       themeLevel: 0,
       color: definition.color,
-      unlocked: definition.unlocked,
-      expansion: !definition.unlocked,
+      unlocked: definition.id === "south_entry",
+      expansion: definition.id !== "south_entry",
       tileKeys: []
     };
 
     for (const slot of shapeSlots) {
-      const q = definition.q + slot.q;
+      const localQ = definition.mirrorX ? -slot.q - slot.r : slot.q;
+      const q = definition.q + localQ;
       const r = definition.r + slot.r;
       const key = `${q},${r}`;
       if (coordinateKeys.has(key)) {
@@ -920,12 +973,13 @@ function addLegendFreeShow(park, legend) {
 }
 
 function finalizeSetupAndLaunchGame() {
-  const mode = document.getElementById("setupMode").value;
   const gameLength = document.getElementById("setupGameLength").value;
   const startingCashInput = Number(document.getElementById("setupStartingCash").value);
-  const startingCash = Number.isFinite(startingCashInput)
-    ? Math.min(1000, Math.max(1, startingCashInput))
-    : 30;
+  if (!Number.isFinite(startingCashInput) || startingCashInput < 1 || startingCashInput > 10000) {
+    throw new RangeError("Starting cash must be between $1M and $10,000M.");
+  }
+  const startingCash = startingCashInput;
+  endTutorial();
   gameState.tutorialEnabled = !document.getElementById("setupDisableTutorial").checked;
   gameState.allTechnologyUnlocked = document.getElementById("setupUnlockAllTechnology").checked;
   gameState.maxYears = gameLength === "unlimited"
@@ -977,19 +1031,12 @@ function finalizeSetupAndLaunchGame() {
     });
   });
 
-  if (mode === "single") {
-    const botCount = Math.min(7, Math.max(1, parseInt(document.getElementById("setupBotCount").value) || 3));
+  {
+    const botLegends = draftState.players.slice(1).map(player => player.legend);
     const botDiff = document.getElementById("setupBotDifficulty").value;
     const diffMultMap = { easy: 0.90, medium: 1.10, hard: 1.30 };
-    const remLegs = PREMADE_LEGENDS.filter(l => !draftState.takenLegendIds.has(l.id));
-    for (let i = remLegs.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [remLegs[i], remLegs[j]] = [remLegs[j], remLegs[i]];
-    }
-    for (let i = 0; i < botCount; i++) {
-      const leg = remLegs[i];
-      if (!leg) throw new Error("Not enough available legends to assign unique AI leaders.");
-      draftState.takenLegendIds.add(leg.id);
+    for (let i = 0; i < botLegends.length; i++) {
+      const leg = botLegends[i];
       const pid = `bot_${i + 1}`;
       const sHex = pickRandomStartingHex();
       const availableParkNames = shuffleAIParkNames(leg);
@@ -1062,7 +1109,7 @@ const TUTORIAL_STEPS = [
   { title: "1. Contiguous US Population Hex Map", targetId: "panelCenterWorkspace", text: "The Lower-48 US Hex Map reflects real-world population & tourism pockets: Barren (0.8x Red), Rural (0.9x Orange), Suburban (1.0x Yellow), Urban (1.2x Light Green), and Destination (1.4x Strong Green). Every nearby park within 3 hexes adds +0.1x attendance!" },
   { title: "2. Facilities & Avoiding Score Penalties", targetId: "panelLeftSidebar", text: "Restrooms and restaurants serve cleared hexes within 2 hexes. Each uncovered hex loses 10% of its points for each missing amenity (up to 20%). Your Park also needs 1 Guest Services (-5% park score if missing). Build facilities in the Facilities tab—and theme them at HALF the cost of rides!" },
   { title: "3. Expanding & Territorial Borders", targetId: "hexInspectorCard", text: "Click any hex on the map to inspect its market multiplier and buy a new Small, Medium, or Large park. You cannot build within 1 hex of a rival's park unless you also own a park within 1 hex!" },
-  { title: "4. Zooming Into Your Park Campus", targetId: "panelCenterWorkspace", text: "Double-click your park hex to open its campus. Each park has preset 12-hex lands: starting lands are available immediately, and each expansion land costs $5M. Choose a theme and upgrade scenery for each land as a whole." },
+  { title: "4. Zooming Into Your Park Campus", targetId: "panelCenterWorkspace", text: "Double-click your park hex to open its campus. The entrance land is open initially; every other land costs $4M to unlock. Choose a theme and upgrade scenery for each land as a whole." },
   { title: "5. Chain Treasury & Scenery Costs", targetId: "hudBankBox", text: "Land scenery upgrades cost 10 times the equivalent single-tile upgrade. Coaster and Tracked Ride scenery costs are doubled (2x), Flat Rides cost standard price (1x), and Facilities cost half price (0.5x). Reach 50,000,000 annual guests to win!" },
   { title: "6. Ending Your Season", targetId: "btnEndTurn", text: "When you finish building rides, facilities, and scenery for the turn, click 'End Turn ➔' to view the 4-page Annual Report!" }
 ];
@@ -3359,6 +3406,8 @@ function drawMapCanvas() {
   if (!canvas) return;
   syncCampusLayerVisibility();
   const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   const scaleX = canvas.width / canvas.clientWidth;
   const scaleY = canvas.height / canvas.clientHeight;
   ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
@@ -3643,7 +3692,15 @@ function getEffectiveRideThemeLevel(ride) {
 }
 
 function getCampusRideSkinThemeId(themeId) {
-  return themeId === "german" ? "bavarian" : themeId;
+  const equivalents = { german: "bavarian", americana: "classic", caribbean: "fiesta", retro: "space", tiki: "jungle" };
+  return equivalents[themeId] || themeId;
+}
+
+function getCampusTileThemePack(themeId) {
+  const equivalents = { americana: "classic", caribbean: "fiesta", retro: "space", tiki: "jungle" };
+  const pack = THEME_PACKS[equivalents[themeId] || themeId];
+  if (!pack) throw new Error(`Missing procedural theme pack: ${themeId}`);
+  return pack;
 }
 
 function getCampusRideWoodColor(themeId, rideThemeTier) {
@@ -3691,25 +3748,38 @@ function drawCampusWaterFeatures(ctx, park) {
 function drawMacroLandBack(ctx, park) {
   const layers = new Map();
   for (const land of park.lands || []) {
-    const landPack = SPRITE_SKIN_PACKS.lands[land.themeId];
-    if (!land.unlocked || !landPack || land.themeLevel <= 0) continue;
-    const shape = land.shape === "A" ? "A" : "B";
-    const mirrorX = land.shape === "B_EAST";
-    const baked = landPack.bake(shape, land.themeLevel, CAMPUS_HEX_R, { mirrorX });
-    const center = getCampusTilePixel(land.q + 1 + land.r * 0.5, land.r);
+    if (!land.unlocked) continue;
+    if (land.themeLevel <= 0 && park.tiles.some(tile =>
+      tile.landId === land.landId && !tile.isWeenie && getEffectiveTileThemeLevel(tile) > 0
+    )) continue;
+    const landPack = REVISED_LAND_PACKS[land.themeId];
+    if (!landPack) throw new Error(`Missing land artwork: ${land.themeId}`);
+    const shape = land.shape;
+    const mirrorX = land.mirrorX;
+    const clearTiles = [];
+    const clear = [];
+    for (const ride of park.rides) {
+      const first = land.tileKeys.indexOf(ride.primaryTileKey);
+      const second = land.tileKeys.indexOf(ride.secondaryTileKey);
+      if (ride.facilityRole === "weenie" && first !== -1) clearTiles.push(first);
+      if (first !== -1 && second !== -1) clear.push([first, second]);
+    }
+    const baked = landPack.bake(shape, land.themeLevel, CAMPUS_HEX_R, { mirrorX, clear, clearTiles });
+    const offset = shape === "A" ? (mirrorX ? -1 : 1) : 0;
+    const center = getCampusTilePixel(land.q + offset + land.r * 0.5, land.r);
     landPack.drawBack(ctx, center.x, center.y, baked);
     layers.set(land.landId, { pack: landPack, center, baked });
   }
   return layers;
 }
 
-function drawCampusForestHex(ctx, tile) {
-  const treeCenters = [
-    { x: -9, y: 1, scale: 0.75 },
-    { x: 7, y: -3, scale: 0.9 },
-    { x: 1, y: 9, scale: 0.65 }
-  ];
-  for (const tree of treeCenters) {
+const CAMPUS_FOREST_TREES = [
+  { x: -9, y: 1, scale: 0.75 },
+  { x: 7, y: -3, scale: 0.9 },
+  { x: 1, y: 9, scale: 0.65 }
+];
+function drawCampusForestHex(ctx, tile, trees = CAMPUS_FOREST_TREES) {
+  for (const tree of trees) {
     const x = tile.px + tree.x;
     const y = tile.py + tree.y;
     const height = 13 * tree.scale;
@@ -3851,18 +3921,73 @@ function drawStrategicCampusMap(ctx, player, park) {
   }
 }
 
+let scenicSceneCache = null;
+let scenicSceneRefreshTimer = null;
+const SCENIC_SCENE_CACHE_LIMIT = 96 * 1024 * 1024;
+
 function drawParkCampusMap(ctx) {
   const p = gameState.players[gameState.inspectedPlayerIdx];
   const park = p.parks.find(pk => pk.id === gameState.selectedParkId) || p.parks[0];
   const hexObj = gameState.hexByKey.get(park.hexKey);
   const totMult = getTotalHexAttendanceMultiplier(hexObj, p);
-  document.getElementById("mapModeIndicator").textContent = `🎡 ${park.name} — 12-Hex Land Campus (${hexObj ? hexObj.regionName : ''} • ${totMult}x Market)`;
+  document.getElementById("mapModeIndicator").textContent = `🎡 ${park.name} — Preset Land Campus (${hexObj ? hexObj.regionName : ''} • ${totMult}x Market)`;
 
   if (gameState.campusViewMode === "strategic") {
     drawStrategicCampusMap(ctx, p, park);
     return;
   }
 
+  const displayContext = ctx;
+  const transform = ctx.getTransform();
+  const sceneKey = [park.id, ctx.canvas.width, ctx.canvas.height].join("|");
+  // Reproject padded layers during camera movement, then rebuild at the final zoom.
+  if (scenicSceneCache?.park === park && scenicSceneCache.key === sceneKey) {
+    const cache = scenicSceneCache;
+    const ratio = transform.a / cache.transform.a;
+    const x = transform.e - (cache.transform.e + cache.paddingX) * ratio;
+    const y = transform.f - (cache.transform.f + cache.paddingY) * ratio;
+    if (x <= 0 && y <= 0 && x + cache.width * ratio >= ctx.canvas.width &&
+        y + cache.height * ratio >= ctx.canvas.height) {
+      const cameraKey = [transform.a, transform.d, transform.e, transform.f].join("|");
+      if (cameraKey !== cache.cameraKey) {
+        cache.cameraKey = cameraKey;
+        clearTimeout(scenicSceneRefreshTimer);
+        scenicSceneRefreshTimer = setTimeout(() => {
+          scenicSceneRefreshTimer = null;
+          if (scenicSceneCache === cache) {
+            scenicSceneCache = null;
+            requestAnimationFrame(drawMapCanvas);
+          }
+        }, 180);
+      }
+      updateCampusSpriteLayer(park);
+      cache.draw(displayContext);
+      return;
+    }
+  }
+  clearTimeout(scenicSceneRefreshTimer);
+  scenicSceneRefreshTimer = null;
+  scenicSceneCache = null;
+  const paddingX = Math.ceil(ctx.canvas.width * 0.3);
+  const paddingY = Math.ceil(ctx.canvas.height * 0.3);
+  const layerWidth = ctx.canvas.width + paddingX * 2;
+  const layerHeight = ctx.canvas.height + paddingY * 2;
+  const layerBytes = layerWidth * layerHeight * 4;
+  let allocatedBytes = 0;
+  const makeStaticLayer = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = layerWidth;
+    canvas.height = layerHeight;
+    const layerContext = canvas.getContext("2d");
+    layerContext.setTransform(transform.a, transform.b, transform.c, transform.d,
+      transform.e + paddingX, transform.f + paddingY);
+    layerContext.imageSmoothingEnabled = true;
+    layerContext.imageSmoothingQuality = "high";
+    allocatedBytes += layerBytes;
+    return { canvas, context: layerContext };
+  };
+  let staticLayer = makeStaticLayer();
+  ctx = staticLayer.context;
   const originalFillText = ctx.fillText;
   ctx.fillText = () => {};
   const drawSpriteWithLabels = (draw, x, y, radius, options) => {
@@ -3874,34 +3999,108 @@ function drawParkCampusMap(ctx) {
       ctx.fillText = suppressedFillText;
     }
   };
-  drawCampusWaterFeatures(ctx, park);
+  const northwest = park.lands?.find(land => land.landId === "northwest_wing");
+  const isMediumLayout = park.lands?.length === 7 ||
+    (park.lands?.length === 9 && park.lands.some(land => land.landId === "extra_northwest_expansion"));
+  const mediumScenery = isMediumLayout && northwest?.q === 0 && northwest.r === -2
+    ? MEDIUM_CAMPUS_SCENERY.bake(CAMPUS_HEX_R)
+    : null;
+  const mediumAnchor = getCampusTilePixel(-3.5, -2);
+  const extraTiles = park.tiles.filter(tile => tile.landId?.startsWith("extra_"));
+  const extraBounds = [...new Set(extraTiles.map(tile => tile.landId))].map(landId => {
+    const tiles = extraTiles.filter(tile => tile.landId === landId);
+    return {
+      left: Math.min(...tiles.map(tile => tile.px)) - CAMPUS_HEX_R,
+      right: Math.max(...tiles.map(tile => tile.px)) + CAMPUS_HEX_R,
+      top: Math.min(...tiles.map(tile => tile.py)) - CAMPUS_HEX_R * 2,
+      bottom: Math.max(...tiles.map(tile => tile.py)) + CAMPUS_HEX_R
+    };
+  });
+  const drawMediumSurroundings = draw => {
+    if (!extraBounds.length) {
+      draw(ctx, mediumAnchor.x, mediumAnchor.y, mediumScenery);
+      return;
+    }
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(-10000, -10000, 20000, 20000);
+    for (const bounds of extraBounds) {
+      ctx.rect(bounds.right, bounds.top, bounds.left - bounds.right, bounds.bottom - bounds.top);
+    }
+    ctx.clip();
+    draw(ctx, mediumAnchor.x, mediumAnchor.y, mediumScenery);
+    ctx.restore();
+  };
+  if (mediumScenery) {
+    MEDIUM_CAMPUS_SCENERY.drawGround(ctx, mediumAnchor.x, mediumAnchor.y, mediumScenery);
+  } else {
+    drawCampusWaterFeatures(ctx, park);
+  }
 
   const tileByKey = new Map(park.tiles.map(t => [t.key, t]));
-  const tileSceneryLayouts = new Map();
-  const macroLandLayers = drawMacroLandBack(ctx, park);
-  const macroLandDepthBands = [];
-  for (const landLayer of macroLandLayers.values()) {
-    landLayer.baked.bands.forEach((band, index) => {
-      if (!band.canvas) return;
-      macroLandDepthBands.push({
-        depth: landLayer.center.y - landLayer.baked.oy + band.depth,
-        ...landLayer,
-        index
-      });
-    });
-  }
-  macroLandDepthBands.sort((a, b) => a.depth - b.depth);
-  let nextMacroLandDepthBand = 0;
-  const drawMacroLandBandsThrough = depth => {
-    while (nextMacroLandDepthBand < macroLandDepthBands.length &&
-      macroLandDepthBands[nextMacroLandDepthBand].depth <= depth) {
-      const band = macroLandDepthBands[nextMacroLandDepthBand++];
-      band.pack.drawDepthBand(ctx, band.center.x, band.center.y, band.baked, band.index);
+  const scenerySprites = [];
+  let bakingScenery = false;
+  const drawSceneryObject = (sprite, x, y) => {
+    if (!bakingScenery) {
+      drawScenicSprite(ctx, sprite, x, y);
+      return;
+    }
+    // Draw directly at the layer's screen resolution rather than baking each sprite twice.
+    ctx.save();
+    try {
+      sprite.draw(ctx, x, y);
+    } finally {
+      ctx.restore();
     }
   };
+  const queueSprite = (depth, draw, dynamic = false) => scenerySprites.push({ depth, draw, dynamic });
+  const visibleSprite = (sprite, x, y) => {
+    const zoom = gameState.camera.zoom;
+    const marginX = paddingX / transform.a, marginY = paddingY / transform.d;
+    const left = -gameState.camera.x / zoom - marginX, top = -gameState.camera.y / zoom - marginY;
+    const right = left + displayContext.canvas.clientWidth / zoom + 2 * marginX;
+    const bottom = top + displayContext.canvas.clientHeight / zoom + 2 * marginY;
+    return x + sprite.unit * 9 + 2 >= left && x - sprite.unit * 9 - 2 <= right &&
+      y + sprite.unit * 5 + 2 >= top && y - sprite.unit * 20 - 2 <= bottom;
+  };
+  const tileSpriteDepth = (tileY, spriteY) => {
+    const halfRow = CAMPUS_HEX_R * 1.5 * CAMPUS_HEX_VERTICAL_SCALE / 2;
+    return tileY + halfRow * (2 / Math.PI) * Math.atan((spriteY - tileY) / halfRow);
+  };
+  const macroLandLayers = drawMacroLandBack(ctx, park);
+  for (const [landId, layer] of macroLandLayers) {
+    const land = park.lands.find(item => item.landId === landId);
+    const tiles = land.tileKeys.map(key => tileByKey.get(key)).filter(Boolean);
+    for (const sprite of layer.baked.sprites) {
+      const x = layer.center.x + sprite.x, y = layer.center.y + sprite.y;
+      if (!visibleSprite(sprite, x, y)) continue;
+      const tile = tiles.reduce((nearest, candidate) => {
+        const distance = item => (item.px - x) ** 2 + ((item.py - y) / CAMPUS_HEX_VERTICAL_SCALE) ** 2;
+        return distance(candidate) < distance(nearest) ? candidate : nearest;
+      });
+      queueSprite(tileSpriteDepth(tile.py, y), () => drawSceneryObject(sprite, x, y));
+    }
+  }
+  if (mediumScenery) {
+    for (const sprite of mediumScenery.sprites) {
+      const x = mediumAnchor.x + sprite.x, y = mediumAnchor.y + sprite.y;
+      if (!visibleSprite(sprite, x, y)) continue;
+      const overlapsExtra = extraBounds.some(bounds =>
+        x + sprite.unit * 9 + 2 >= bounds.left && x - sprite.unit * 9 - 2 <= bounds.right &&
+        y + sprite.unit * 5 + 2 >= bounds.top && y - sprite.unit * 20 - 2 <= bounds.bottom);
+      queueSprite(y, () => {
+        const draw = () => drawSceneryObject(sprite, x, y);
+        if (overlapsExtra) drawMediumSurroundings(draw);
+        else draw();
+      });
+    }
+  }
   const weenieTileKeys = new Set(
     park.rides.filter(ride => ride.facilityRole === "weenie").map(ride => ride.primaryTileKey)
   );
+  const entranceLand = park.lands?.find(land => land.landId === "south_entry") ||
+    park.lands?.find(land => land.unlocked);
+  const entranceThemeId = entranceLand?.themeId || park.themeId;
 
   // Draw each land tile using its land theme.
   for (const t of park.tiles) {
@@ -3911,8 +4110,7 @@ function drawParkCampusMap(ctx) {
     const hasMacroLand = macroLandLayers.has(t.landId);
 
     if (!hasMacroLand && t.state === "cleared" && !t.isEntrance && themeId) {
-      const themePack = THEME_PACKS[themeId];
-      if (!themePack) throw new Error(`Missing procedural theme pack: ${themeId}`);
+      const themePack = getCampusTileThemePack(themeId);
       themePack.drawThemeGround(ctx, t.px, t.py, CAMPUS_HEX_R, themePack.pack, false);
       if (effTileTheme > 0) {
         const seed = Array.from(`${t.key}:${themeId}:${effTileTheme}`).reduce(
@@ -3929,15 +4127,18 @@ function drawParkCampusMap(ctx) {
           layout.assets = [];
           layout.decals = [];
         }
-        tileSceneryLayouts.set(t.key, { themePack, layout });
         themePack.drawThemeDecals(ctx, t.px, t.py, themePack.pack, layout, 0);
-        themePack.drawThemeAssets(ctx, t.px, t.py, themePack.pack, layout, 0, "back");
+        for (const asset of layout.assets) {
+          queueSprite(tileSpriteDepth(t.py, t.py + asset.y), () =>
+            themePack.pack.assets[asset.id].draw(ctx, t.px + asset.x, t.py + asset.y, layout.u, asset.v, 0));
+        }
       }
+    } else if (!hasMacroLand && t.isEntrance) {
+      const entranceThemePack = getCampusTileThemePack(entranceThemeId);
+      entranceThemePack.drawThemeGround(ctx, t.px, t.py, CAMPUS_HEX_R, entranceThemePack.pack, false);
     } else if (!hasMacroLand) {
       drawCampusHexPolygon(ctx, t.px, t.py, CAMPUS_HEX_R);
-      if (t.isEntrance) {
-        ctx.fillStyle = "#7dd3fc";
-      } else if (t.state === "woods" || t.state === "locked") {
+      if (t.state === "woods" || t.state === "locked") {
         ctx.fillStyle = "#365a3d";
       } else {
         ctx.fillStyle = "#bbf7d0";
@@ -3950,11 +4151,13 @@ function drawParkCampusMap(ctx) {
     ctx.textBaseline = "middle";
 
     if (t.isEntrance) {
-      drawParkEntrance(ctx, t.px, t.py, CAMPUS_HEX_R * 0.9, {
-        accent: "#ef4444", tile: false, tm: performance.now() / 1000
-      });
+      queueSprite(t.py, () => drawParkEntrance(ctx, t.px, t.py, CAMPUS_HEX_R * 0.9, {
+        theme: getCampusRideSkinThemeId(entranceThemeId), tile: false, t: performance.now() / 1000
+      }));
     } else if (t.state === "woods" || t.state === "locked") {
-      drawCampusForestHex(ctx, t);
+      for (const tree of CAMPUS_FOREST_TREES) {
+        queueSprite(tileSpriteDepth(t.py, t.py + tree.y), () => drawCampusForestHex(ctx, t, [tree]));
+      }
     } else if (!hasMacroLand && effTileTheme > 0 && !t.rideId) {
       ctx.fillStyle = "#0f172a";
       ctx.font = "bold 9px 'Segoe UI', sans-serif";
@@ -3962,439 +4165,522 @@ function drawParkCampusMap(ctx) {
     }
   }
 
-  // 2. Draw 1-Hex rides and multi-hex rides over the campus tiles
+  if (mediumScenery) MEDIUM_CAMPUS_SCENERY.drawInlays(ctx, mediumAnchor.x, mediumAnchor.y, mediumScenery);
+
+  updateCampusSpriteLayer(park);
   const rideDepth = ride => {
     const primary = tileByKey.get(ride.primaryTileKey);
     if (!primary) return Infinity;
     const secondary = ride.secondaryTileKey ? tileByKey.get(ride.secondaryTileKey) : null;
     return secondary ? (primary.py + secondary.py) / 2 : primary.py;
   };
-  const canvasRides = park.rides
-    .filter(ride => !getCampusRideSpriteSource(ride))
-    .sort((a, b) => rideDepth(a) - rideDepth(b));
-  for (const r of canvasRides) {
-    const t1 = tileByKey.get(r.primaryTileKey);
-    if (!t1) continue;
-    drawMacroLandBandsThrough(rideDepth(r));
-    const zone = r.zoneId ? park.zones.find(z => z.id === r.zoneId) : null;
-    const rideThemeTier = getEffectiveRideThemeLevel(r);
-    const accentColor = r.trainLineColor || (zone
-      ? (rideThemeTier >= 3 ? getLandTheme(zone.themeId).borderColor : zone.color)
-      : "#ffffff");
-    const skinOptions = {
-      accent: accentColor,
-      themeId: getCampusRideSkinThemeId(zone?.themeId || park.themeId),
-      rideThemeTier,
-      wood: getCampusRideWoodColor(zone?.themeId || park.themeId, rideThemeTier)
-    };
-    const isDown = !isRideOperational(r);
+  for (const ride of park.rides) {
+    const source = getCampusRideSpriteSource(ride);
+    if (!source) {
+      scenerySprites.push({ depth: rideDepth(ride), ride });
+      continue;
+    }
+    const tile = tileByKey.get(ride.primaryTileKey);
+    const secondary = tileByKey.get(ride.secondaryTileKey);
+    const sprite = campusHexNodes.get(ride.primaryTileKey)?.querySelector(".hex-ride-sprite > img, .hex-ride-sprite > video");
+    if (!tile || !sprite) continue;
+    queueSprite(rideDepth(ride), () => {
+      const width = sprite instanceof HTMLVideoElement ? sprite.videoWidth : sprite.naturalWidth;
+      const height = sprite instanceof HTMLVideoElement ? sprite.videoHeight : sprite.naturalHeight;
+      if (!width || !height || (sprite instanceof HTMLVideoElement && sprite.readyState < 2)) return;
+      const scale = Math.min(42 / width, 36 / height);
+      const x = secondary ? (tile.px + secondary.px) / 2 : tile.px;
+      const y = secondary ? (tile.py + secondary.py) / 2 : tile.py;
+      const bob = isCampusRideSpriteStatic(ride) ? 0 : 2 * Math.cos(performance.now() * Math.PI * 2 / 2400);
+      ctx.drawImage(sprite, x - width * scale / 2, y - height * scale / 2 + bob, width * scale, height * scale);
+    }, true);
+  }
+  scenerySprites.sort((a, b) => a.depth - b.depth);
+  // Keep each animated ride between the same depth-sorted static layers.
+  const sceneItems = [];
+  const bakeItem = item => {
+    bakingScenery = true;
+    try {
+      item.draw();
+    } finally {
+      bakingScenery = false;
+    }
+  };
+  for (const item of scenerySprites) {
+    if (item.dynamic || item.ride) {
+      if (staticLayer) {
+        sceneItems.push({ canvas: staticLayer.canvas });
+        staticLayer = null;
+      }
+      sceneItems.push(item);
+    } else if (staticLayer) {
+      bakeItem(item);
+    } else if (allocatedBytes + layerBytes <= SCENIC_SCENE_CACHE_LIMIT) {
+      staticLayer = makeStaticLayer();
+      ctx = staticLayer.context;
+      ctx.fillText = () => {};
+      bakeItem(item);
+    } else {
+      // Retain correct ordering without allocating more layers beyond the budget.
+      sceneItems.push(item);
+    }
+  }
+  if (staticLayer) sceneItems.push({ canvas: staticLayer.canvas });
 
-    if (r.spaces === 2 && r.secondaryTileKey) {
-      const t2 = tileByKey.get(r.secondaryTileKey);
-      if (t2) {
-        if (r.modelId === "dark_ride") {
-          const orientation = getMultiTileRideOrientation(t1, t2);
-          const midX = (t1.px + t2.px) / 2;
-          const midY = (t1.py + t2.py) / 2;
-          const options = {
-            accent: accentColor,
-            name: r.name,
-            t: isDown ? undefined : performance.now() / 1000
-          };
-          if (orientation === "side") {
-            drawDarkRideSide(ctx, midX, midY, CAMPUS_HEX_R, options);
-          } else {
-            drawDarkRideDiag(ctx, midX, midY, CAMPUS_HEX_R, {
-              ...options,
-              dir: orientation
-            });
-          }
-          ctx.fillStyle = "#0f172a";
-          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
-            midX, midY + CAMPUS_HEX_R * 0.62);
-          continue;
-        }
-        const coasterPack = SPRITE_SKIN_PACKS.coasters[r.modelId];
-        if (coasterPack || [
-          "rapids", "log_flume", "legendary_splash_mountain",
-          "legendary_space_mountain", "invert"
-        ].includes(r.modelId) ||
-          (r.category === "coaster" && r.modelId === "classic_wood")) {
-          const phase = 0;
-          const orientation = getMultiTileRideOrientation(t1, t2);
-          const midX = (t1.px + t2.px) / 2;
-          const midY = (t1.py + t2.py) / 2;
-          ctx.save();
-          if (r.modelId === "rapids") {
+  const drawScene = targetContext => {
+    ctx = targetContext;
+    const targetFillText = ctx.fillText;
+    ctx.fillText = () => {};
+    const currentTransform = ctx.getTransform();
+    const ratio = currentTransform.a / transform.a;
+    const layerX = currentTransform.e - (transform.e + paddingX) * ratio;
+    const layerY = currentTransform.f - (transform.f + paddingY) * ratio;
+    for (const item of sceneItems) {
+      if (item.canvas) {
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(item.canvas, layerX, layerY, layerWidth * ratio, layerHeight * ratio);
+        ctx.restore();
+        continue;
+      }
+      if (item.draw) {
+        item.draw();
+        continue;
+      }
+      const r = item.ride;
+      const t1 = tileByKey.get(r.primaryTileKey);
+      if (!t1) continue;
+      const zone = r.zoneId ? park.zones.find(z => z.id === r.zoneId) : null;
+      const rideThemeTier = getEffectiveRideThemeLevel(r);
+      const accentColor = r.trainLineColor || (zone
+        ? (rideThemeTier >= 3 ? getLandTheme(zone.themeId).borderColor : zone.color)
+        : "#ffffff");
+      const skinOptions = {
+        accent: accentColor,
+        themeId: getCampusRideSkinThemeId(zone?.themeId || park.themeId),
+        rideThemeTier,
+        wood: getCampusRideWoodColor(zone?.themeId || park.themeId, rideThemeTier)
+      };
+      const isDown = !isRideOperational(r);
+
+      if (r.spaces === 2 && r.secondaryTileKey) {
+        const t2 = tileByKey.get(r.secondaryTileKey);
+        if (t2) {
+          if (r.modelId === "dark_ride") {
+            const orientation = getMultiTileRideOrientation(t1, t2);
+            const midX = (t1.px + t2.px) / 2;
+            const midY = (t1.py + t2.py) / 2;
             const options = {
-              accent: rideThemeTier >= 3 ? accentColor : "#f97316",
-              support: rideThemeTier >= 3 ? skinOptions.wood : "#9aa3b0",
+              accent: accentColor,
+              name: r.name,
               t: isDown ? undefined : performance.now() / 1000
             };
             if (orientation === "side") {
-              MODERN_RIVER_RAPIDS_SPRITE.side(ctx, midX, midY, CAMPUS_HEX_R, options);
+              drawDarkRideSide(ctx, midX, midY, CAMPUS_HEX_R, options);
             } else {
-              MODERN_RIVER_RAPIDS_SPRITE.diag(ctx, midX, midY, CAMPUS_HEX_R, {
+              drawDarkRideDiag(ctx, midX, midY, CAMPUS_HEX_R, {
                 ...options,
                 dir: orientation
               });
             }
-          } else if (r.modelId === "log_flume") {
-            const options = { accent: accentColor, support: skinOptions.wood, t: isDown ? undefined : performance.now() / 1000 };
-            if (orientation === "side") MODERN_LOG_FLUME_SPRITE.side(ctx, midX, midY, CAMPUS_HEX_R, options);
-            else MODERN_LOG_FLUME_SPRITE.diag(ctx, midX, midY, CAMPUS_HEX_R, { ...options, dir: orientation });
-          } else if (r.category === "legendary" && r.modelId === "legendary_splash_mountain") {
-            const options = { t: isDown ? undefined : performance.now() / 1000 };
-            if (orientation === "side") LEGENDARY_SPLASH_MOUNTAIN_SPRITE.side(ctx, midX, midY, CAMPUS_HEX_R, options);
-            else LEGENDARY_SPLASH_MOUNTAIN_SPRITE.diag(ctx, midX, midY, CAMPUS_HEX_R, { ...options, dir: orientation });
-          } else if (r.category === "legendary" && r.modelId === "legendary_space_mountain") {
-            const options = {
-              t: isDown ? undefined : performance.now() / 1000,
-              scale: getBakeScale()
-            };
-            if (orientation === "side") {
-              LEGENDARY_SPACE_MOUNTAIN_SPRITE.side(ctx, midX, midY, CAMPUS_HEX_R, options);
-            } else {
-              LEGENDARY_SPACE_MOUNTAIN_SPRITE.diag(ctx, midX, midY, CAMPUS_HEX_R, {
-                ...options,
-                dir: orientation
-              });
-            }
-          } else if (r.modelId === "invert") {
-            const options = {
-              accent: rideThemeTier >= 3 ? accentColor : "#7c3aed",
-              support: "#1f2430",
-              train: "#12151c",
-              scale: getBakeScale()
-            };
-            if (orientation === "side") {
-              MODERN_INVERTED_COASTER_SPRITE.side(ctx, midX, midY, CAMPUS_HEX_R, options);
-            } else {
-              MODERN_INVERTED_COASTER_SPRITE.diag(ctx, midX, midY, CAMPUS_HEX_R, {
-                ...options,
-                dir: orientation
-              });
-            }
-          } else if (coasterPack) {
-            const coasterOptions = r.modelId === "steel_hybrid" && rideThemeTier < 3
-              ? { ...skinOptions, accent: "#dc2626", wood: "#9a7b56" }
-              : skinOptions;
-            if (orientation === "side") {
-              coasterPack.side(ctx, midX, midY, CAMPUS_HEX_R, coasterOptions);
-            } else {
-              coasterPack.diag(ctx, midX, midY, CAMPUS_HEX_R, {
-                ...coasterOptions,
-                dir: orientation
-              });
-            }
-          } else if (orientation === "side") {
-            drawWoodCoasterSide(ctx, midX, midY, CAMPUS_HEX_R, { accent: accentColor, t: phase });
-          } else {
-            drawWoodCoasterDiagDir(ctx, midX, midY, CAMPUS_HEX_R, { accent: accentColor, t: phase }, orientation);
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
+              midX, midY + CAMPUS_HEX_R * 0.62);
+            continue;
           }
+          const coasterPack = SPRITE_SKIN_PACKS.coasters[r.modelId];
+          if (coasterPack || [
+            "rapids", "log_flume", "legendary_splash_mountain",
+            "legendary_space_mountain", "invert"
+          ].includes(r.modelId) ||
+            (r.category === "coaster" && r.modelId === "classic_wood")) {
+            const phase = 0;
+            const orientation = getMultiTileRideOrientation(t1, t2);
+            const midX = (t1.px + t2.px) / 2;
+            const midY = (t1.py + t2.py) / 2;
+            ctx.save();
+            if (r.modelId === "rapids") {
+              const options = {
+                accent: rideThemeTier >= 3 ? accentColor : "#f97316",
+                support: rideThemeTier >= 3 ? skinOptions.wood : "#9aa3b0",
+                t: isDown ? undefined : performance.now() / 1000
+              };
+              if (orientation === "side") {
+                MODERN_RIVER_RAPIDS_SPRITE.side(ctx, midX, midY, CAMPUS_HEX_R, options);
+              } else {
+                MODERN_RIVER_RAPIDS_SPRITE.diag(ctx, midX, midY, CAMPUS_HEX_R, {
+                  ...options,
+                  dir: orientation
+                });
+              }
+            } else if (r.modelId === "log_flume") {
+              const options = { accent: accentColor, support: skinOptions.wood, t: isDown ? undefined : performance.now() / 1000 };
+              if (orientation === "side") MODERN_LOG_FLUME_SPRITE.side(ctx, midX, midY, CAMPUS_HEX_R, options);
+              else MODERN_LOG_FLUME_SPRITE.diag(ctx, midX, midY, CAMPUS_HEX_R, { ...options, dir: orientation });
+            } else if (r.category === "legendary" && r.modelId === "legendary_splash_mountain") {
+              const options = { t: isDown ? undefined : performance.now() / 1000 };
+              if (orientation === "side") LEGENDARY_SPLASH_MOUNTAIN_SPRITE.side(ctx, midX, midY, CAMPUS_HEX_R, options);
+              else LEGENDARY_SPLASH_MOUNTAIN_SPRITE.diag(ctx, midX, midY, CAMPUS_HEX_R, { ...options, dir: orientation });
+            } else if (r.category === "legendary" && r.modelId === "legendary_space_mountain") {
+              const options = {
+                t: isDown ? undefined : performance.now() / 1000,
+                scale: getBakeScale()
+              };
+              if (orientation === "side") {
+                LEGENDARY_SPACE_MOUNTAIN_SPRITE.side(ctx, midX, midY, CAMPUS_HEX_R, options);
+              } else {
+                LEGENDARY_SPACE_MOUNTAIN_SPRITE.diag(ctx, midX, midY, CAMPUS_HEX_R, {
+                  ...options,
+                  dir: orientation
+                });
+              }
+            } else if (r.modelId === "invert") {
+              const options = {
+                accent: rideThemeTier >= 3 ? accentColor : "#7c3aed",
+                support: "#1f2430",
+                train: "#12151c",
+                scale: getBakeScale()
+              };
+              if (orientation === "side") {
+                MODERN_INVERTED_COASTER_SPRITE.side(ctx, midX, midY, CAMPUS_HEX_R, options);
+              } else {
+                MODERN_INVERTED_COASTER_SPRITE.diag(ctx, midX, midY, CAMPUS_HEX_R, {
+                  ...options,
+                  dir: orientation
+                });
+              }
+            } else if (coasterPack) {
+              const coasterOptions = r.modelId === "steel_hybrid" && rideThemeTier < 3
+                ? { ...skinOptions, accent: "#dc2626", wood: "#9a7b56" }
+                : skinOptions;
+              if (orientation === "side") {
+                coasterPack.side(ctx, midX, midY, CAMPUS_HEX_R, coasterOptions);
+              } else {
+                coasterPack.diag(ctx, midX, midY, CAMPUS_HEX_R, {
+                  ...coasterOptions,
+                  dir: orientation
+                });
+              }
+            } else if (orientation === "side") {
+              drawWoodCoasterSide(ctx, midX, midY, CAMPUS_HEX_R, { accent: accentColor, t: phase });
+            } else {
+              drawWoodCoasterDiagDir(ctx, midX, midY, CAMPUS_HEX_R, { accent: accentColor, t: phase }, orientation);
+            }
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, midX, midY + CAMPUS_HEX_R * 0.62);
+            ctx.restore();
+            continue;
+          }
+          // Draw Red Diagonal Coaster / Tracked Ride Bar across both hexes
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(t1.px, t1.py);
+          ctx.lineTo(t2.px, t2.py);
+          ctx.lineCap = "round";
+          ctx.lineWidth = 14;
+          ctx.strokeStyle = isDown ? "#991b1b" : "#dc2626";
+          ctx.stroke();
+
+          ctx.lineWidth = 8;
+          ctx.strokeStyle = accentColor;
+          ctx.stroke();
+
+          const mx = (t1.px + t2.px) / 2;
+          const my = (t1.py + t2.py) / 2;
+          ctx.beginPath();
+          const cartProgress = r.category === "tracked"
+            ? (performance.now() / 1000 / 5) % 1
+            : 0.5;
+          const cartX = t1.px + (t2.px - t1.px) * cartProgress;
+          const cartY = t1.py + (t2.py - t1.py) * cartProgress;
+          ctx.arc(cartX, cartY, 8, 0, Math.PI * 2);
+          ctx.fillStyle = "#0f172a";
+          ctx.fill();
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = isDown ? "#ef4444" : accentColor;
+          ctx.stroke();
+
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillStyle = "#0f172a";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, mx, my + 23);
+          ctx.restore();
+        }
+      } else {
+        // 1-Hex Flat Ride or Facility
+        ctx.save();
+        if (r.category === "facility") {
+          const code = r.facilityRole === "toilets" ? "RR" : (r.facilityRole === "restaurant" ? "FB" : "GS");
+          const effR = getEffectiveRideThemeLevel(r);
+          if (r.facilityRole === "weenie") {
+            drawCampusWeenie(ctx, r, t1);
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+            ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
+              t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+          } else if (r.facilityRole === "restaurant") {
+            drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.restaurant, t1.px, t1.py,
+              CAMPUS_HEX_R * 0.72, { ...skinOptions, tile: false });
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+            ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
+              t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+          } else if (r.facilityRole === "toilets") {
+            drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.toilets, t1.px, t1.py,
+              CAMPUS_HEX_R * 0.72, { ...skinOptions, tile: false });
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+            ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
+              t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+          } else if (r.facilityRole === "guest_services") {
+            drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.guest_services, t1.px, t1.py,
+              CAMPUS_HEX_R * 0.72, { ...skinOptions, tile: false });
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+            ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
+              t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+          } else {
+            ctx.fillStyle = "#dc2626";
+            ctx.font = "bold 12px 'Segoe UI', sans-serif";
+            ctx.fillText(code, t1.px, t1.py - 2);
+          }
+          if (effR > 0 && !["guest_services", "toilets"].includes(r.facilityRole)) {
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+            ctx.fillText(`+${RIDE_SCENERY_TIERS[effR].points}p`, t1.px, t1.py + 12);
+          }
+        } else if (r.modelId === "stage_show") {
+          drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.stage_show, t1.px, t1.py,
+            CAMPUS_HEX_R * 0.9, { ...skinOptions, tile: false, t: performance.now() / 1000 });
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, midX, midY + CAMPUS_HEX_R * 0.62);
-          ctx.restore();
-          continue;
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "flying_theater") {
+          drawFlyingTheater(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            accent: accentColor, name: r.name
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "demolition_derby") {
+          drawDemolitionDerby(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            accent: accentColor, t: isDown ? undefined : performance.now() / 1000
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "crazy_bus") {
+          drawCrazyBus(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            ...skinOptions,
+            t: isDown ? undefined : performance.now() / 1000,
+            tile: false
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "antique_cars") {
+          drawAntiqueCars(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            ...skinOptions,
+            t: isDown ? undefined : performance.now() / 1000,
+            tile: false
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.isTrainStation) {
+          drawTrainStation(ctx, t1.px, t1.py, CAMPUS_HEX_R * 0.9, { accent: accentColor, tile: false });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "ferris_wheel") {
+          const rotation = isDown ? 0.3 : performance.now() / 1000 * 0.35;
+          drawFerrisWheel(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            accent: accentColor, t: rotation, tile: false
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "drop_tower") {
+          const model = FLAT_RIDE_CATALOG.find(item => item.id === "drop_tower");
+          const height = r.height || model.baseHeight;
+          const levels = 1 + ((height - model.baseHeight) / (model.maxHeight - model.baseHeight)) * 9;
+          const phase = performance.now() / 1000 % 6.5;
+          const gondolaPosition = isDown ? 0 : (phase < 3
+            ? (1 - Math.cos(Math.PI * phase / 3)) / 2 * 0.999
+            : (phase < 4 ? 1 : (phase < 4.8 ? 1 - Math.pow((phase - 4) / 0.8, 2) : 0)));
+          drawDropTower(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            ...skinOptions, levels, t: gondolaPosition, tile: false
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "top_spin") {
+          const seconds = performance.now() / 1000;
+          const phase = seconds % 12;
+          const swing = isDown ? 0.9 : 2.5 * Math.sin(Math.PI * phase / 12) * Math.sin(2 * Math.PI * phase / 2.4);
+          drawTopSpin(ctx, t1.px, t1.py, CAMPUS_HEX_R, { ...skinOptions, t: swing, tile: false });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "nebulaz") {
+          NEBULAZ_SKIN_PACK.draw(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            theme: skinOptions.themeId,
+            rideThemeTier,
+            accent: rideThemeTier >= 3 ? accentColor : "#f97316",
+            t: isDown ? 1.35 : performance.now() / 1000,
+            tile: false
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "scrambler") {
+          const rotation = isDown ? 0.6 : performance.now() / 1000 * 1.1;
+          drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.scrambler, t1.px, t1.py, CAMPUS_HEX_R,
+            { ...skinOptions, theme: skinOptions.themeId, t: rotation, tile: false });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "enterprise") {
+          const seconds = performance.now() / 1000;
+          const phase = seconds % 16;
+          const tilt = isDown ? 0 : 1.4 * Math.pow(Math.sin(Math.PI * phase / 16), 0.7);
+          const spin = isDown ? 0 : seconds * (0.8 + 2.4 * Math.sin(Math.PI * phase / 16));
+          drawEnterprise(ctx, t1.px, t1.py, CAMPUS_HEX_R, { ...skinOptions, t: spin, tilt, tile: false });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "claw") {
+          const seconds = performance.now() / 1000;
+          const swing = isDown ? 1.7 : 2.1 * Math.sin(seconds * 0.9);
+          const rotor = isDown ? 0.5 : seconds * 2.6;
+          drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.claw, t1.px, t1.py, CAMPUS_HEX_R,
+            { ...skinOptions, t: swing, r: rotor, tile: false });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "chair_swings") {
+          const seconds = performance.now() / 1000;
+          const phase = seconds % 14;
+          const fly = isDown ? 0 : Math.min(1, Math.sin(Math.PI * phase / 14) * 1.4);
+          const rotation = isDown ? 0.4 : seconds * (0.5 + 1.6 * fly);
+          drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.chair_swings, t1.px, t1.py, CAMPUS_HEX_R,
+            { ...skinOptions, t: rotation, fly, tile: false });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "pirate_ship") {
+          const seconds = performance.now() / 1000;
+          const phase = seconds % 12;
+          const swing = isDown ? 0.6 :
+            1.25 * Math.sin(Math.PI * phase / 12) * Math.sin(2 * Math.PI * phase / 2.6);
+          drawPirateShip(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            accent: accentColor, t: swing, tile: false
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "bumper_cars") {
+          drawBumperCars(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            accent: accentColor, t: performance.now() / 1000, tile: false
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "air_race") {
+          const seconds = performance.now() / 1000;
+          drawAirRace(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            ...skinOptions, t: isDown ? 0.5 : seconds * 1.2,
+            fly: isDown ? 0 : Math.abs(Math.sin(seconds * 0.35)), tile: false
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "disco") {
+          drawDiskO(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            accent: accentColor, r: isDown ? 0.4 : performance.now() / 1000, tile: false
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "giant_discovery") {
+          drawGiantDiscovery(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            accent: accentColor, t: isDown ? 0 : performance.now() / 1000, tile: false
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "sky_fly") {
+          drawSkyFly(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            accent: accentColor, t: isDown ? 0 : performance.now() / 1000, tile: false
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "carousel") {
+          const seconds = performance.now() / 1000;
+          drawCarousel(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            ...skinOptions, t: isDown ? 0.4 : seconds * 0.7 + 0.4,
+            tm: seconds, tile: false
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "flyer") {
+          const seconds = performance.now() / 1000;
+          drawFlyerRide(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            ...skinOptions, t: isDown ? 0.4 : seconds * 0.9 + 0.4,
+            fly: isDown ? 0.55 : 0.5 + 0.5 * Math.sin(seconds * 0.5),
+            tm: seconds, tile: false
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else {
+          // Unsupported flat-ride models still get a moving visual marker.
+          ctx.beginPath();
+          ctx.arc(t1.px, t1.py, 15, 0, Math.PI * 2);
+          ctx.fillStyle = "#0f172a";
+          ctx.fill();
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = isDown ? "#991b1b" : "#dc2626";
+          ctx.stroke();
+
+          const phase = isDown ? 0 : performance.now() / 1000;
+          const markerX = t1.px + Math.cos(phase) * 7;
+          const markerY = t1.py + Math.sin(phase) * 4;
+          ctx.beginPath();
+          ctx.arc(markerX, markerY, 4, 0, Math.PI * 2);
+          ctx.fillStyle = accentColor;
+          ctx.fill();
+
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillStyle = "#0f172a";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + 22);
         }
-        // Draw Red Diagonal Coaster / Tracked Ride Bar across both hexes
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(t1.px, t1.py);
-        ctx.lineTo(t2.px, t2.py);
-        ctx.lineCap = "round";
-        ctx.lineWidth = 14;
-        ctx.strokeStyle = isDown ? "#991b1b" : "#dc2626";
-        ctx.stroke();
-
-        ctx.lineWidth = 8;
-        ctx.strokeStyle = accentColor;
-        ctx.stroke();
-
-        const mx = (t1.px + t2.px) / 2;
-        const my = (t1.py + t2.py) / 2;
-        ctx.beginPath();
-        const cartProgress = r.category === "tracked"
-          ? (performance.now() / 1000 / 5) % 1
-          : 0.5;
-        const cartX = t1.px + (t2.px - t1.px) * cartProgress;
-        const cartY = t1.py + (t2.py - t1.py) * cartProgress;
-        ctx.arc(cartX, cartY, 8, 0, Math.PI * 2);
-        ctx.fillStyle = "#0f172a";
-        ctx.fill();
-        ctx.lineWidth = 2.5;
-        ctx.strokeStyle = isDown ? "#ef4444" : accentColor;
-        ctx.stroke();
-
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillStyle = "#0f172a";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, mx, my + 23);
         ctx.restore();
       }
-    } else {
-      // 1-Hex Flat Ride or Facility
-      ctx.save();
-      if (r.category === "facility") {
-        const code = r.facilityRole === "toilets" ? "RR" : (r.facilityRole === "restaurant" ? "FB" : "GS");
-        const effR = getEffectiveRideThemeLevel(r);
-        if (r.facilityRole === "weenie") {
-          drawCampusWeenie(ctx, r, t1);
-          ctx.fillStyle = "#0f172a";
-          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
-            t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-        } else if (r.facilityRole === "restaurant") {
-          drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.restaurant, t1.px, t1.py,
-            CAMPUS_HEX_R * 0.72, { ...skinOptions, tile: false });
-          ctx.fillStyle = "#0f172a";
-          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
-            t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-        } else if (r.facilityRole === "toilets") {
-          drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.toilets, t1.px, t1.py,
-            CAMPUS_HEX_R * 0.72, { ...skinOptions, tile: false });
-          ctx.fillStyle = "#0f172a";
-          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
-            t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-        } else if (r.facilityRole === "guest_services") {
-          drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.guest_services, t1.px, t1.py,
-            CAMPUS_HEX_R * 0.72, { ...skinOptions, tile: false });
-          ctx.fillStyle = "#0f172a";
-          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
-            t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-        } else {
-          ctx.fillStyle = "#dc2626";
-          ctx.font = "bold 12px 'Segoe UI', sans-serif";
-          ctx.fillText(code, t1.px, t1.py - 2);
-        }
-        if (effR > 0 && !["guest_services", "toilets"].includes(r.facilityRole)) {
-          ctx.fillStyle = "#0f172a";
-          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-          ctx.fillText(`+${RIDE_SCENERY_TIERS[effR].points}p`, t1.px, t1.py + 12);
-        }
-      } else if (r.modelId === "stage_show") {
-        drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.stage_show, t1.px, t1.py,
-          CAMPUS_HEX_R * 0.9, { ...skinOptions, tile: false, t: performance.now() / 1000 });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "flying_theater") {
-        drawFlyingTheater(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-          accent: accentColor, name: r.name
-        });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "demolition_derby") {
-        drawDemolitionDerby(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-          accent: accentColor, t: isDown ? undefined : performance.now() / 1000
-        });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "antique_cars") {
-        drawAntiqueCars(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-          accent: accentColor, t: isDown ? undefined : performance.now() / 1000
-        });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.isTrainStation) {
-        drawTrainStation(ctx, t1.px, t1.py, CAMPUS_HEX_R * 0.9, { accent: accentColor, tile: false });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "ferris_wheel") {
-        const rotation = isDown ? 0.3 : performance.now() / 1000 * 0.35;
-        drawFerrisWheel(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-          accent: accentColor, t: rotation, tile: false
-        });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "drop_tower") {
-        const model = FLAT_RIDE_CATALOG.find(item => item.id === "drop_tower");
-        const height = r.height || model.baseHeight;
-        const levels = 1 + ((height - model.baseHeight) / (model.maxHeight - model.baseHeight)) * 9;
-        const phase = performance.now() / 1000 % 6.5;
-        const gondolaPosition = isDown ? 0 : (phase < 3
-          ? (1 - Math.cos(Math.PI * phase / 3)) / 2 * 0.999
-          : (phase < 4 ? 1 : (phase < 4.8 ? 1 - Math.pow((phase - 4) / 0.8, 2) : 0)));
-        drawDropTower(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-          ...skinOptions, levels, t: gondolaPosition, tile: false
-        });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "top_spin") {
-        const seconds = performance.now() / 1000;
-        const phase = seconds % 12;
-        const swing = isDown ? 0.9 : 2.5 * Math.sin(Math.PI * phase / 12) * Math.sin(2 * Math.PI * phase / 2.4);
-        drawTopSpin(ctx, t1.px, t1.py, CAMPUS_HEX_R, { ...skinOptions, t: swing, tile: false });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "nebulaz") {
-        NEBULAZ_SKIN_PACK.draw(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-          theme: skinOptions.themeId,
-          rideThemeTier,
-          accent: rideThemeTier >= 3 ? accentColor : "#f97316",
-          t: isDown ? 1.35 : performance.now() / 1000,
-          tile: false
-        });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "scrambler") {
-        const rotation = isDown ? 0.6 : performance.now() / 1000 * 1.1;
-        drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.scrambler, t1.px, t1.py, CAMPUS_HEX_R,
-          { ...skinOptions, theme: skinOptions.themeId, t: rotation, tile: false });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "enterprise") {
-        const seconds = performance.now() / 1000;
-        const phase = seconds % 16;
-        const tilt = isDown ? 0 : 1.4 * Math.pow(Math.sin(Math.PI * phase / 16), 0.7);
-        const spin = isDown ? 0 : seconds * (0.8 + 2.4 * Math.sin(Math.PI * phase / 16));
-        drawEnterprise(ctx, t1.px, t1.py, CAMPUS_HEX_R, { ...skinOptions, t: spin, tilt, tile: false });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "claw") {
-        const seconds = performance.now() / 1000;
-        const swing = isDown ? 1.7 : 2.1 * Math.sin(seconds * 0.9);
-        const rotor = isDown ? 0.5 : seconds * 2.6;
-        drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.claw, t1.px, t1.py, CAMPUS_HEX_R,
-          { ...skinOptions, t: swing, r: rotor, tile: false });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "chair_swings") {
-        const seconds = performance.now() / 1000;
-        const phase = seconds % 14;
-        const fly = isDown ? 0 : Math.min(1, Math.sin(Math.PI * phase / 14) * 1.4);
-        const rotation = isDown ? 0.4 : seconds * (0.5 + 1.6 * fly);
-        drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.chair_swings, t1.px, t1.py, CAMPUS_HEX_R,
-          { ...skinOptions, t: rotation, fly, tile: false });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "pirate_ship") {
-        const seconds = performance.now() / 1000;
-        const phase = seconds % 12;
-        const swing = isDown ? 0.6 :
-          1.25 * Math.sin(Math.PI * phase / 12) * Math.sin(2 * Math.PI * phase / 2.6);
-        drawPirateShip(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-          accent: accentColor, t: swing, tile: false
-        });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "bumper_cars") {
-        drawBumperCars(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-          accent: accentColor, t: performance.now() / 1000, tile: false
-        });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "air_race") {
-        const seconds = performance.now() / 1000;
-        drawAirRace(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-          ...skinOptions, t: isDown ? 0.5 : seconds * 1.2,
-          fly: isDown ? 0 : Math.abs(Math.sin(seconds * 0.35)), tile: false
-        });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "disco") {
-        drawDiskO(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-          accent: accentColor, r: isDown ? 0.4 : performance.now() / 1000, tile: false
-        });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "giant_discovery") {
-        drawGiantDiscovery(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-          accent: accentColor, t: isDown ? 0 : performance.now() / 1000, tile: false
-        });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "sky_fly") {
-        drawSkyFly(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-          accent: accentColor, t: isDown ? 0 : performance.now() / 1000, tile: false
-        });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "carousel") {
-        const seconds = performance.now() / 1000;
-        drawCarousel(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-          ...skinOptions, t: isDown ? 0.4 : seconds * 0.7 + 0.4,
-          tm: seconds, tile: false
-        });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else if (r.modelId === "flyer") {
-        const seconds = performance.now() / 1000;
-        drawFlyerRide(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-          ...skinOptions, t: isDown ? 0.4 : seconds * 0.9 + 0.4,
-          fly: isDown ? 0.55 : 0.5 + 0.5 * Math.sin(seconds * 0.5),
-          tm: seconds, tile: false
-        });
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
-      } else {
-        // Unsupported flat-ride models still get a moving visual marker.
-        ctx.beginPath();
-        ctx.arc(t1.px, t1.py, 15, 0, Math.PI * 2);
-        ctx.fillStyle = "#0f172a";
-        ctx.fill();
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = isDown ? "#991b1b" : "#dc2626";
-        ctx.stroke();
-
-        const phase = isDown ? 0 : performance.now() / 1000;
-        const markerX = t1.px + Math.cos(phase) * 7;
-        const markerY = t1.py + Math.sin(phase) * 4;
-        ctx.beginPath();
-        ctx.arc(markerX, markerY, 4, 0, Math.PI * 2);
-        ctx.fillStyle = accentColor;
-        ctx.fill();
-
-        ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
-        ctx.fillStyle = "#0f172a";
-        ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + 22);
-      }
-      ctx.restore();
     }
-  }
 
-  for (const tile of park.tiles) {
-    const scenery = tileSceneryLayouts.get(tile.key);
-    if (scenery) {
-      scenery.themePack.drawThemeAssets(
-        ctx, tile.px, tile.py, scenery.themePack.pack, scenery.layout, 0, "front"
-      );
-    }
-  }
-  drawMacroLandBandsThrough(Infinity);
-  updateCampusSpriteLayer(park);
-  ctx.fillText = originalFillText;
+    ctx.fillText = targetFillText;
+  };
+  scenicSceneCache = {
+    park, key: sceneKey, draw: drawScene, transform, paddingX, paddingY,
+    width: layerWidth, height: layerHeight,
+    cameraKey: [transform.a, transform.d, transform.e, transform.f].join("|")
+  };
+  drawScene(displayContext);
 }
 
 function drawCampusWeenie(ctx, ride, tile) {
   const definition = WEENIE_CATALOG.find(item => item.id === ride.modelId);
   if (!definition) throw new RangeError(`Unknown weenie model: ${ride.modelId}`);
+  if (["americana", "caribbean", "retro", "tiki"].includes(definition.themeId)) {
+    NEW_WEENIE_PACK.draw(ctx, tile.px, tile.py, CAMPUS_HEX_R, { theme: definition.themeId });
+    return;
+  }
   const themePack = THEME_PACKS[definition.themeId];
   if (!themePack) throw new Error(`Missing weenie theme pack: ${definition.themeId}`);
   const seed = Array.from(`${ride.id}:${definition.id}`).reduce(
@@ -4979,7 +5265,7 @@ function getParkTicketPricingState(park, ownerPlayer = null, summaryOverride = n
       const rivalHex = gameState.hexByKey.get(rivalPark.hexKey);
       if (!parkHex || !rivalHex) continue;
       if (hexDistance(parkHex, rivalHex) <= 2) {
-        const rivalSummary = calculateParkScoreSummary(rivalPark, owner);
+        const rivalSummary = calculateParkScoreComponents(rivalPark, owner);
         const rivalValueRatio = (rivalSummary?.finalScore || 0) / Math.max(1, Number(rivalPark.ticketPrice || 45));
         if (rivalValueRatio > currentValueRatio * 1.25) {
           withinRangePenalty = 0.90;
@@ -5290,7 +5576,7 @@ function calculateParkInfrastructureSupport(park, ownerPlayer, estimatedAttendan
   };
 }
 
-function calculateParkScoreSummary(park, ownerPlayer = null) {
+function calculateParkScoreComponents(park, ownerPlayer = null) {
   if (!ownerPlayer) ownerPlayer = gameState.players.find(p => p.parks.some(pk => pk.id === park.id));
   syncParkPlotsMirror(park);
   const amenityCoverage = getParkAmenityCoverage(park);
@@ -5339,6 +5625,13 @@ function calculateParkScoreSummary(park, ownerPlayer = null) {
   const hasBalancedBonus = checkParkBalancedPortfolio(park);
   const balancedBonusPts = hasBalancedBonus ? score * 0.10 : 0;
   const finalScore = score + balancedBonusPts;
+  return { totalScenic, parkRecBonus, hasGuestServices, hasBalancedBonus, balancedBonusPts, finalScore };
+}
+
+function calculateParkScoreSummary(park, ownerPlayer = null) {
+  if (!ownerPlayer) ownerPlayer = gameState.players.find(p => p.parks.some(pk => pk.id === park.id));
+  const { totalScenic, parkRecBonus, hasGuestServices, hasBalancedBonus, balancedBonusPts, finalScore } =
+    calculateParkScoreComponents(park, ownerPlayer);
   const marketMultiplier = getTotalHexAttendanceMultiplier(
     gameState.hexByKey.get(park.hexKey),
     ownerPlayer
@@ -5497,6 +5790,7 @@ function toggleParkDrawer(open) {
 
 function renderAll() {
   if (!gameState.players.length) return;
+  scenicSceneCache = null;
   recalculateGlobalRecords();
   const activePlayer = gameState.players[gameState.activePlayerIdx];
   const inspectedPlayer = gameState.players[gameState.inspectedPlayerIdx];
@@ -5518,13 +5812,16 @@ function renderAll() {
     summary.crowdStatus === "OVERCROWDED"
   );
   const hudAttendance = document.getElementById("hudAttendance");
-  hudAttendance.textContent =
-    `${activePlayer.totalAttendance.toLocaleString()} / ${chainCapacity.toLocaleString()}`;
+  hudAttendance.textContent = activePlayer.totalAttendance.toLocaleString();
   hudAttendance.title = chainCrowdState
     ? `Potential Demand: ${chainDemand.toLocaleString()} guests — Build more rides or high-capacity shows to reduce queues and grow attendance!`
-    : `Chain attendance versus total park capacity. Potential demand: ${chainDemand.toLocaleString()} guests.`;
+    : `Annual chain attendance. Potential demand: ${chainDemand.toLocaleString()} guests per year.`;
   hudAttendance.setAttribute("aria-label",
-    `Chain attendance ${activePlayer.totalAttendance.toLocaleString()} of ${chainCapacity.toLocaleString()} capacity`);
+    `Annual chain attendance ${activePlayer.totalAttendance.toLocaleString()}`);
+  const hudCapacity = document.getElementById("hudCapacity");
+  hudCapacity.textContent = chainCapacity.toLocaleString();
+  hudCapacity.title = "Maximum annual guest capacity across all parks (daily ride capacity × 365).";
+  hudCapacity.setAttribute("aria-label", `Annual chain capacity ${chainCapacity.toLocaleString()} guests`);
   document.getElementById("lblRecPts").textContent = getRecordBonusValue();
 
   renderAdvisorSidebar(activePlayer);
@@ -5657,7 +5954,7 @@ function renderLeftSidebar(inspectedPlayer) {
     card.className = `card ${park.id === gameState.selectedParkId ? 'active-card' : ''}`;
     const crowdClass = summary.crowdStatus === "OVERCROWDED" ? "badge-red"
       : summary.crowdStatus === "OPTIMAL" ? "badge-gold" : "badge-green";
-    card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><strong style="cursor:pointer;" onclick="focusParkOnMap('${park.id}')">🎡 ${escapeHtml(park.name)}</strong><span class="badge badge-gold">${summary.finalScore.toFixed(1)}p</span></div><div style="font-size:.7rem;color:var(--text-muted);margin-top:.18rem;">📍 ${hexObj ? escapeHtml(hexObj.regionName) : ''} • <strong style="color:var(--accent-teal);">${totMult}x Market</strong> • Saturation: <strong>${(summary.marketSaturationEfficiency * 100).toFixed(0)}%</strong> ${!summary.hasGuestServices ? '<span class="badge badge-red">No Guest Svc (-5%)</span>' : '<span class="badge badge-green">ℹ️ OK</span>'}</div><div class="park-capacity-line"><span>Attendance: ${(park.lastAttendance || 0).toLocaleString()} / Capacity: ${summary.capacity.toLocaleString()}</span><span class="badge ${crowdClass}" title="Potential demand: ${summary.potentialDemand.toLocaleString()} guests">${summary.crowdStatus}</span></div>${parkPricing}${summary.infrastructureBottleneck ? '<div class="badge badge-red" style="white-space:normal;margin-top:.3rem;">⚠ Infrastructure Bottleneck: Build more F&amp;B, Services, or Plazas!</div>' : ''}<div style="display:flex;gap:.35rem;margin-top:.4rem;"><button class="btn-primary btn-sm" style="flex:1;" onclick="enterParkCampusView('${park.id}')">🔍 Open Campus</button></div>`;
+    card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><strong style="cursor:pointer;" onclick="focusParkOnMap('${park.id}')">🎡 ${escapeHtml(park.name)}</strong><span class="badge badge-gold">${summary.finalScore.toFixed(1)}p</span></div><div style="font-size:.7rem;color:var(--text-muted);margin-top:.18rem;">📍 ${hexObj ? escapeHtml(hexObj.regionName) : ''} • <strong style="color:var(--accent-teal);">${totMult}x Market</strong> • Saturation: <strong>${(summary.marketSaturationEfficiency * 100).toFixed(0)}%</strong> ${!summary.hasGuestServices ? '<span class="badge badge-red">No Guest Svc (-5%)</span>' : '<span class="badge badge-green">ℹ️ OK</span>'}</div><div class="park-capacity-line"><span>Annual attendance: ${(park.lastAttendance || 0).toLocaleString()} / Annual capacity: ${summary.capacity.toLocaleString()}</span><span class="badge ${crowdClass}" title="Potential annual demand: ${summary.potentialDemand.toLocaleString()} guests">${summary.crowdStatus}</span></div>${parkPricing}${summary.infrastructureBottleneck ? '<div class="badge badge-red" style="white-space:normal;margin-top:.3rem;">⚠ Infrastructure Bottleneck: Build more F&amp;B, Services, or Plazas!</div>' : ''}<div style="display:flex;gap:.35rem;margin-top:.4rem;"><button class="btn-primary btn-sm" style="flex:1;" onclick="enterParkCampusView('${park.id}')">🔍 Open Campus</button></div>`;
     parkListEl.appendChild(card);
   }
 
@@ -5803,7 +6100,7 @@ function renderParkDrawer() {
       const expansionCost = getParkExpansionCost(park);
       const canUnlock = !isRO && tileZone && park.expansionsBought < park.maxExpansions &&
         inspectedPlayer.cash >= expansionCost;
-      html += `<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.45rem;">${escapeHtml(tileZone?.name || "Expansion Land")} contains 12 buildable hexes. Unlock the whole land for $${expansionCost.toFixed(2)}M.</div>
+      html += `<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.45rem;">${escapeHtml(tileZone?.name || "Expansion Land")} contains ${tileZone?.tileKeys.length || 0} buildable hexes. Unlock the whole land for $${expansionCost.toFixed(2)}M.</div>
       ${!isRO && tileZone ? `<button class="btn-primary btn-sm" style="width:100%;" ${canUnlock ? '' : 'disabled'} onclick="unlockExpansionLand('${park.id}','${tileZone.id}')">🔓 Unlock Expansion Land ($${expansionCost.toFixed(2)}M)</button>` : ''}`;
     } else {
       // Cleared Buildable Tile Inspector
@@ -5885,11 +6182,12 @@ function renderParkDrawer() {
     const ev = evaluateThemedLandBreakdown(park, zone, inspectedPlayer);
     const theme = getLandTheme(zone.themeId);
     const unlocked = zone.unlocked !== false;
+    const landHexCount = zone.tileKeys?.length ?? park.tiles.filter(tile => tile.zoneId === zone.id).length;
     html += `<div class="card campus-land-card${unlocked ? "" : " locked"}" style="border-left:4px solid ${theme.borderColor};">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
           <strong>${escapeHtml(zone.name)}</strong>
-          <span class="badge land-theme-badge" style="--theme-accent:${theme.badgeColor};--theme-border:${theme.borderColor};margin-left:4px;">${unlocked ? `${escapeHtml(theme.name)} · 12 Hexes` : "Expansion Plot · 12 Hexes"}</span>
+          <span class="badge land-theme-badge" style="--theme-accent:${theme.badgeColor};--theme-border:${theme.borderColor};margin-left:4px;">${unlocked ? `${escapeHtml(theme.name)} · ${landHexCount} Hexes` : `Expansion Plot · ${landHexCount} Hexes`}</span>
         </div>
         <div style="display:flex;gap:.25rem;align-items:center;">
           ${unlocked ? `<span class="badge badge-gold">${ev.finalLandScore.toFixed(1)}p</span>` : ""}
@@ -5915,8 +6213,8 @@ function renderParkDrawer() {
         <span class="badge ${ev.hasToilets ? 'badge-green' : 'badge-red'}">🚻 RR Coverage ${ev.toiletsCoveredTiles}/${ev.tileCount}</span>
         <span class="badge ${ev.hasRestaurant ? 'badge-green' : 'badge-red'}">🍔 FB Coverage ${ev.restaurantCoveredTiles}/${ev.tileCount}</span>
       </div>
-      ` : `<div class="campus-expansion-copy">Locked land plot. Unlock the full 12-hex land for $5.00M.</div>
-        ${!isRO ? `<button class="btn-primary btn-sm campus-expansion-button" ${inspectedPlayer.cash >= getParkExpansionCost(park) ? "" : "disabled"} onclick="unlockExpansionLand('${park.id}','${zone.id}')">🔓 Unlock Land ($5.00M)</button>` : ""}`}
+      ` : `<div class="campus-expansion-copy">Locked land plot with ${zone.tileKeys.length} buildable hexes. Unlock it for $${getParkExpansionCost(park).toFixed(2)}M.</div>
+        ${!isRO ? `<button class="btn-primary btn-sm campus-expansion-button" ${inspectedPlayer.cash >= getParkExpansionCost(park) ? "" : "disabled"} onclick="unlockExpansionLand('${park.id}','${zone.id}')">🔓 Unlock Land ($${getParkExpansionCost(park).toFixed(2)}M)</button>` : ""}`}
     </div>`;
   }
 
@@ -6107,11 +6405,12 @@ function openBuyParkOnHexModal(hexKey) {
   const totMult = getTotalHexAttendanceMultiplier(hex, player);
   const prices = getHexParkPricesForPlayer(player, hex);
   document.getElementById("buyParkModalHeader").textContent = `🗺️ Acquire Park in ${hex.regionName} (${trait.name} • ${totMult}x Att)`;
-  document.getElementById("buyParkModalBody").innerHTML = `<div class="form-group"><label>New Park Name</label><div style="display:flex;gap:.5rem;"><input type="text" id="newParkNameInput" value="${generateRandomParkName()}"><button class="btn-outline btn-sm" onclick="document.getElementById('newParkNameInput').value=generateRandomParkName()">🎲</button></div></div><div class="form-group"><label for="newParkThemeSelect">Default Land Theme</label><select id="newParkThemeSelect">${LAND_THEMES.map(theme => `<option value="${theme.id}">${escapeHtml(theme.name)}</option>`).join("")}</select><div style="font-size:.7rem;color:var(--text-muted);">Each unlocked land can be themed separately after purchase.</div></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>Small Park (2 Starting Lands)</strong><div style="font-size:.72rem;color:var(--text-muted);">2 locked expansion lands ($5M each)</div></div><button class="btn-primary" ${player.cash < prices.smallCost ? 'disabled' : ''} onclick="purchaseNewParkOnHex('${hex.key}','small',${prices.smallCost},5)">Buy $${prices.smallCost}M</button></div></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>Medium Park (4 Starting Lands)</strong><div style="font-size:.72rem;color:var(--text-muted);">2 locked expansion lands ($5M each)</div></div><button class="btn-primary" ${player.cash < prices.mediumCost ? 'disabled' : ''} onclick="purchaseNewParkOnHex('${hex.key}','medium',${prices.mediumCost},5)">Buy $${prices.mediumCost}M</button></div></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>Large Park (6 Starting Lands)</strong><div style="font-size:.72rem;color:var(--text-muted);">2 locked expansion lands ($5M each)</div></div><button class="btn-primary" ${player.cash < prices.largeCost ? 'disabled' : ''} onclick="purchaseNewParkOnHex('${hex.key}','large',${prices.largeCost},5)">Buy $${prices.largeCost}M</button></div></div>`;
+  const options = [["small", "Small", prices.smallCost], ["medium", "Medium", prices.mediumCost], ["large", "Large", prices.largeCost]];
+  document.getElementById("buyParkModalBody").innerHTML = `<div class="form-group"><label>New Park Name</label><div style="display:flex;gap:.5rem;"><input type="text" id="newParkNameInput" value="${generateRandomParkName()}"><button class="btn-outline btn-sm" onclick="document.getElementById('newParkNameInput').value=generateRandomParkName()">🎲</button></div></div><div class="form-group"><label for="newParkThemeSelect">Default Land Theme</label><select id="newParkThemeSelect">${LAND_THEMES.map(theme => `<option value="${theme.id}">${escapeHtml(theme.name)}</option>`).join("")}</select><div style="font-size:.7rem;color:var(--text-muted);">Each unlocked land can be themed separately after purchase.</div></div>${options.map(([tier, label, cost]) => `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>${label} Park (1 Starting Land)</strong><div style="font-size:.72rem;color:var(--text-muted);">${CAMPUS_PARK_LAYOUTS[tier].lands.length - 1} locked lands ($${CAMPUS_EXPANSION_COST}M each)</div></div><button class="btn-primary" ${player.cash < cost ? "disabled" : ""} onclick="purchaseNewParkOnHex('${hex.key}','${tier}',${cost})">Buy $${cost}M</button></div></div>`).join("")}`;
   document.getElementById("buyParkModal").classList.add("active");
 }
 
-function purchaseNewParkOnHex(hexKey, tier, finalCost, expCost) {
+function purchaseNewParkOnHex(hexKey, tier, finalCost) {
   const player = gameState.players[gameState.activePlayerIdx];
   const hex = gameState.hexByKey.get(hexKey);
   if (!hex || hex.parkId || player.cash < finalCost) return;
@@ -6231,7 +6530,7 @@ function openWeenieModal(parkId, tileKey) {
   const theme = getLandTheme(zone.themeId);
   document.getElementById("weenieModalTitle").textContent = `🏰 ${theme.name} Weenies`;
   document.getElementById("weenieModalBody").innerHTML = `
-    <p class="weenie-modal-note">Build only the landmark assigned to this land. Each weenie is limited to one per park, costs $${WEENIE_CATALOG[0].baseCost}M to build, and can be themed separately using coaster scenery tiers.</p>
+    <p class="weenie-modal-note">Build only the landmark assigned to this land. Each weenie is limited to one per park, costs $${WEENIE_CATALOG[0].baseCost}M, and is automatically immersive.</p>
     <div class="weenie-card-grid">
       ${WEENIE_CATALOG.map(weenie => {
         const themeMatches = weenie.themeId === zone.themeId;
@@ -6262,7 +6561,7 @@ function openWeenieModal(parkId, tileKey) {
   document.querySelectorAll("[data-weenie-preview]").forEach(canvas => {
     const weenie = WEENIE_CATALOG.find(item => item.id === canvas.dataset.weeniePreview);
     const ctx = canvas.getContext("2d");
-    const pack = THEME_PACKS[weenie.themeId];
+    const pack = getCampusTileThemePack(weenie.themeId);
     pack.drawThemeGround(ctx, 70, 56, 40, pack.pack, false);
     drawCampusWeenie(ctx, { id: `preview-${weenie.id}`, modelId: weenie.id }, { px: 70, py: 56 });
   });
@@ -6377,6 +6676,9 @@ function switchBuildCategory(cat, manufacturerId = null) {
         const badges = [
           costMod ? `${costMod > 0 ? "+" : ""}${Math.round(costMod * 100)}% Cost` : "",
           manufacturer?.issueMod ? `${manufacturer.issueMod > 0 ? "+" : ""}${Math.round(manufacturer.issueMod * 100)}% Issues` : "",
+          manufacturer?.issueModAfterTurnValue
+            ? `+${Math.round(manufacturer.issueModAfterTurnValue * 100)}% Issues after Turn ${manufacturer.issueModAfterTurn}`
+            : "",
           manufacturer && manufacturer.capMult !== 1 ? `${manufacturer.capMult}x Capacity` : "",
           manufacturer?.pointsMod ? `+${Math.round(manufacturer.pointsMod * 100)}% Points` : "",
           manufacturer?.smoothnessRule === "always_smooth" ? "Always Smooth" :
@@ -6531,7 +6833,7 @@ function renderRidePreview(model, cat, manufacturerId = null) {
   document.getElementById("ridePreviewCategory").textContent = categoryName;
   document.getElementById("ridePreviewStats").innerHTML = `
     <span>Base $${model.cost.toFixed(2)}M</span>
-    ${RIDE_CAPACITIES[model.id] ? `<span>Capacity ${getManufacturerCapacity(RIDE_CAPACITIES[model.id].parkCapacity, manufacturerId).toLocaleString()} guests/yr • ${getRideCycleCapacity(model.id, manufacturerId)} per cycle</span>` : ""}
+    ${RIDE_CAPACITIES[model.id] ? `<span>Capacity ${getManufacturerCapacity(RIDE_CAPACITIES[model.id].parkCapacity, manufacturerId).toLocaleString()} guests/day (${(getManufacturerCapacity(RIDE_CAPACITIES[model.id].parkCapacity, manufacturerId) * 365).toLocaleString()} per year) • ${getRideCycleCapacity(model.id, manufacturerId)} per cycle</span>` : ""}
     ${getRideManufacturer(model, cat, manufacturerId) ? `<span>Manufacturer: ${escapeHtml(getRideManufacturer(model, cat, manufacturerId).name)}</span>` : ""}
     <span>Upkeep $${upkeep.toFixed(2)}M/year</span>
     <span>Base ${Number(basePoints).toFixed(1)} pts</span>
@@ -8282,5 +8584,4 @@ window.addEventListener("DOMContentLoaded", () => {
   });
   initMapCanvasEvents();
   buildUSHexGrid();
-  openSetupModal();
 });
