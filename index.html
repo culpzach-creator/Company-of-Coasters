@@ -9,22 +9,13 @@
 <body>
 
 <header>
-  <div class="logo-area">
-    <span style="font-size:1.5rem;">🎢</span>
-    <div>
-      <div class="logo-title">COMPANY OF COASTERS</div>
-      <div style="font-size:.66rem;color:var(--text-muted);">Lower-48 US Population Map & Facilities • Alpha v1.7</div>
-    </div>
-  </div>
-
   <div class="top-hud" id="topHud">
+    <div class="hud-stat" id="hudLegendPill" onclick="openLegendInfoModal()" title="Click for Legend Info" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLegendInfoModal()}">
+      <span class="hud-value hud-legend-value" id="hudLegendName">—</span>
+    </div>
     <div class="hud-stat">
       <span class="hud-label">CEO & Chain</span>
       <span class="hud-value" id="hudPlayerName">—</span>
-    </div>
-    <div class="hud-stat" id="hudLegendPill" onclick="openLegendInfoModal()" title="Click for Legend Info" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLegendInfoModal()}">
-      <span class="hud-label">Legend</span>
-      <span class="hud-value hud-legend-value" id="hudLegendName" style="color:var(--accent-gold);font-size:.78rem;">—</span>
     </div>
     <div class="hud-stat">
       <span class="hud-label">Year / Era</span>
@@ -44,19 +35,21 @@
     </div>
     <button class="btn-gold" id="btnEndTurn" onclick="endPlayerTurn()">End Turn ➔</button>
     <button class="btn-outline btn-sm" onclick="openSetupModal()">New Game</button>
+    <button class="hud-settings" type="button" disabled title="Settings coming soon" aria-label="Settings coming soon">⚙</button>
   </div>
 </header>
 
 <div class="main-workspace">
   <aside class="left-toolbar" id="panelLeftSidebar">
     <div class="toolbar-tabs">
-      <button class="toolbar-tab-btn active" id="tbTabParks" onclick="switchSidebarTab('parks')"><span>🎡</span><span>Parks</span></button>
-      <button class="toolbar-tab-btn" id="tbTabRivals" onclick="switchSidebarTab('rivals')"><span>🏢</span><span>Chains</span></button>
-      <button class="toolbar-tab-btn" id="tbTabRd" onclick="switchSidebarTab('rd')"><span>🔬</span><span>R&D Lab</span></button>
-      <button class="toolbar-tab-btn" id="tbTabAdvisors" onclick="switchSidebarTab('advisors')"><span>🧠</span><span>Advisors</span></button>
-      <button class="toolbar-tab-btn" id="tbTabRecords" onclick="switchSidebarTab('records')"><span>🏆</span><span>Records</span></button>
+      <button class="toolbar-tab-btn" id="tbTabParks" onclick="switchSidebarTab('parks')" aria-label="Parks" title="Parks" aria-expanded="false"><span>🎡</span></button>
+      <button class="toolbar-tab-btn" id="tbTabRd" onclick="switchSidebarTab('rd')" aria-label="Research" title="Research" aria-expanded="false"><span>🔬</span></button>
+      <button class="toolbar-tab-btn" id="tbTabAdvisors" onclick="switchSidebarTab('advisors')" aria-label="Advisors" title="Advisors" aria-expanded="false"><span>🧠</span></button>
+      <button class="toolbar-tab-btn" id="tbTabRivals" onclick="switchSidebarTab('rivals')" aria-label="Chains" title="Chains" aria-expanded="false"><span>🏢</span></button>
+      <button class="toolbar-tab-btn" id="tbTabRecords" onclick="switchSidebarTab('records')" aria-label="Records" title="Records" aria-expanded="false"><span>🏆</span></button>
     </div>
 
+    <div class="sidebar-drawer-content" id="sidebarDrawerContent" hidden>
     <div class="toolbar-body" id="sidebarParksPane">
       <div id="inspectionNoticeBox"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
@@ -65,7 +58,7 @@
       </div>
       <div id="parkListContainer"></div>
       <div style="margin-top:.8rem;padding:.65rem;background:#f0f9ff;border:1px solid var(--border-color);border-radius:8px;font-size:.74rem;color:var(--text-muted);line-height:1.4;">
-        💡 <strong>Facility Coverage:</strong> Restrooms and restaurants serve cleared tiles within 2 hexes. Tiles outside either service radius lose 10% of their points per missing amenity (up to 20%). Each Park still needs 1 <strong>Guest Services</strong> (-5% park score if missing). Above 1M attendance, keep at least 25% of points in support and scenery to avoid overcrowding penalties.
+        💡 <strong>Facility Coverage:</strong> Each land needs an operational restroom and restaurant, regardless of distance. A land loses 10% of its points per missing amenity (up to 20%). Each Park still needs 1 <strong>Guest Services</strong> (-5% park score if missing). Above 1M attendance, keep at least 25% of points in support and scenery to avoid overcrowding penalties.
       </div>
     </div>
 
@@ -92,6 +85,8 @@
       <div style="margin-top:1rem;font-size:.72rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:.4rem;font-weight:700;">Event Feed</div>
       <div id="gameLogContainer" style="font-size:.74rem;display:flex;flex-direction:column;gap:.35rem;"></div>
     </div>
+    <button class="drawer-close" type="button" onclick="closeSidebarDrawer()" aria-label="Close chain drawer">Close drawer ➜</button>
+    </div>
   </aside>
 
   <main class="map-stage" id="panelCenterWorkspace">
@@ -101,7 +96,7 @@
     <div class="map-top-bar">
       <div class="map-pill">
         <span id="mapModeIndicator" style="font-weight:700;color:var(--accent-gold);">🌎 Contiguous US Population Hex Map</span>
-        <button class="btn-primary btn-sm" id="btnExitParkView" style="display:none;" onclick="exitParkCampusView()">⬅ Back to US Map</button>
+        <button class="btn-primary btn-sm" id="btnExitParkView" style="display:none;" onclick="exitParkCampusView()">⬅ Back to Map</button>
         <div class="campus-view-toggle" id="campusViewToggle" style="display:none;" role="group" aria-label="Campus view mode">
           <button type="button" class="btn-outline btn-sm active" id="btnScenicView" aria-pressed="true" onclick="toggleCampusViewMode('scenic')">🎡 Scenic View</button>
           <button type="button" class="btn-outline btn-sm" id="btnStrategicView" aria-pressed="false" onclick="toggleCampusViewMode('strategic')">🗺️ Strategic View</button>
@@ -120,7 +115,7 @@
     <div class="map-bottom-left" id="hexInspectorCard">
       <div style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Hex Inspector</div>
       <div id="hexInspectorContent" style="margin-top:.35rem;font-size:.82rem;">
-        Click any hex on the US map to inspect its attendance modifier, nearby park cluster bonus (+0.1x within 3 hexes), and land acquisition prices.
+        Click any map hex to inspect its attendance modifier, nearby park cluster bonus (+0.1x within 3 hexes), and land acquisition prices.
       </div>
     </div>
 
@@ -138,10 +133,11 @@
           <span id="drawerParkIdentity" class="badge badge-gold" style="margin-top:.25rem;"></span>
         </div>
         <div style="display:flex;gap:.35rem;">
-          <button class="btn-outline btn-sm" onclick="toggleParkDrawer(false)">Hide Drawer ➔</button>
+          <button class="btn-outline btn-sm" onclick="toggleParkDrawer(false)">Close ✕</button>
         </div>
       </div>
       <div class="modal-body" id="drawerParkBody" style="padding:.85rem;"></div>
+      <button class="drawer-close" type="button" onclick="toggleParkDrawer(false)">⬅ Close drawer</button>
     </div>
   </main>
 </div>
@@ -189,8 +185,9 @@
             <select id="setupMap">
               <option value="america">America</option>
               <option value="world" disabled>World (coming soon)</option>
-              <option value="europe" disabled>Europe (coming soon)</option>
+              <option value="europe">Europe</option>
             </select>
+            <small style="display:block;margin-top:.3rem;color:var(--text-muted);">Europe's market tiers are gameplay estimates based on nearby city populations, not census counts.</small>
           </div>
           <div id="singlePlayerDiffBox" class="form-group">
             <label>AI Skill Level (Revenue Modifiers)</label>
@@ -346,7 +343,7 @@
   </div>
 </div>
 
-<div class="modal-backdrop" id="buildRideModal">
+<div class="build-drawer" id="buildRideModal">
   <div class="modal-content ride-modal-content">
     <div class="modal-header">
       <span id="buildModalTitle">Construct Attraction or Facility</span>
@@ -354,7 +351,7 @@
     </div>
     <div class="modal-body ride-modal-body">
       <div class="tabs ride-category-tabs">
-        <button class="tab-btn" id="buildTabCoaster" onclick="switchBuildCategory('coaster')">🎢 Roller Coasters (2 Slots)</button>
+        <button class="tab-btn" id="buildTabCoaster" onclick="switchBuildCategory('coaster')">🎢 Roller Coasters</button>
         <button class="tab-btn active" id="buildTabFlat" onclick="switchBuildCategory('flat')">🎠 Flat Rides</button>
         <button class="tab-btn" id="buildTabLegendary" onclick="switchBuildCategory('legendary')">🏆 Legendary Rides</button>
         <button class="tab-btn" id="buildTabFacility" onclick="switchBuildCategory('facility')">🏢 Facilities</button>
@@ -499,9 +496,9 @@
 </div>
 
 <script src="data.js"></script>
+<script src="europeMap.js"></script>
 <script src="sprites.js"></script>
 <script src="parkEntrancePack.js"></script>
-<script src="antiqueCarsSkinPack.js"></script>
 <script src="crazyBusSkinPack.js"></script>
 <script src="macroLandPacks.js"></script>
 <script src="additionalMacroLandPacks.js"></script>
@@ -512,12 +509,19 @@
 <script src="legendarySplashMountainPack.js"></script>
 <script src="rideSkinPacks.js"></script>
 <script src="regionalFlatRideSprites.js"></script>
+<script src="antiqueCarsSkinPack.js"></script>
+<script src="ferrisWheelSkinPack.js"></script>
+<script src="pirateShipSkinPack.js"></script>
 <script src="regionalTrackedRideSprites.js"></script>
 <script src="regionalThemePacks.js"></script>
 <script src="themePacks.js"></script>
 <script src="revisedLandPacks.js"></script>
 <script src="newWeeniePacks.js"></script>
-<script src="mediumCampusScenery.js"></script>
+<script src="campusScenery.js"></script>
+<script src="largeCampusScenery.js"></script>
+<script src="campusTrain.js"></script>
+<script src="smallCampusTrain.js"></script>
+<script src="newRideArtwork.js"></script>
 <script src="advancedFlatRideSkinPacks.js"></script>
 <script src="dropTowerSkinPack.js"></script>
 <script src="modernRiverRapidsPack.js"></script>

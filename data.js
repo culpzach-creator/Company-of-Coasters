@@ -196,7 +196,7 @@ const PREMADE_LEGENDS = [
     img: "Images/george_milley.jpg",
     defaultChain: "Milley Entertainment",
     defaultPark: "Ocean Adventure",
-    desc: "Every new park receives a free Stage Show. Build up to 3 Stage Shows per park.",
+    desc: "Every additional park receives a free Stage Show. Build up to 3 Stage Shows per park.",
     parkNames: ["Seven Seas Oralndo", "Seven Seas San Antonio", "Seven Seas San Diego", "Seven Seas Mid America", "Seven Seas Gulf Coast", "Seven Seas West Coast"]
   },
   {
@@ -345,7 +345,7 @@ const FACILITY_CATALOG = [
     spaces: 1,
     lifespan: 30,
     immuneToIssues: true,
-    desc: "Serves cleared tiles within 2 hexes. Tiles outside restroom coverage lose 10% of their points. Themeable at 1/2 Ride Scenery cost."
+    desc: "Serves the entire land containing it. Lands without operational restrooms lose 10% of their points. Themeable at 1/2 Ride Scenery cost."
   },
   {
     id: "restaurant",
@@ -359,7 +359,7 @@ const FACILITY_CATALOG = [
     spaces: 1,
     lifespan: 30,
     immuneToIssues: true,
-    desc: "Set meal prices from $10 to $25. Each venue can sell up to 400,000 meals per year. Serves cleared tiles within 2 hexes; themeable at 1/2 Ride Scenery cost."
+    desc: "Set meal prices from $10 to $25. Each venue can sell up to 450,000 meals per year. Serves the entire land containing it; lands without an operational restaurant lose 10% of their points. Themeable at 1/2 Ride Scenery cost."
   },
   {
     id: "guest_services",
@@ -511,6 +511,7 @@ const COASTER_CATALOG = RAW_COASTERS.map(c => {
   if (!statCurve) throw new Error(`Missing stat curve for coaster: ${c[0]}`);
   return {
     id: c[0], name: c[1], track: c[2], gen: c[3], era: c[3], lifespan: c[4], cost: c[5], researchCost: c[6],
+    spaces: c[0] === "boomerang" ? 1 : 2,
     baseLen: c[7], initialSliderMaxLen: c[8], lenStep: 250, baseHeight: c[11], initialSliderMaxHeight: c[12], heightStep: 10,
     canInvert: c[15] && !NON_INVERTING_COASTER_IDS.has(c[0]), baseInv: c[16], initialSliderMaxInv: c[17],
     statCurve: { ...statCurve, baseH: c[11], baseL: c[7], baseI: c[16], canInvert: c[15] && !NON_INVERTING_COASTER_IDS.has(c[0]) }
@@ -796,9 +797,10 @@ const CAMPUS_LAND_SHAPES = {
 const CAMPUS_PARK_LAYOUTS = {
   small: {
     entrance: { q: -1, r: 6 },
+    trainStation: { q: 2, r: 6, connectedLandId: "east_expansion" },
     lands: [
-      { id: "south_entry", name: "South Entry Land", shape: "A", q: -2, r: 1, unlocked: true, color: "#f2aa84" },
-      { id: "west_wing", name: "West Wing", shape: "B", q: 1, r: 2, unlocked: false, color: "#96dcf8" },
+      { id: "south_entry", name: "South Entry Land", shape: "B", q: 1, r: 2, unlocked: true, color: "#96dcf8" },
+      { id: "west_wing", name: "West Wing", shape: "A", q: -2, r: 1, unlocked: false, color: "#f2aa84" },
       { id: "north_expansion", name: "North Expansion", shape: "C", q: 2, r: -2, mirrorX: true, unlocked: false, color: "#d1d1d1" },
       { id: "east_expansion", name: "East Expansion", shape: "D", q: 3, r: 3, unlocked: false, color: "#d1d1d1" }
     ],
@@ -806,6 +808,7 @@ const CAMPUS_PARK_LAYOUTS = {
   },
   medium: {
     entrance: { q: -1, r: 6 },
+    trainStation: { q: -3, r: 7, connectedLandId: "southwest_wing" },
     lands: [
       { id: "south_entry", name: "South Center Entry Land", shape: "A", q: 0, r: 2, unlocked: true, color: "#f2aa84" },
       { id: "northwest_wing", name: "Northwest Land", shape: "B", q: 0, r: -2, mirrorX: true, unlocked: false, color: "#8b1f7a" },
@@ -821,6 +824,7 @@ const CAMPUS_PARK_LAYOUTS = {
   },
   starting_rolland: {
     entrance: { q: -1, r: 6 },
+    trainStation: { q: -3, r: 7, connectedLandId: "southwest_wing" },
     lands: [
       ...[
         { id: "south_entry", name: "South Center Entry Land", shape: "A", q: 0, r: 2, unlocked: true, color: "#f2aa84" },
@@ -838,16 +842,17 @@ const CAMPUS_PARK_LAYOUTS = {
   },
   large: {
     entrance: { q: -1, r: 8 },
+    trainStation: { q: 4, r: 6, connectedLandId: "southeast_land" },
     lands: [
-      { id: "south_entry", name: "South Entry Land", shape: "A", q: -1, r: 4, unlocked: true, color: "#f2aa84" },
-      { id: "west_land", name: "West Land", shape: "B", q: 0, r: -3, unlocked: false, color: "#96dcf8" },
-      { id: "north_land", name: "North Land", shape: "A", q: 4, r: -5, unlocked: false, color: "#30cc59" },
-      { id: "northeast_land", name: "Northeast Land", shape: "C", q: 7, r: -4, unlocked: false, color: "#bef4ca" },
-      { id: "east_land", name: "East Land", shape: "D", q: 6, r: -1, unlocked: false, color: "#f2aa84" },
-      { id: "southeast_land", name: "Southeast Land", shape: "B", q: 4, r: 2, unlocked: false, color: "#96dcf8" },
-      { id: "southwest_land", name: "Southwest Land", shape: "C", q: -2, r: 2, mirrorX: true, unlocked: false, color: "#bef4ca" },
-      { id: "northwest_expansion", name: "Northwest Expansion", shape: "A", q: 1, r: -7, unlocked: false, color: "#d1d1d1" },
-      { id: "northeast_expansion", name: "Northeast Expansion", shape: "C", q: 9, r: -7, mirrorX: true, unlocked: false, color: "#d1d1d1" }
+      { id: "south_entry", name: "South Entry Land", shape: "A", q: 0, r: 4, unlocked: true, color: "#f2aa84" },
+      { id: "west_land", name: "West Land", shape: "B", q: 1, r: -3, unlocked: false, color: "#96dcf8" },
+      { id: "north_land", name: "North Land", shape: "A", q: 5, r: -5, unlocked: false, color: "#30cc59" },
+      { id: "northeast_land", name: "Northeast Land", shape: "C", q: 9, r: -5, unlocked: false, color: "#bef4ca" },
+      { id: "east_land", name: "East Land", shape: "D", q: 8, r: -2, unlocked: false, color: "#f2aa84" },
+      { id: "southeast_land", name: "Southeast Land", shape: "B", q: 5, r: 2, unlocked: false, color: "#96dcf8" },
+      { id: "southwest_land", name: "Southwest Land", shape: "C", q: -1, r: 2, mirrorX: true, unlocked: false, color: "#bef4ca" },
+      { id: "northwest_expansion", name: "Northwest Expansion", shape: "B", q: 4, r: -7, mirrorX: true, unlocked: false, color: "#d1d1d1" },
+      { id: "northeast_expansion", name: "Northeast Expansion", shape: "C", q: 9, r: -8, mirrorX: true, unlocked: false, color: "#d1d1d1" }
     ],
     waterFeatures: [
       { id: "central_lagoon", q: 0, r: 1, width: 5.5, height: 2.5 }

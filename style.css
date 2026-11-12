@@ -1149,3 +1149,157 @@ select {
  .ride-preview-copy h3 { font-size: .9rem; }
  .ride-preview-stats { font-size: .62rem; }
 }
+
+/* Interim game workspace: map-centered with independent side drawers. */
+header {
+  background: linear-gradient(110deg, #06354c, #0d5878);
+  border: 3px solid #b49900;
+  padding: .4rem .8rem;
+  min-height: 82px;
+  box-shadow: none;
+}
+.top-hud { width: 100%; flex-wrap: nowrap; gap: .55rem; }
+.top-hud .hud-stat {
+  background: #f3f5f6;
+  border: 1px solid #263f49;
+  border-radius: 3px;
+  min-width: 0;
+  flex: 1 1 0;
+}
+.top-hud .hud-label { color: #475569; }
+.top-hud #hudLegendPill {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  flex: 0 0 auto;
+  padding: 0;
+}
+#hudLegendPill .legend-avatar-thumb, #hudLegendPill .hud-legend-fallback {
+  width: 62px;
+  height: 62px;
+  flex-basis: 62px;
+  border: 4px solid #b49900;
+}
+#hudLegendPill .hud-legend-text { color: #f4d84e; }
+#hudLegendPill .hud-legend-hint { color: #e2e8f0; }
+.top-hud #btnEndTurn { white-space: nowrap; background: #a78d00; }
+.hud-settings { background: transparent; color: #dce5e9; padding: .25rem; font-size: 1.5rem; }
+.main-workspace { min-height: 0; }
+.left-toolbar {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: min(390px, 94vw);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  z-index: 35;
+  pointer-events: none;
+}
+.toolbar-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: space-around;
+  gap: .3rem;
+  padding: .35rem .5rem;
+  background: transparent;
+  border: 0;
+  pointer-events: auto;
+}
+.toolbar-tab-btn {
+  width: 49px;
+  height: 49px;
+  padding: 0;
+  border: 3px solid #b49900;
+  border-radius: 50%;
+  background: #073c54;
+  color: #f5d73b;
+  font-size: 1.25rem;
+  box-shadow: 0 2px 6px #0005;
+}
+.toolbar-tab-btn:hover, .toolbar-tab-btn.active {
+  background: #176f90;
+  color: white;
+  border-color: #e5ce54;
+}
+.sidebar-drawer-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  background: #f5f9fb;
+  border: 3px solid #b49900;
+  border-top: 0;
+  box-shadow: -8px 8px 22px #0003;
+  pointer-events: auto;
+}
+.sidebar-drawer-content[hidden] { display: none; }
+.toolbar-body { min-height: 0; }
+.drawer-close {
+  flex: 0 0 auto;
+  align-self: stretch;
+  border-radius: 0;
+  background: #073c54;
+  border-top: 2px solid #b49900;
+  color: #fff;
+  min-height: 38px;
+}
+.drawer-close:hover { background: #176f90; }
+.park-drawer {
+  left: 0;
+  right: auto;
+  width: min(390px, 94vw);
+  border: 3px solid #b49900;
+  border-top: 0;
+  box-shadow: 8px 0 22px #0003;
+}
+.park-drawer .modal-header { flex: 0 0 auto; }
+#drawerParkBody { min-height: 0; }
+.build-drawer { display: none; position: absolute; inset: 0; z-index: 1; background: #f5f9fb; }
+.build-drawer.active { display: flex; }
+.build-drawer .ride-modal-content {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.build-drawer .ride-category-tabs { display: flex; flex-wrap: wrap; }
+.build-drawer .ride-category-tabs .tab-btn { flex: 1 1 45%; font-size: .68rem; padding: .35rem; }
+.build-drawer .ride-split-layout { display: block; overflow-y: auto; }
+.build-drawer .ride-catalog-list {
+  max-height: 36vh;
+  overflow-y: auto;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 0 .4rem;
+}
+.build-drawer .ride-inspector-pane { min-height: auto; }
+.build-drawer .ride-preview-showcase { flex-basis: auto; padding-top: .5rem; }
+.build-drawer .ride-preview-graphic { width: 100px; height: 80px; flex-basis: 100px; }
+.build-drawer .ride-customizer { overflow: visible; }
+.build-drawer .ride-build-bar { position: sticky; bottom: 0; background: #fff; padding-bottom: .4rem; }
+.map-top-bar { right: 400px; gap: .5rem; }
+.map-stage:has(.park-drawer.open) .map-top-bar { left: 402px; }
+@media (max-width: 1150px) {
+  .map-stage:has(.park-drawer.open) .map-pill { flex-wrap: wrap; }
+  .map-stage:has(.park-drawer.open) #mapModeIndicator { display: none; }
+}
+@media (max-width: 900px) {
+  header { min-height: 70px; padding: .3rem; }
+  .top-hud { gap: .25rem; }
+  .top-hud .hud-stat { padding: .2rem .3rem; }
+  #hudLegendPill .legend-avatar-thumb, #hudLegendPill .hud-legend-fallback { width: 46px; height: 46px; flex-basis: 46px; }
+  .hud-legend-hint { display: none; }
+  .map-top-bar { top: 62px; right: 14px; }
+  .map-top-bar { flex-wrap: wrap; }
+}
+@media (max-width: 620px) {
+  header { flex-direction: row; }
+  .top-hud { overflow-x: auto; justify-content: flex-start; }
+  .top-hud .hud-stat { flex: 0 0 auto; }
+  .left-toolbar { width: min(390px, 94vw); }
+  .map-stage:has(.park-drawer.open) .map-top-bar { left: 14px; }
+}
