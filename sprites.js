@@ -2,7 +2,16 @@ function getBakeScale() {
   const dpr = typeof devicePixelRatio === "number" && Number.isFinite(devicePixelRatio)
     ? devicePixelRatio
     : 1;
-  return Math.max(3.5, Math.min(4.5, dpr * 2.2));
+  if (GAME_SETTINGS.renderQuality === "performance") return 0.85;
+  if (GAME_SETTINGS.renderQuality === "standard") return 1.25;
+  return dpr * 2;
+}
+
+function getCampusBakeScale() {
+  const zoom = gameState.camera.zoom;
+  // The base bake already supersamples; bucket extra zoom to limit cache churn.
+  const zoomBucket = Math.max(1, Math.ceil(zoom) / 2);
+  return getBakeScale() * zoomBucket;
 }
 
 // Sprites are cached independently so objects from different lands can interleave by depth.
@@ -30,7 +39,7 @@ function drawScenicSprite(ctx, sprite, x, y) {
   const margin = Math.max(width, height) * Math.max(Math.abs(transform.a), Math.abs(transform.d));
   if (sx < -margin || sy < -margin || sx > ctx.canvas.width + margin || sy > ctx.canvas.height + margin) return;
   let cached = scenicSpriteCache.get(sprite);
-  const scale = getBakeScale();
+  const scale = getCampusBakeScale();
   if (cached && cached.scale !== scale) {
     scenicSpriteBytes -= cached.bytes;
     scenicSpriteCache.delete(sprite);
@@ -41,9 +50,10 @@ function drawScenicSprite(ctx, sprite, x, y) {
     scenicSpriteCache.set(sprite, cached);
   } else {
     const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = Math.ceil(width * scale);
+    canvas.height = Math.ceil(height * scale);
     const context = canvas.getContext("2d", { willReadFrequently: true });
+    context.scale(scale, scale);
     sprite.draw(context, left, top);
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
     let minX = canvas.width, minY = canvas.height, maxX = -1, maxY = -1;
@@ -58,20 +68,20 @@ function drawScenicSprite(ctx, sprite, x, y) {
       cacheScenicSprite(sprite, { empty: true, bytes: 0, scale });
       return;
     }
-    minX = Math.max(0, minX - 1); minY = Math.max(0, minY - 1);
-    maxX = Math.min(canvas.width - 1, maxX + 1);
-    maxY = Math.min(canvas.height - 1, maxY + 1);
+    const padding = Math.ceil(scale);
+    minX = Math.max(0, minX - padding); minY = Math.max(0, minY - padding);
+    maxX = Math.min(canvas.width - 1, maxX + padding);
+    maxY = Math.min(canvas.height - 1, maxY + padding);
     const cropped = document.createElement("canvas");
     const cropWidth = maxX - minX + 1;
     const cropHeight = maxY - minY + 1;
-    cropped.width = Math.ceil(cropWidth * scale);
-    cropped.height = Math.ceil(cropHeight * scale);
+    cropped.width = cropWidth;
+    cropped.height = cropHeight;
     const output = cropped.getContext("2d");
-    output.scale(scale, scale);
-    sprite.draw(output, left - minX, top - minY);
+    output.drawImage(canvas, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
     cached = {
-      canvas: cropped, width: cropWidth, height: cropHeight,
-      left: left - minX, top: top - minY,
+      canvas: cropped, width: cropWidth / scale, height: cropHeight / scale,
+      left: left - minX / scale, top: top - minY / scale,
       bytes: cropped.width * cropped.height * 4, scale
     };
     cacheScenicSprite(sprite, cached);

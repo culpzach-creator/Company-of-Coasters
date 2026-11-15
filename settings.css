@@ -1,0 +1,64 @@
+#settings-modal { z-index: 300; }
+#settings-modal .settings-content {
+  width: min(680px, 100%);
+  max-height: min(76vh, 760px);
+  zoom: var(--ui-scale, 1);
+  overflow: hidden;
+  border: 2px solid #d8a62a;
+  border-radius: 8px;
+  background: #062333;
+  color: #f5e8bd;
+  box-shadow: 0 18px 50px #000b, inset 0 0 0 2px #0b3952;
+}
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid #a87d24;
+  background: #031521;
+}
+.settings-header h2 { color: #f6d76b; font: bold 1.15rem Georgia, serif; text-transform: uppercase; }
+.settings-close { border: 0; background: transparent; color: #f6d76b; font-size: 1.4rem; cursor: pointer; }
+.settings-tabs { display: flex; flex-wrap: wrap; gap: 5px; padding: 12px 18px 0; background: #0b3952; }
+.settings-tabs button { padding: .55rem .8rem; border: 1px solid #8e6e2a; background: #031521; color: #efdfb1; cursor: pointer; }
+.settings-tabs button[aria-selected="true"] { border-color: #f6d76b; background: #17435a; color: #fff1b8; }
+.settings-body { min-height: 180px; padding: 16px 22px; overflow-y: auto; }
+.settings-body section[hidden] { display: none; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid #2c5361; }
+.settings-row strong { display: block; color: #f6d76b; font: bold 1rem Georgia, serif; }
+.settings-row small { display: block; margin-top: 4px; color: #b6c8cf; line-height: 1.4; }
+.settings-row input[type="checkbox"] { width: 20px; height: 20px; flex: 0 0 20px; accent-color: #d8a62a; }
+.settings-row select { min-width: 120px; padding: 6px; border: 1px solid #d8a62a; background: #031521; color: #f5e8bd; }
+.settings-range { display: flex; align-items: center; gap: 8px; }
+.settings-range input { width: 130px; accent-color: #d8a62a; }
+.settings-range output { min-width: 38px; text-align: right; }
+.settings-note, .settings-status { margin-top: 15px; color: #b6c8cf; font-size: .82rem; line-height: 1.4; }
+.settings-status { color: #f6d76b; }
+.settings-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; padding: 14px 22px; border-top: 1px solid #a87d24; background: #031521; }
+.settings-data-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.settings-data-actions[hidden] { display: none; }
+#loadGameModal { z-index: 250; }
+#homeModal .home-actions .home-load {
+  top: 78%;
+  height: 6%;
+  border: 1px solid #a87d24;
+  border-radius: 5px;
+  background: #031521;
+}
+.map-stage.campus-view-scenic[data-hex-grid="always"] .campus-tile-outline,
+.map-stage.campus-view-scenic[data-hex-grid="hover"] .campus-hex.selected .campus-tile-outline,
+.map-stage.campus-view-scenic[data-hex-grid="hover"] .campus-hex.hovered .campus-tile-outline {
+  display: block !important;
+}
+.colorblind-badges .badge { outline: 1px solid currentColor; text-decoration: underline; text-underline-offset: 2px; }
+.colorblind-badges .badge-green::before { content: "[Green] "; }
+.colorblind-badges .badge-red::before { content: "[Red] "; }
+.colorblind-badges .badge-gold::before { content: "[Gold] "; }
+.colorblind-badges .badge-teal::before { content: "[Teal] "; }
+.colorblind-badges .badge-blue::before { content: "[Blue] "; }
+.colorblind-badges .badge-purple::before { content: "[Purple] "; }
+#topHud #btnSettings { cursor: pointer; }
+#topHud #btnSettings:hover, #topHud #btnSettings:focus-visible { outline: 2px solid white; outline-offset: 2px; }
+.sidebar-drawer-content, .park-drawer, .modal-backdrop:not(#homeModal):not(#setupModal):not(#settings-modal) > .modal-content { zoom: var(--ui-scale, 1); }
+@media (max-width: 480px) { .settings-row { flex-wrap: wrap; } .settings-range input { width: 110px; } .settings-header { padding: 14px; } .settings-body { padding: 12px 14px; } }

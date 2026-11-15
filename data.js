@@ -520,63 +520,63 @@ const COASTER_CATALOG = RAW_COASTERS.map(c => {
 
 const MANUFACTURERS = {
   zampini: {
-    id: "zampini", name: "Zampini", origin: "🇮🇹 Italy",
+    id: "zampini", name: "Zampini", origin: "Italy",
     flatCostMod: 0.10, costMod: 0, issueMod: -0.10, capMult: 1.0, capRound: "ceil", pointsMod: 0,
     smoothnessRule: "normal", desc: "+10% Flat Ride Cost • -10% Issue Chance",
     coasters: [],
     flats: ["antique_cars", "bumper_cars", "giant_discovery", "top_spin", "claw", "nebulaz", "disco", "crazy_bus", "air_race", "carousel", "scrambler", "teacups", "demolition_derby", "ferris_wheel", "chair_swings", "flyer", "log_flume", "pirate_ship"]
   },
   intramax: {
-    id: "intramax", name: "Intramax", origin: "🇨🇭 Switzerland",
+    id: "intramax", name: "Intramax", origin: "Switzerland",
     costMod: 0, issueMod: 0.05, capMult: 1.0, capRound: "ceil", pointsMod: 0.03,
     smoothnessRule: "normal", desc: "+3% Ride Points • +5% Issue Chance",
     coasters: ["launch", "hyper", "giga", "strata", "exa", "hydro_launch", "invert", "modern_looper", "mine_train"],
     flats: ["drop_tower", "rapids", "log_flume", "flying_theater", "dark_ride"]
   },
   bh: {
-    id: "bh", name: "B&H", origin: "🇨🇭 Switzerland",
+    id: "bh", name: "B&H", origin: "Switzerland",
     costMod: 0.20, issueMod: -0.20, capMult: 1.5, capRound: "ceil", pointsMod: 0,
     smoothnessRule: "normal", desc: "+20% Cost • -20% Issue Chance • 1.5x Capacity",
     coasters: ["flying", "dive", "wing", "hyper", "giga", "invert", "strata", "modern_looper"],
     flats: []
   },
   gerstmann: {
-    id: "gerstmann", name: "Gerstmann", origin: "🇩🇪 Germany",
+    id: "gerstmann", name: "Gerstmann", origin: "Germany",
     costMod: 0, issueMod: 0, capMult: 1.0, capRound: "ceil", pointsMod: 0,
     smoothnessRule: "normal", desc: "Standard Baseline Engineering",
     coasters: ["launch", "modern_looper", "dive", "spinning_coaster"],
     flats: ["air_race", "flyer"]
   },
   macht: {
-    id: "macht", name: "Macht", origin: "🇩🇪 Germany",
+    id: "macht", name: "Macht", origin: "Germany",
     costMod: 0.10, issueMod: -0.15, capMult: 1.1, capRound: "ceil", pointsMod: 0,
     smoothnessRule: "no_rough", desc: "+10% Cost • -15% Issue Chance • 1.1x Capacity • No Rough Rides",
     coasters: ["launch", "hyper", "modern_looper", "spinning_coaster", "mine_train"],
     flats: ["log_flume", "rapids", "dark_ride", "flying_theater", "teacups", "carousel", "chair_swings", "antique_cars", "demolition_derby"]
   },
   velkona: {
-    id: "velkona", name: "Velkona", origin: "🇳🇱 Netherlands",
+    id: "velkona", name: "Velkona", origin: "Netherlands",
     costMod: -0.05, issueMod: 0, capMult: 0.6, capRound: "ceil", pointsMod: 0,
     smoothnessRule: "always_smooth", desc: "All Rides Smooth • -5% Cost • 0.6x Capacity",
     coasters: ["launch", "modern_looper", "hyper", "flying", "invert", "mine_train"],
     flats: ["dark_ride", "flying_theater"]
   },
   rmc: {
-    id: "rmc", name: "Rusty Mountain", origin: "🇺🇸 USA",
+    id: "rmc", name: "Rusty Mountain", origin: "USA",
     costMod: -0.20, issueMod: 0.10, capMult: 0.6, capRound: "ceil", pointsMod: 0,
     smoothnessRule: "always_smooth", desc: "All Rides Smooth • -20% Cost • 0.6x Capacity • +10% Issue Chance",
     coasters: ["steel_hybrid", "advanced_wood"],
     flats: []
   },
   sankyo: {
-    id: "sankyo", name: "Sankyo", origin: "🇯🇵 Japan",
+    id: "sankyo", name: "Sankyo", origin: "Japan",
     costMod: -0.05, issueMod: 0.15, capMult: 1.0, capRound: "ceil", pointsMod: 0.05,
     smoothnessRule: "normal", desc: "+5% Ride Points • -5% Cost • +15% Issue Chance",
     coasters: ["4d_coaster", "launch", "modern_looper", "axis"],
     flats: ["drop_tower", "claw"]
   },
   vector_dynamics: {
-    id: "vector_dynamics", name: "Vector Dynamics", origin: "🇺🇸 USA",
+    id: "vector_dynamics", name: "Vector Dynamics", origin: "USA",
     costMod: 0, issueMod: 0, capMult: 1.0, capRound: "ceil", pointsMod: 0,
     issueModAfterTurn: 15, issueModAfterTurnValue: 0.25,
     smoothnessRule: "normal", desc: "Standard ride specifications • +25% Issue Chance after Turn 15",
@@ -584,35 +584,35 @@ const MANUFACTURERS = {
     flats: ["log_flume", "rapids"]
   },
   lawson: {
-    id: "lawson", name: "Lawson", origin: "🇺🇸 USA",
+    id: "lawson", name: "Lawson", origin: "USA",
     costMod: -0.15, issueMod: 0.15, capMult: 1.0, capRound: "ceil", pointsMod: 0,
     smoothnessRule: "normal", desc: "-15% Cost • +15% Issue Chance",
     coasters: [],
     flats: ["flyer", "ferris_wheel", "claw", "bumper_cars", "drop_tower", "scrambler", "chair_swings", "pirate_ship"]
   },
   fbs: {
-    id: "fbs", name: "FBS Group", origin: "🇮🇹 Italy / US",
+    id: "fbs", name: "FBS Group", origin: "Italy / US",
     costMod: -0.10, issueMod: 0.10, capMult: 1.0, capRound: "ceil", pointsMod: 0,
     smoothnessRule: "normal", desc: "-10% Cost • +10% Issue Chance",
     coasters: ["spinning_coaster", "mine_train"],
     flats: ["claw", "air_race", "bumper_cars", "disco", "crazy_bus", "carousel", "scrambler", "teacups", "demolition_derby", "ferris_wheel", "chair_swings", "antique_cars", "pirate_ship"]
   },
   hauss: {
-    id: "hauss", name: "Hauss", origin: "🇩🇪 Germany",
+    id: "hauss", name: "Hauss", origin: "Germany",
     costMod: 0.05, issueMod: 0.05, capMult: 1.2, capRound: "ceil", pointsMod: 0,
     smoothnessRule: "normal", desc: "+5% Cost • +5% Issue Chance • 1.2x Capacity",
     coasters: [],
     flats: ["top_spin", "bumper_cars", "claw", "giant_discovery", "enterprise", "drop_tower", "scrambler"]
   },
   polaris: {
-    id: "polaris", name: "Polaris", origin: "🇺🇸 USA",
+    id: "polaris", name: "Polaris", origin: "USA",
     costMod: -0.10, issueMod: 0, capMult: 0.8, capRound: "round", pointsMod: 0,
     smoothnessRule: "normal", desc: "-10% Cost • 0.8x Capacity",
     coasters: ["launch", "modern_looper", "hydro_launch"],
     flats: []
   },
   gravityworks: {
-    id: "gravityworks", name: "Gravityworks", origin: "🇺🇸 USA",
+    id: "gravityworks", name: "Gravityworks", origin: "USA",
     costMod: 0, issueMod: 0, capMult: 1.0, capRound: "ceil", pointsMod: 0,
     smoothnessRule: "no_fine", roughPointsMod: -0.15, smoothPointsMod: 0.15,
     desc: "No Fine Rides • -15% Rough Points • +15% Smooth Points",
@@ -620,7 +620,7 @@ const MANUFACTURERS = {
     flats: []
   },
   gtc: {
-    id: "gtc", name: "GTC", origin: "🇺🇸 USA",
+    id: "gtc", name: "GTC", origin: "USA",
     costMod: 0, issueMod: 0, capMult: 1.0, capRound: "ceil", pointsMod: 0,
     smoothnessRule: "no_rough", desc: "No Rough Rides",
     coasters: ["classic_wood", "modern_wood", "advanced_wood"],
@@ -728,25 +728,42 @@ const LAND_THEMES = [
   { id: "americana", name: "Americana", badgeColor: "#fef3c7", borderColor: "#9a633a" },
   { id: "caribbean", name: "Caribbean", badgeColor: "#a5f3fc", borderColor: "#0e7490" },
   { id: "retro", name: "Retro-Future", badgeColor: "#ddd6fe", borderColor: "#6d28d9" },
-  { id: "tiki", name: "Tiki", badgeColor: "#bbf7d0", borderColor: "#15803d" }
+  { id: "tiki", name: "Tiki", badgeColor: "#bbf7d0", borderColor: "#15803d" },
+  { id: "galactic", name: "Galactic Outpost", badgeColor: "#bae6fd", borderColor: "#42677b" },
+  { id: "babylon", name: "Babylon", badgeColor: "#fde68a", borderColor: "#a56832" },
+  { id: "egypt", name: "Egypt", badgeColor: "#fef3c7", borderColor: "#b8863b" },
+  { id: "china", name: "China", badgeColor: "#fecaca", borderColor: "#a3382a" },
+  { id: "japan", name: "Japan", badgeColor: "#fbcfe8", borderColor: "#9c424e" },
+  { id: "jurassic", name: "Jurassic Island", badgeColor: "#bbf7d0", borderColor: "#3d704d" },
+  { id: "greece", name: "Ancient Greece", badgeColor: "#dbeafe", borderColor: "#55779a" },
+  { id: "rome", name: "Ancient Rome", badgeColor: "#fed7aa", borderColor: "#a65c45" }
 ];
 
 const WEENIE_CATALOG = [
-  { id: "castle", name: "Fantasy Castle", themeId: "medieval", assetId: "castleKeep", assetScale: 0.075 },
-  { id: "cathedral", name: "Ruined Cathedral", themeId: "gothic", assetId: "cathedralRuin", assetScale: 0.09 },
+  { id: "castle", name: "Fairytale Fantasy Hilltop Castle", themeId: "medieval", landmarkId: "medieval" },
+  { id: "cathedral", name: "Ruined Haunted Gothic Cathedral", themeId: "gothic", landmarkId: "gothic" },
   { id: "rocket", name: "Rocket Ship", themeId: "space", assetId: "rocket", assetScale: 0.085 },
-  { id: "saloon", name: "Saloon", themeId: "western", assetId: null, assetScale: 0.085 },
+  { id: "saloon", name: "Monument Valley Mitten Butte", themeId: "western", landmarkId: "western" },
   { id: "fort", name: "Frontier Fort", themeId: "frontier", assetId: "stockadeFort", assetScale: 0.09 },
   { id: "bigtop", name: "Circus Tent", themeId: "classic", assetId: "bigTop", assetScale: 0.12 },
   { id: "temple", name: "Mayan Temple", themeId: "jungle", assetId: "stepPyramid", assetScale: 0.09 },
   { id: "church", name: "Festival Church", themeId: "fiesta", assetId: "festivalChurch", assetScale: 1 },
   { id: "festhaus", name: "Festhaus", themeId: "german", assetId: "festhaus", assetScale: 1 },
   { id: "mountain", name: "Snowy Mountain", themeId: "alps", assetId: "mountain", assetScale: 1 },
-  { id: "longhouse", name: "Viking Longhouse", themeId: "nordic", assetId: "longhouse", assetScale: 1 },
-  { id: "courthouse", name: "Hill Valley Courthouse", themeId: "americana" },
-  { id: "city_hall", name: "Spanish Colonial City Hall", themeId: "caribbean" },
-  { id: "retro_mountain", name: "Retro-Future Space Mountain", themeId: "retro" },
-  { id: "tiki_pagoda", name: "Polynesian Tiki Pagoda", themeId: "tiki" }
+  { id: "longhouse", name: "Great Stave Church of Borgund", themeId: "nordic", landmarkId: "nordic" },
+  { id: "courthouse", name: "Hill Valley Courthouse", themeId: "americana", legacy: true },
+  { id: "city_hall", name: "Spanish Colonial City Hall", themeId: "caribbean", legacy: true },
+  { id: "retro_mountain", name: "Retro-Future Space Mountain", themeId: "retro", legacy: true },
+  { id: "tiki_pagoda", name: "Polynesian Tiki Pagoda", themeId: "tiki", legacy: true },
+  { id: "galactic_spaceport", name: "Galactic Spaceport", themeId: "galactic", newLandmarkId: "galactic" },
+  { id: "china_temple", name: "Temple of Heaven", themeId: "china", newLandmarkId: "china" },
+  { id: "japan_castle", name: "Himeji Castle", themeId: "japan", newLandmarkId: "japan" },
+  { id: "jurassic_center", name: "Jurassic Visitor Center", themeId: "jurassic", newLandmarkId: "jurassic" },
+  { id: "greece_parthenon", name: "Parthenon", themeId: "greece", newLandmarkId: "greece" },
+  { id: "rome_temple", name: "Temple of Apollo", themeId: "rome", newLandmarkId: "rome" },
+  { id: "pyramid", name: "Egyptian Pyramid", themeId: null, monumentId: "pyramid" },
+  { id: "sphinx", name: "Egyptian Sphinx", themeId: null, monumentId: "sphinx" },
+  { id: "ziggurat", name: "Babylonian Ziggurat", themeId: null, monumentId: "ziggurat" }
 ].map(weenie => ({ ...weenie, baseCost: 50, techPoints: 25, spaces: 1 }));
 
 // Per-tile scenery costs and points; land upgrades price at 10x these costs.
@@ -866,23 +883,23 @@ const CAMPUS_EXPANSION_COST = 4;
 const GLOBAL_TOURISM_TABLE = [
   {
     id: "crisis",
-    label: "📉 Global Travel Slump",
+    label: "Global Travel Slump",
     mult: 0.65,
     weight: 2,
     badgeClass: "badge-red",
-    headline: "📉 <strong>GLOBAL TRAVEL SLUMP (0.65x):</strong> High inflation and fuel costs hammer discretionary spending! Worldwide theme park attendance drops sharply across all chains."
+    headline: "<strong>GLOBAL TRAVEL SLUMP (0.65x):</strong> High inflation and fuel costs hammer discretionary spending! Worldwide theme park attendance drops sharply across all chains."
   },
   {
     id: "recession",
-    label: "🌧️ Economic Cooling",
+    label: "Economic Cooling",
     mult: 0.80,
     weight: 4,
     badgeClass: "badge-red",
-    headline: "🌧️ <strong>ECONOMIC COOLING (0.80x):</strong> Consumer confidence dips this season, tightening family vacation budgets nationwide."
+    headline: "<strong>ECONOMIC COOLING (0.80x):</strong> Consumer confidence dips this season, tightening family vacation budgets nationwide."
   },
   {
     id: "sluggish",
-    label: "☁️ Soft Tourism Market",
+    label: "Soft Tourism Market",
     mult: 0.90,
     weight: 4,
     badgeClass: "badge-purple",
@@ -890,7 +907,7 @@ const GLOBAL_TOURISM_TABLE = [
   },
   {
     id: "steady",
-    label: "⚖️ Normal Tourism Demand",
+    label: "Normal Tourism Demand",
     mult: 1.00,
     weight: 5,
     badgeClass: "badge-teal",
@@ -898,18 +915,18 @@ const GLOBAL_TOURISM_TABLE = [
   },
   {
     id: "growth",
-    label: "☀️ Strong Travel Season",
+    label: "Strong Travel Season",
     mult: 1.10,
     weight: 2,
     badgeClass: "badge-green",
-    headline: "☀️ <strong>STRONG TRAVEL SEASON (1.10x):</strong> Upbeat consumer spending boosts domestic travel and theme park turnstiles nationwide!"
+    headline: "<strong>STRONG TRAVEL SEASON (1.10x):</strong> Upbeat consumer spending boosts domestic travel and theme park turnstiles nationwide!"
   },
   {
     id: "boom",
-    label: "🚀 Worldwide Tourism Boom",
+    label: "Worldwide Tourism Boom",
     mult: 1.25,
     weight: 1,
     badgeClass: "badge-gold",
-    headline: "🚀 <strong>WORLDWIDE TOURISM BOOM (1.25x):</strong> Record-breaking vacation demand sends theme park attendance surging across every region!"
+    headline: "<strong>WORLDWIDE TOURISM BOOM (1.25x):</strong> Record-breaking vacation demand sends theme park attendance surging across every region!"
   }
 ];

@@ -1,0 +1,43 @@
+#tutorialConfirmModal { z-index: 250; }
+#tutorialConfirmModal .tutorial-confirm-content {
+  max-width: 520px;
+  border: 2px solid #d8a62a;
+  background: #062333;
+  color: #f5e8bd;
+}
+#tutorialConfirmModal .modal-header {
+  background: #031521;
+  border-color: #a87d24;
+  color: #f6d76b;
+  font: bold 1.15rem Georgia, serif;
+  text-transform: uppercase;
+}
+#tutorialConfirmModal .modal-body { line-height: 1.55; }
+#tutorialFloatingBox {
+  left: 50%;
+  right: auto;
+  bottom: 12px;
+  width: min(390px, calc(100vw - 24px));
+  max-height: min(55vh, 360px);
+  overflow: auto;
+  background: linear-gradient(145deg, #0b3952, #031521);
+  border: 2px solid #d8a62a;
+  color: #f5e8bd;
+  box-shadow: 0 8px 26px #0009;
+  transform: translateX(-50%);
+}
+#tutorialFloatingBox #tutorialStepTitle,
+#tutorialFloatingBox #tutorialStepText { color: #f5e8bd !important; }
+#tutorialFloatingBox #tutorialStepTitle { font-family: Georgia, serif; }
+#tutorialFloatingBox .icon-btn {
+  color: #f6d76b;
+  background: #062333;
+  border: 1px solid #a87d24;
+}
+#btnTutorialLocation { margin-bottom: .7rem; }
+#btnTutorialLocation[hidden] { display: none; }
+#tutorialFloatingBox.tutorial-collapsed { width: auto; min-width: 220px; }
+#tutorialFloatingBox.tutorial-collapsed > h4,
+#tutorialFloatingBox.tutorial-collapsed > p,
+#tutorialFloatingBox.tutorial-collapsed > #btnTutorialLocation,
+#tutorialFloatingBox.tutorial-collapsed > .tutorial-navigation { display: none !important; }

@@ -1,0 +1,416 @@
+/* The header is built from live components; the old full-screen mockup is not used. */
+header.game-header {
+  position: relative;
+  z-index: 70;
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#topHud {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 100%;
+  height: auto;
+  min-height: 90px;
+  grid-template-columns: minmax(0, 1fr) clamp(120px, 10vw, 155px) minmax(0, 1fr);
+  grid-template-areas: "left logo right";
+  align-items: center;
+  gap: clamp(6px, .7vw, 14px);
+  padding: 9px 14px 13px;
+  overflow: visible;
+}
+
+#topHud::before,
+#topHud::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+#topHud::before {
+  background: linear-gradient(#ffe69a, #a87319 65%, #e6b942);
+}
+
+#topHud::after {
+  inset: 2px 3px 4px;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 13px, rgba(102, 145, 167, .09) 13px 14px),
+    repeating-linear-gradient(-45deg, transparent 0 13px, rgba(102, 145, 167, .09) 13px 14px),
+    linear-gradient(#152d41, #05111e);
+}
+
+#topHud .hud-left,
+#topHud .hud-right {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: clamp(6px, .7vw, 14px);
+}
+
+#topHud .hud-left { grid-area: left; }
+#topHud .hud-right { grid-area: right; }
+
+#topHud .hud-player-group {
+  position: relative;
+  inset: auto;
+  display: flex;
+  grid-area: player;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  flex: 1.35 1 0;
+  align-items: center;
+  gap: 9px;
+}
+
+#topHud .hud-stat {
+  position: relative;
+  inset: auto;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#topHud #hudLegendPill {
+  width: 94px;
+  height: 94px;
+  flex: 0 0 94px;
+  align-items: center;
+  margin-block: -16px;
+  padding: 3px;
+  border: 4px solid #d6a52e;
+  border-radius: 50%;
+  background: #f5f0e2;
+  box-shadow: 0 1px 5px #000b, inset 0 0 0 1px #fff0af;
+  cursor: pointer;
+  transform: translateY(9px);
+}
+
+#topHud #hudLegendName {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+#topHud #hudLegendPill .legend-avatar-thumb,
+#topHud #hudLegendPill .hud-legend-fallback {
+  width: 100%;
+  height: 100%;
+  flex-basis: auto;
+  border: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+#topHud .hud-player-details {
+  position: relative;
+  inset: auto;
+  display: flex;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 14px;
+}
+
+#topHud .hud-player-details,
+#topHud #hudBankBox,
+#topHud .hud-chain-stats,
+#topHud #btnEndTurn {
+  position: relative;
+  isolation: isolate;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none;
+}
+
+#topHud .hud-player-details::before,
+#topHud #hudBankBox::before,
+#topHud .hud-chain-stats::before,
+#topHud #btnEndTurn::before,
+#topHud .hud-player-details::after,
+#topHud #hudBankBox::after,
+#topHud .hud-chain-stats::after,
+#topHud #btnEndTurn::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+}
+
+#topHud .hud-player-details::before,
+#topHud #hudBankBox::before,
+#topHud .hud-chain-stats::before,
+#topHud #btnEndTurn::before {
+  background: linear-gradient(#ffe69a, #a67822 60%, #f5d274);
+}
+
+#topHud .hud-player-details::after,
+#topHud #hudBankBox::after,
+#topHud .hud-chain-stats::after,
+#topHud #btnEndTurn::after {
+  inset: 2px;
+  background: linear-gradient(145deg, #132737, #040d18 65%);
+}
+
+#topHud #hudIdentityBox,
+#topHud #hudYearBox {
+  width: 100%;
+  align-items: flex-start;
+}
+
+#topHud #hudPlayerName,
+#topHud #hudYear,
+#topHud .hud-label,
+#topHud .hud-value,
+#topHud #btnEndTurn {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+#topHud #hudPlayerName {
+  color: #f6e8c1;
+  font-size: clamp(.7rem, .8vw, .95rem);
+  line-height: 1.2;
+}
+
+#topHud #hudYear {
+  color: #e6c05b;
+  font-size: clamp(.62rem, .65vw, .78rem);
+  line-height: 1.2;
+}
+
+#topHud #hudBankBox {
+  grid-area: bank;
+  width: auto;
+  min-height: 52px;
+  flex: .85 1 0;
+  align-items: center;
+  padding: 6px 10px;
+}
+
+#topHud #hudBankBox::after { background: linear-gradient(#fffdf2, #e0d0aa); }
+#topHud #hudBankBox .hud-label { display: none; }
+#topHud #hudCash {
+  color: #176443;
+  font-size: clamp(.9rem, 1.25vw, 1.35rem);
+}
+
+#topHud .hud-logo {
+  display: block;
+  grid-area: logo;
+  width: 100%;
+  max-width: 155px;
+  height: 62px;
+  justify-self: center;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+#topHud .hud-chain-stats {
+  display: grid;
+  grid-area: stats;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  flex: 1.7 1 0;
+  min-width: 0;
+  min-height: 52px;
+}
+
+#topHud #hudAttendanceBox,
+#topHud #hudCapacityBox {
+  grid-area: auto;
+  width: auto;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 5px;
+}
+
+#topHud #hudCapacityBox { border-left: 1px solid #806323; }
+#topHud #hudAttendanceBox .hud-label,
+#topHud #hudCapacityBox .hud-label {
+  color: #e7c466;
+  font-size: clamp(.52rem, .6vw, .68rem);
+  line-height: 1.15;
+  text-align: center;
+  transform: none;
+}
+
+#topHud #hudAttendanceBox .hud-value,
+#topHud #hudCapacityBox .hud-value {
+  color: #f6edce;
+  font-size: clamp(.8rem, .92vw, 1rem);
+  line-height: 1.1;
+  transform: none;
+}
+
+#topHud #btnEndTurn {
+  position: relative;
+  inset: auto;
+  grid-area: turn;
+  width: auto;
+  flex: .8 1 0;
+  height: auto;
+  min-height: 50px;
+  padding: 6px;
+  color: #302006;
+  font-size: clamp(.72rem, .85vw, 1rem);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+#topHud #btnEndTurn::after { background: linear-gradient(#ffdf80, #db9a20 60%, #ac6e12); }
+
+#topHud #btnSettings {
+  position: relative;
+  inset: auto;
+  display: grid;
+  grid-area: settings;
+  width: 46px;
+  height: 46px;
+  min-width: 0;
+  flex: 0 0 46px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  opacity: 1;
+}
+
+#topHud #btnSettings img { width: 100%; height: 100%; object-fit: contain; }
+
+#topHud .toolbar-tabs {
+  position: absolute;
+  z-index: 72;
+  top: calc(100% - 10px);
+  right: 4%;
+  display: flex;
+  width: auto;
+  height: auto;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 5px 16px 7px;
+  border: 1px solid #cba23d;
+  border-radius: 0 0 12px 12px;
+  background: linear-gradient(#102638, #05111e);
+  box-shadow: 0 3px 6px #0008;
+  pointer-events: auto;
+}
+
+#topHud .toolbar-tab-btn,
+#topHud .toolbar-tab-btn:hover,
+#topHud .toolbar-tab-btn.active {
+  position: relative;
+  inset: auto;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  min-width: 0;
+  flex: 0 0 44px;
+  place-items: center;
+  padding: 4px;
+  border: 2px solid #d7a737;
+  border-radius: 50%;
+  background: linear-gradient(#19374a, #06111c) !important;
+  box-shadow: inset 0 0 0 1px #7f5a12, 0 2px 5px #000a;
+  pointer-events: auto;
+}
+
+#topHud .toolbar-tab-btn.active {
+  border-color: #ffe08a;
+  box-shadow: inset 0 0 0 1px #e3b640, 0 0 8px #f4c450;
+}
+
+#topHud .toolbar-tab-btn img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+#topHud .toolbar-tab-btn:hover,
+#topHud .toolbar-tab-btn:focus-visible,
+#topHud #btnEndTurn:hover,
+#topHud #btnEndTurn:focus-visible,
+#topHud #hudLegendPill:hover,
+#topHud #hudLegendPill:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 1050px) {
+  #topHud {
+    grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr);
+    gap: 6px;
+    padding-inline: 8px;
+  }
+  #topHud #hudLegendPill { width: 78px; height: 78px; flex-basis: 78px; margin-block: -8px; }
+  #topHud #btnSettings { width: 38px; height: 38px; flex-basis: 38px; }
+  #topHud #hudPlayerName { overflow: visible; white-space: normal; overflow-wrap: anywhere; }
+}
+
+@media (max-width: 900px) {
+  #topHud {
+    grid-template-columns: minmax(0, 1fr) 86px minmax(0, 1fr);
+    grid-template-areas: "player player settings" "bank logo turn" "stats stats stats";
+    gap: 7px;
+    padding: 8px 8px 25px;
+  }
+  #topHud .hud-left,
+  #topHud .hud-right { display: contents; }
+  #topHud #hudLegendPill { width: 62px; height: 62px; flex-basis: 62px; margin-block: -5px; transform: none; }
+  #topHud .hud-logo { height: 46px; }
+  #topHud #hudBankBox, #topHud #btnEndTurn { width: 100%; }
+  #topHud #btnSettings { justify-self: end; }
+  #topHud #hudBankBox, #topHud .hud-chain-stats { min-height: 46px; }
+  #topHud #hudAttendanceBox .hud-label,
+  #topHud #hudCapacityBox .hud-label {
+    display: flex;
+    min-height: 2.3em;
+    align-items: center;
+    justify-content: center;
+  }
+  #topHud #btnEndTurn { min-height: 46px; }
+  #topHud .toolbar-tabs { right: 8px; gap: 7px; padding: 4px 10px 6px; }
+  #topHud .toolbar-tab-btn,
+  #topHud .toolbar-tab-btn:hover,
+  #topHud .toolbar-tab-btn.active { width: 38px; height: 38px; flex-basis: 38px; }
+}
+
+@media (max-width: 400px) {
+  #topHud #hudLegendPill { width: 54px; height: 54px; flex-basis: 54px; }
+  #topHud .hud-player-details { padding: 6px; }
+  #topHud #hudBankBox { padding-inline: 5px; }
+  #topHud #btnEndTurn { min-height: 46px; font-size: .72rem; }
+}

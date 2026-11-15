@@ -16,7 +16,6 @@ let draftState = {
 let gameState = {
   year: 1,
   maxYears: 50,
-  winAttendance: 50000000,
   players: [],
   activePlayerIdx: 0,
   inspectedPlayerIdx: 0,
@@ -32,6 +31,7 @@ let gameState = {
   currentTurnNews: [],
   pendingAdvisorReports: [],
   gameOver: false,
+  finalAwards: null,
   tutorialStep: 0,
   tutorialEnabled: true,
   mapId: "america",
@@ -117,7 +117,7 @@ function buildEuropeHexGrid() {
 }
 
 function getNationalMapTitle() {
-  return gameState.mapId === "europe" ? "🌍 Europe Population Hex Map" : "🌎 Contiguous US Population Hex Map";
+  return gameState.mapId === "europe" ? "Europe Population Hex Map" : "Contiguous US Population Hex Map";
 }
 
 function getHexClusterBonusInfo(hex, viewingPlayer = null) {
@@ -435,6 +435,7 @@ function openSetupModal() {
   document.getElementById("setupStepConfig").hidden = false;
   document.getElementById("setupStepPlayers").hidden = true;
   document.getElementById("setupStepLegend").hidden = true;
+  document.getElementById("setupModal").dataset.step = "options";
   document.getElementById("setupChainName").value = PREMADE_LEGENDS[0].defaultChain;
   document.getElementById("setupParkName").value = PREMADE_LEGENDS[0].defaultPark;
   const candidates = PREMADE_LEGENDS.filter(legend => legend.id !== "walt_disney");
@@ -462,6 +463,7 @@ function showPlayerSetupStep() {
   document.getElementById("setupStepConfig").hidden = true;
   document.getElementById("setupStepLegend").hidden = true;
   document.getElementById("setupStepPlayers").hidden = false;
+  document.getElementById("setupModal").dataset.step = "players";
   renderSetupPlayers();
 }
 
@@ -469,18 +471,31 @@ function showOptionsSetupStep() {
   document.getElementById("setupStepLegend").hidden = true;
   document.getElementById("setupStepPlayers").hidden = true;
   document.getElementById("setupStepConfig").hidden = false;
+  document.getElementById("setupModal").dataset.step = "options";
+}
+
+function adjustSetupStartingCash(amount) {
+  const input = document.getElementById("setupStartingCash");
+  if (!input.reportValidity()) return;
+
+  const min = Number(input.min);
+  const max = Number(input.max);
+  const nextValue = Math.min(max, Math.max(min, Number(input.value) + amount));
+  input.value = String(nextValue);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 function renderSetupPlayers() {
   document.getElementById("setupPlayerList").innerHTML = draftState.players.map((player, index) => `
     <div class="setup-player-row">
-      <button class="setup-player-select" onclick="editSetupPlayer(${index})">
+      <button type="button" class="setup-player-select" onclick="editSetupPlayer(${index})">
         ${getLegendPortraitHTML(player.legend, "legend-roster-thumb")}
         <span><strong>${index === 0 ? "You" : `AI Player ${index}`}</strong>
         <small>${escapeHtml(player.legend.name)} · ${escapeHtml(player.legend.title)}</small></span>
-        <span class="setup-player-change">Choose legend →</span>
       </button>
-      ${index >= 4 ? `<button class="btn-outline btn-sm" aria-label="Remove AI Player ${index}" onclick="removeSetupAIPlayer(${index})">Remove</button>` : ""}
+      <button type="button" class="setup-player-change" onclick="editSetupPlayer(${index})">Choose legend →</button>
+      ${index >= 4 ? `<button type="button" class="setup-player-remove" aria-label="Remove AI Player ${index}" onclick="removeSetupAIPlayer(${index})">Remove</button>` : "" }
     </div>`).join("");
   document.getElementById("setupAddPlayer").disabled = draftState.players.length >= 8;
 }
@@ -517,6 +532,7 @@ function editSetupPlayer(index) {
   document.getElementById("btnConfirmDraftPlayer").disabled = false;
   document.getElementById("setupStepPlayers").hidden = true;
   document.getElementById("setupStepLegend").hidden = false;
+  document.getElementById("setupModal").dataset.step = "players";
   renderLegendSelection();
 }
 
@@ -548,7 +564,7 @@ function renderLegendSelection() {
   customRow.className = `legend-roster-item${draftState.selectedLegendId === "custom" ? " active" : ""}`;
   customRow.setAttribute("role", "option");
   customRow.setAttribute("aria-selected", String(draftState.selectedLegendId === "custom"));
-  customRow.innerHTML = `<span class="legend-roster-thumb custom-legend-thumb">✨</span><span class="legend-roster-copy"><strong>Custom Legend</strong><small>Build a leader with your own perks</small></span>`;
+  customRow.innerHTML = `<span class="legend-roster-thumb custom-legend-thumb">CL</span><span class="legend-roster-copy"><strong>Custom Legend</strong><small>Build a leader with your own perks</small></span>`;
   customRow.onclick = selectCustomLegend;
   if (draftState.editingPlayerIndex === 0) roster.appendChild(customRow);
   renderLegendDetails();
@@ -692,14 +708,14 @@ function confirmPlayerSetupStep() {
   showPlayerSetupStep();
 }
 
-function startConfiguredGame() {
+function startConfiguredGame({ tutorialMode = false } = {}) {
   if (!document.getElementById("setupStartingCash").reportValidity()) {
     showOptionsSetupStep();
     return;
   }
   const human = draftState.players[0];
   draftState.draftedPlayers = [{ ...human, ceoName: human.legend.name }];
-  finalizeSetupAndLaunchGame();
+  finalizeSetupAndLaunchGame(tutorialMode);
 }
 
 function pickRandomStartingHex() {
@@ -721,6 +737,7 @@ function pickRandomStartingHex() {
 // Pointy-top hex positions for the centered 49-hex rounded campus.
 const CAMPUS_HEX_R = 34;
 const CAMPUS_HEX_VERTICAL_SCALE = 0.58;
+const FACILITY_SPRITE_SCALE = 0.67;
 function getCampusTilePixel(sx, sy) {
   return {
     x: CAMPUS_HEX_R * Math.sqrt(3) * sx,
@@ -955,7 +972,7 @@ function addLegendFreeShow(park, legend) {
   return true;
 }
 
-function finalizeSetupAndLaunchGame() {
+function finalizeSetupAndLaunchGame(tutorialMode = false) {
   const gameLength = document.getElementById("setupGameLength").value;
   const startingCashInput = Number(document.getElementById("setupStartingCash").value);
   if (!Number.isFinite(startingCashInput) || startingCashInput < 1 || startingCashInput > 10000) {
@@ -963,11 +980,11 @@ function finalizeSetupAndLaunchGame() {
   }
   const startingCash = startingCashInput;
   endTutorial();
-  gameState.tutorialEnabled = !document.getElementById("setupDisableTutorial").checked;
+  gameState.tutorialMode = tutorialMode;
+  gameState.tutorialEnabled = tutorialMode || !document.getElementById("setupDisableTutorial").checked;
   gameState.allTechnologyUnlocked = document.getElementById("setupUnlockAllTechnology").checked;
-  gameState.maxYears = gameLength === "unlimited"
-    ? Infinity
-    : Math.max(1, parseInt(gameLength, 10) || 50);
+  if (!["25", "50", "100", "150", "200"].includes(gameLength)) throw new RangeError("Invalid game length.");
+  gameState.maxYears = Number(gameLength);
   const mapId = document.getElementById("setupMap").value;
   if (!["america", "europe"].includes(mapId)) throw new RangeError(`Unsupported map: ${mapId}`);
   gameState.mapId = mapId;
@@ -989,6 +1006,7 @@ function finalizeSetupAndLaunchGame() {
   gameState.currentTurnNews = [];
   gameState.pendingAdvisorReports = [];
   gameState.gameOver = false;
+  gameState.finalAwards = null;
   gameState.mapViewMode = "national";
   gameState.hoveredHexKey = null;
   document.getElementById("mapModeIndicator").textContent = getNationalMapTitle();
@@ -1067,6 +1085,7 @@ function finalizeSetupAndLaunchGame() {
   gameState.selectedHexKey = p0.parks[0].hexKey;
   recalculateGlobalRecords();
   addLog(`Year 1 started! ${p0.ceoName} leads ${p0.chainName}.`);
+  startGameMusic();
   closeModal("setupModal");
   resetMapCamera();
   renderAll();
@@ -1085,7 +1104,7 @@ function showWelcomeModal(p0) {
       <div>
         <div class="card" style="border-color:var(--accent-gold);background:var(--accent-gold-light);padding:.9rem;">
           <p style="font-style:italic;color:var(--text-main);margin-bottom:.75rem;">"A new era begins for <strong>${escapeHtml(parkName)}</strong>, under the leadership of <strong>${escapeHtml(p0.chainName)}</strong>! Park CEO, <strong>${escapeHtml(p0.ceoName)}</strong> looks to welcome more guests throughout the coming seasons with exciting new changes and additions."</p>
-          <p style="color:var(--text-muted);font-size:.88rem;">Welcome to <strong>Company of Coasters</strong>, where you step into the shoes of a theme park CEO in the <strong>${escapeHtml(hObj.regionName)}</strong> region, with the goal of growing your chain to welcome <strong>50 million guests annually</strong>.</p>
+          <p style="color:var(--text-muted);font-size:.88rem;">Welcome to <strong>Company of Coasters</strong>, where you lead a theme park chain in the <strong>${escapeHtml(hObj.regionName)}</strong> region. Earn the most Bronze Tickets by the end of ${gameState.maxYears} turns to win.</p>
         </div>
         <div style="font-size:.8rem;color:var(--accent-blue);margin-top:.55rem;"><strong>${escapeHtml(title)}:</strong> ${escapeHtml(p0.legend.desc)}</div>
       </div>
@@ -1111,28 +1130,34 @@ const TUTORIAL_STEPS = [
 
 function startInteractiveTutorial() {
   gameState.tutorialStep = 0;
+  document.getElementById("tutorialFloatingBox").classList.remove("tutorial-collapsed");
+  document.getElementById("btnTutorialMinimize").textContent = "Minimize";
+  document.getElementById("btnTutorialMinimize").setAttribute("aria-expanded", "true");
   document.getElementById("tutorialFloatingBox").classList.add("active");
   renderTutorialStep();
 }
 
 function stepTutorial(delta) {
   gameState.tutorialStep += delta;
-  if (gameState.tutorialStep >= TUTORIAL_STEPS.length) { endTutorial(); return; }
+  const steps = gameState.tutorialMode ? GUIDED_TUTORIAL_STEPS : TUTORIAL_STEPS;
+  if (gameState.tutorialStep >= steps.length) { endTutorial(); return; }
   if (gameState.tutorialStep < 0) gameState.tutorialStep = 0;
   renderTutorialStep();
 }
 
 function renderTutorialStep() {
   document.querySelectorAll(".tutorial-highlight").forEach(el => el.classList.remove("tutorial-highlight"));
-  const s = TUTORIAL_STEPS[gameState.tutorialStep];
-  document.getElementById("tutorialStepBadge").textContent = `Tutorial ${gameState.tutorialStep + 1} / ${TUTORIAL_STEPS.length}`;
-  document.getElementById("tutorialStepTitle").textContent = gameState.tutorialStep === 0 && gameState.mapId === "europe"
+  const steps = gameState.tutorialMode ? GUIDED_TUTORIAL_STEPS : TUTORIAL_STEPS;
+  const s = steps[gameState.tutorialStep];
+  document.getElementById("tutorialStepBadge").textContent = `Tutorial ${gameState.tutorialStep + 1} / ${steps.length}`;
+  document.getElementById("tutorialStepTitle").textContent = !gameState.tutorialMode && gameState.tutorialStep === 0 && gameState.mapId === "europe"
     ? "1. Europe Population Hex Map" : s.title;
-  document.getElementById("tutorialStepText").textContent = gameState.tutorialStep === 0 && gameState.mapId === "europe"
+  document.getElementById("tutorialStepText").textContent = !gameState.tutorialMode && gameState.tutorialStep === 0 && gameState.mapId === "europe"
     ? "Europe's market tiers estimate nearby city populations: Barren (0.8x), Rural (0.9x), Suburban (1.0x), Urban (1.2x), and Destination (1.4x). Nearby parks can also affect attendance."
     : s.text;
   document.getElementById("btnTutPrev").style.visibility = gameState.tutorialStep === 0 ? "hidden" : "visible";
-  document.getElementById("btnTutNext").textContent = gameState.tutorialStep === TUTORIAL_STEPS.length - 1 ? "Finish Tutorial ✔" : "Next Tip ➔";
+  document.getElementById("btnTutNext").textContent = gameState.tutorialStep === steps.length - 1 ? "Finish Tutorial ✔" : "Next Tip ➔";
+  document.getElementById("btnTutorialLocation").hidden = !gameState.tutorialMode || !s.location;
   const tEl = document.getElementById(s.targetId);
   if (tEl) tEl.classList.add("tutorial-highlight");
 }
@@ -1272,6 +1297,19 @@ function findHexAtWorldPoint(wx, wy) {
 }
 
 function handleCanvasHover(e) {
+  if (gameState.mapViewMode === "campus") {
+    const player = gameState.players[gameState.inspectedPlayerIdx];
+    const park = player && (player.parks.find(item => item.id === gameState.selectedParkId) || player.parks[0]);
+    const point = e.target === document.getElementById("mapCanvas") ? screenToWorld(e.clientX, e.clientY) : null;
+    const tile = point && park ? findCampusTileAtWorldPoint(park, point.wx, point.wy) : null;
+    const old = document.querySelector("#campusSpriteLayer .campus-hex.hovered");
+    const node = tile ? campusHexNodes.get(tile.key) : null;
+    if (old !== node) {
+      if (old) old.classList.remove("hovered");
+      if (node) node.classList.add("hovered");
+    }
+    return;
+  }
   if (e.target !== document.getElementById("mapCanvas") || gameState.mapViewMode !== "national") return;
   const { wx, wy } = screenToWorld(e.clientX, e.clientY);
   const h = findHexAtWorldPoint(wx, wy);
@@ -1455,6 +1493,19 @@ function drawSingleTileFacilityBase(ctx, cx, cy, radius, accent, project) {
   ctx.strokeStyle = "#64748b";
   ctx.lineWidth = radius * 0.018;
   ctx.stroke();
+}
+
+function drawMirroredFacilitySprite(ctx, centerX, mirrored, draw) {
+  ctx.save();
+  if (mirrored) {
+    ctx.translate(centerX * 2, 0);
+    ctx.scale(-1, 1);
+  }
+  try {
+    draw();
+  } finally {
+    ctx.restore();
+  }
 }
 
 function drawGuestServicesSprite(ctx, cx, cy, radius, accent) {
@@ -3477,7 +3528,7 @@ function drawNationalUSMap(ctx) {
       ctx.fillStyle = p.color; ctx.fill();
       ctx.lineWidth = 2; ctx.strokeStyle = "#fff"; ctx.stroke();
       ctx.font = "11px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillStyle = "#fff"; ctx.fillText("🎢", x, y);
+      ctx.fillStyle = "#fff"; ctx.fillText("", x, y);
       const lbl = `${pk.name} (${summary.finalScore.toFixed(0)}p)`;
       ctx.font = "bold 9.5px 'Segoe UI', sans-serif";
       const bw = ctx.measureText(lbl).width + 14, bh = 16, bx = x - bw / 2, by = y - 28;
@@ -3656,7 +3707,8 @@ function updateCampusSpriteLayer(park) {
     }
   }
 
-  const selectedKey = gameState.selectedCampusTileKey;
+  const selectedKey = tileByKey.has(gameState.selectedCampusTileKey)
+    ? gameState.selectedCampusTileKey : park.tiles[0]?.key;
   const selectedNode = campusHexNodes.get(selectedKey) || null;
   if (campusSelectedHexNode !== selectedNode) {
     campusSelectedHexNode?.classList.remove("selected");
@@ -3671,7 +3723,7 @@ function syncCampusLayerVisibility() {
   const hasActiveModal = Boolean(document.querySelector(".modal-backdrop.active"));
   const isScenicCampus = gameState.mapViewMode === "campus" &&
     gameState.campusViewMode === "scenic";
-  const paused = !isScenicCampus || hasActiveModal;
+  const paused = !isScenicCampus || hasActiveModal || !GAME_SETTINGS.animateRides;
   layer.classList.toggle("animations-paused", paused);
   layer.style.visibility = isScenicCampus ? "visible" : "hidden";
   layer.style.transform =
@@ -3709,13 +3761,38 @@ function getEffectiveRideThemeLevel(ride) {
   return ride.themedForZoneId === expected ? (ride.themeLevel || 0) : 0;
 }
 
+const NEW_WORLD_SKIN_FALLBACKS = Object.freeze({
+  galactic: "space", babylon: "western", egypt: "western", china: "medieval",
+  japan: "medieval", jurassic: "jungle", greece: "classic", rome: "classic"
+});
+
 function getCampusRideSkinThemeId(themeId) {
-  const equivalents = { german: "bavarian", americana: "classic", caribbean: "fiesta", retro: "space", tiki: "jungle" };
+  const equivalents = { ...NEW_WORLD_SKIN_FALLBACKS, german: "bavarian", americana: "classic", caribbean: "fiesta", retro: "space", tiki: "jungle" };
   return equivalents[themeId] || themeId;
 }
 
+function getCampusRideArtwork(modelId, themeId, tier, fallback) {
+  const pack = NEW_SPRITE_PACKS.rides[modelId];
+  const aliases = { galactic: "galactic_outpost", jurassic: "jurassic_island",
+    rome: "ancient_rome", greece: "ancient_greece", retro: "retro_future" };
+  const spriteTheme = aliases[themeId] || themeId;
+  if (pack && (tier <= 2 || Object.prototype.hasOwnProperty.call(pack.skins, spriteTheme))) {
+    return { draw: pack.draw, themeId: spriteTheme };
+  }
+  return { draw: fallback, themeId: getCampusRideSkinThemeId(themeId) };
+}
+
+function getCampusFacilityArtwork(role, themeId) {
+  const newThemes = ["galactic", "babylon", "egypt", "china", "japan", "jurassic", "greece", "rome"];
+  const existing = { restaurant: RESTAURANT_FACILITY_ART, toilets: RESTROOM_FACILITY_ART,
+    guest_services: GUEST_SERVICES_FACILITY_ART };
+  return newThemes.includes(themeId)
+    ? { pack: NEW_SPRITE_PACKS.facilities[role], themeId }
+    : { pack: existing[role], themeId: getCampusRideSkinThemeId(themeId) };
+}
+
 function getCampusTileThemePack(themeId) {
-  const equivalents = { americana: "classic", caribbean: "fiesta", retro: "space", tiki: "jungle" };
+  const equivalents = { ...NEW_WORLD_SKIN_FALLBACKS, americana: "classic", caribbean: "fiesta", retro: "space", tiki: "jungle" };
   const pack = THEME_PACKS[equivalents[themeId] || themeId];
   if (!pack) throw new Error(`Missing procedural theme pack: ${themeId}`);
   return pack;
@@ -3770,7 +3847,7 @@ function drawMacroLandBack(ctx, park) {
     if (land.themeLevel <= 0 && park.tiles.some(tile =>
       tile.landId === land.landId && !tile.isWeenie && getEffectiveTileThemeLevel(tile) > 0
     )) continue;
-    const landPack = REVISED_LAND_PACKS[land.themeId];
+    const landPack = NEW_WORLD_LAND_PACKS[land.themeId] || REVISED_LAND_PACKS[land.themeId];
     if (!landPack) throw new Error(`Missing land artwork: ${land.themeId}`);
     const shape = land.shape;
     const mirrorX = land.mirrorX;
@@ -3782,7 +3859,9 @@ function drawMacroLandBack(ctx, park) {
       if (ride.facilityRole === "weenie" && first !== -1) clearTiles.push(first);
       if (first !== -1 && second !== -1) clear.push([first, second]);
     }
-    const baked = landPack.bake(shape, land.themeLevel, CAMPUS_HEX_R, { mirrorX, clear, clearTiles });
+    const baked = landPack.bake(shape, land.themeLevel, CAMPUS_HEX_R, {
+      mirrorX, clear, clearTiles, scale: getCampusBakeScale()
+    });
     const offset = shape === "A" ? (mirrorX ? -1 : 1) : 0;
     const center = getCampusTilePixel(land.q + offset + land.r * 0.5, land.r);
     landPack.drawBack(ctx, center.x, center.y, baked);
@@ -3827,6 +3906,7 @@ function drawSelectionHalo(ctx, path) {
 }
 
 function drawSelectedCampusTile(ctx, park) {
+  if (gameState.campusViewMode === "scenic") return;
   const tile = park.tiles.find(item => item.key === gameState.selectedCampusTileKey) || park.tiles[0];
   if (tile) drawSelectionHalo(ctx, () => drawCampusHexPolygon(ctx, tile.px, tile.py, CAMPUS_HEX_R));
 }
@@ -3968,6 +4048,11 @@ function drawStrategicCampusMap(ctx, player, park) {
 
 let scenicSceneCache = null;
 let scenicSceneRefreshTimer = null;
+let campusAnimationTime = 0;
+function getCampusAnimationMilliseconds() {
+  if (!campusLayerPaused) campusAnimationTime = performance.now();
+  return campusAnimationTime;
+}
 const SCENIC_SCENE_CACHE_LIMIT = 96 * 1024 * 1024;
 
 function drawParkCampusMap(ctx) {
@@ -3975,7 +4060,7 @@ function drawParkCampusMap(ctx) {
   const park = p.parks.find(pk => pk.id === gameState.selectedParkId) || p.parks[0];
   const hexObj = gameState.hexByKey.get(park.hexKey);
   const totMult = getTotalHexAttendanceMultiplier(hexObj, p);
-  document.getElementById("mapModeIndicator").textContent = `🎡 ${park.name} — Preset Land Campus (${hexObj ? hexObj.regionName : ''} • ${totMult}x Market)`;
+  document.getElementById("mapModeIndicator").textContent = `${park.name} — Preset Land Campus (${hexObj ? hexObj.regionName : ''} • ${totMult}x Market)`;
 
   if (gameState.campusViewMode === "strategic") {
     drawStrategicCampusMap(ctx, p, park);
@@ -4091,6 +4176,19 @@ function drawParkCampusMap(ctx) {
 
   const tileByKey = new Map(park.tiles.map(t => [t.key, t]));
   const scenerySprites = [];
+  const wildernessLandLayers = new Map((park.lands || [])
+    .filter(land => !land.unlocked)
+    .map(land => {
+      const shapeAOffset = land.shape === "A" ? (land.mirrorX ? -1 : 1) : 0;
+      const anchor = getCampusTilePixel(land.q + land.r * 0.5 + shapeAOffset, land.r);
+      return [land.landId, {
+        anchor,
+        baked: LAND_WILDERNESS_ART.bake(land.shape, CAMPUS_HEX_R, {
+          mirrorX: land.mirrorX,
+          scale: getCampusBakeScale()
+        })
+      }];
+    }));
   let bakingScenery = false;
   const drawSceneryObject = (sprite, x, y) => {
     if (!bakingScenery) {
@@ -4106,6 +4204,10 @@ function drawParkCampusMap(ctx) {
     }
   };
   const queueSprite = (depth, draw, dynamic = false) => scenerySprites.push({ depth, draw, dynamic });
+  for (const layer of wildernessLandLayers.values()) {
+    queueSprite(Infinity, () =>
+      LAND_WILDERNESS_ART.drawFront(ctx, layer.anchor.x, layer.anchor.y, layer.baked));
+  }
   const trainRide = park.rides.find(ride => ride.isTrainStation);
   if (mediumScenery?.train && trainRide) {
     queueSprite(-Infinity, () => {
@@ -4114,7 +4216,7 @@ function drawParkCampusMap(ctx) {
       const trainArt = isSmallLayout ? SMALL_CAMPUS_TRAIN_ART : CAMPUS_TRAIN_ART;
       trainArt.draw(ctx, mediumAnchor.x * mediumScenery.scale,
         mediumAnchor.y * mediumScenery.scale, mediumScenery, {
-          t: isRideOperational(trainRide) ? performance.now() / 1000 : 0
+          t: isRideOperational(trainRide) ? getCampusAnimationMilliseconds() / 1000 : 0
         });
       ctx.restore();
     }, true);
@@ -4214,7 +4316,7 @@ function drawParkCampusMap(ctx) {
     } else if (!hasMacroLand && t.isEntrance) {
       const entranceThemePack = getCampusTileThemePack(entranceThemeId);
       entranceThemePack.drawThemeGround(ctx, t.px, t.py, CAMPUS_HEX_R, entranceThemePack.pack, false);
-    } else if (!hasMacroLand) {
+    } else if (!hasMacroLand && !wildernessLandLayers.has(t.landId)) {
       drawCampusHexPolygon(ctx, t.px, t.py, CAMPUS_HEX_R);
       if (t.state === "woods" || t.state === "locked") {
         ctx.fillStyle = "#365a3d";
@@ -4230,20 +4332,24 @@ function drawParkCampusMap(ctx) {
 
     if (t.isEntrance) {
       queueSprite(t.py, () => drawParkEntrance(ctx, t.px, t.py, CAMPUS_HEX_R * 0.9, {
-        theme: getCampusRideSkinThemeId(entranceThemeId), tile: false, t: performance.now() / 1000
+        theme: getCampusRideSkinThemeId(entranceThemeId), tile: false, t: getCampusAnimationMilliseconds() / 1000
       }));
-    } else if (t.state === "woods" || t.state === "locked") {
+    } else if ((t.state === "woods" || t.state === "locked") &&
+        !wildernessLandLayers.has(t.landId)) {
       for (const tree of CAMPUS_FOREST_TREES) {
         queueSprite(tileSpriteDepth(t.py, t.py + tree.y), () => drawCampusForestHex(ctx, t, [tree]));
       }
     } else if (!hasMacroLand && effTileTheme > 0 && !t.rideId) {
       ctx.fillStyle = "#0f172a";
       ctx.font = "bold 9px 'Segoe UI', sans-serif";
-      ctx.fillText("★".repeat(effTileTheme), t.px, t.py + 18);
+      ctx.fillText("".repeat(effTileTheme), t.px, t.py + 18);
     }
   }
 
   if (mediumScenery) campusPack.drawInlays(ctx, mediumAnchor.x, mediumAnchor.y, mediumScenery);
+  for (const layer of wildernessLandLayers.values()) {
+    LAND_WILDERNESS_ART.drawBack(ctx, layer.anchor.x, layer.anchor.y, layer.baked);
+  }
 
   updateCampusSpriteLayer(park);
   const rideDepth = ride => {
@@ -4269,7 +4375,7 @@ function drawParkCampusMap(ctx) {
       const scale = Math.min(42 / width, 36 / height);
       const x = secondary ? (tile.px + secondary.px) / 2 : tile.px;
       const y = secondary ? (tile.py + secondary.py) / 2 : tile.py;
-      const bob = isCampusRideSpriteStatic(ride) ? 0 : 2 * Math.cos(performance.now() * Math.PI * 2 / 2400);
+      const bob = isCampusRideSpriteStatic(ride) ? 0 : 2 * Math.cos(getCampusAnimationMilliseconds() * Math.PI * 2 / 2400);
       ctx.drawImage(sprite, x - width * scale / 2, y - height * scale / 2 + bob, width * scale, height * scale);
     }, true);
   }
@@ -4351,7 +4457,7 @@ function drawParkCampusMap(ctx) {
             const options = {
               accent: accentColor,
               name: r.name,
-              t: isDown ? undefined : performance.now() / 1000
+              t: isDown ? undefined : getCampusAnimationMilliseconds() / 1000
             };
             if (orientation === "side") {
               drawDarkRideSide(ctx, midX, midY, CAMPUS_HEX_R, options);
@@ -4374,7 +4480,7 @@ function drawParkCampusMap(ctx) {
             diag: (c, x, y, radius, options) => DIVE_ART.drawBaked(c, x, y,
               DIVE_ART.bake(options.dir === "NE-SW" ? "diag-nesw" : "diag-nwse",
                 radius, { accent: options.accent, pixelRatio: getBakeScale() }))
-          } : SPRITE_SKIN_PACKS.coasters[r.modelId];
+          } : CLASSIC_COASTER_PACKS[r.modelId] || SPRITE_SKIN_PACKS.coasters[r.modelId];
           if (coasterPack || [
             "rapids", "log_flume", "legendary_splash_mountain",
             "legendary_space_mountain", "invert"
@@ -4389,7 +4495,7 @@ function drawParkCampusMap(ctx) {
               const options = {
                 accent: rideThemeTier >= 3 ? accentColor : "#f97316",
                 support: rideThemeTier >= 3 ? skinOptions.wood : "#9aa3b0",
-                t: isDown ? undefined : performance.now() / 1000
+                t: isDown ? undefined : getCampusAnimationMilliseconds() / 1000
               };
               if (orientation === "side") {
                 MODERN_RIVER_RAPIDS_SPRITE.side(ctx, midX, midY, CAMPUS_HEX_R, options);
@@ -4400,16 +4506,16 @@ function drawParkCampusMap(ctx) {
                 });
               }
             } else if (r.modelId === "log_flume") {
-              const options = { accent: accentColor, support: skinOptions.wood, t: isDown ? undefined : performance.now() / 1000 };
+              const options = { accent: accentColor, support: skinOptions.wood, t: isDown ? undefined : getCampusAnimationMilliseconds() / 1000 };
               if (orientation === "side") MODERN_LOG_FLUME_SPRITE.side(ctx, midX, midY, CAMPUS_HEX_R, options);
               else MODERN_LOG_FLUME_SPRITE.diag(ctx, midX, midY, CAMPUS_HEX_R, { ...options, dir: orientation });
             } else if (r.category === "legendary" && r.modelId === "legendary_splash_mountain") {
-              const options = { t: isDown ? undefined : performance.now() / 1000 };
+              const options = { t: isDown ? undefined : getCampusAnimationMilliseconds() / 1000 };
               if (orientation === "side") LEGENDARY_SPLASH_MOUNTAIN_SPRITE.side(ctx, midX, midY, CAMPUS_HEX_R, options);
               else LEGENDARY_SPLASH_MOUNTAIN_SPRITE.diag(ctx, midX, midY, CAMPUS_HEX_R, { ...options, dir: orientation });
             } else if (r.category === "legendary" && r.modelId === "legendary_space_mountain") {
               const options = {
-                t: isDown ? undefined : performance.now() / 1000,
+                t: isDown ? undefined : getCampusAnimationMilliseconds() / 1000,
                 scale: getBakeScale()
               };
               if (orientation === "side") {
@@ -4438,7 +4544,9 @@ function drawParkCampusMap(ctx) {
             } else if (coasterPack) {
               const coasterOptions = r.modelId === "steel_hybrid" && rideThemeTier < 3
                 ? { ...skinOptions, accent: "#dc2626", wood: "#9a7b56" }
-                : skinOptions;
+                : CLASSIC_COASTER_PACKS[r.modelId]
+                  ? { ...skinOptions, scale: getBakeScale() }
+                  : skinOptions;
               if (orientation === "side") {
                 coasterPack.side(ctx, midX, midY, CAMPUS_HEX_R, coasterOptions);
               } else {
@@ -4477,7 +4585,7 @@ function drawParkCampusMap(ctx) {
           const my = (t1.py + t2.py) / 2;
           ctx.beginPath();
           const cartProgress = r.category === "tracked"
-            ? (performance.now() / 1000 / 5) % 1
+            ? (getCampusAnimationMilliseconds() / 1000 / 5) % 1
             : 0.5;
           const cartX = t1.px + (t2.px - t1.px) * cartProgress;
           const cartY = t1.py + (t2.py - t1.py) * cartProgress;
@@ -4500,7 +4608,8 @@ function drawParkCampusMap(ctx) {
           BOOMERANG_ART.drawBaked(ctx, t1.px, t1.py,
             BOOMERANG_ART.bake(CAMPUS_HEX_R, { accent: accentColor, pixelRatio: getBakeScale() }));
         } else if (r.category === "facility") {
-          const code = r.facilityRole === "toilets" ? "RR" : (r.facilityRole === "restaurant" ? "FB" : "GS");
+          const code = r.facilityRole === "toilets" ? "RR" :
+            (r.facilityRole === "restaurant" ? "FB" : (r.facilityRole === "theater" ? "TH" : "GS"));
           const effR = getEffectiveRideThemeLevel(r);
           if (r.facilityRole === "weenie") {
             drawCampusWeenie(ctx, r, t1);
@@ -4509,22 +4618,51 @@ function drawParkCampusMap(ctx) {
             ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
               t1.px, t1.py + CAMPUS_HEX_R * 0.62);
           } else if (r.facilityRole === "restaurant") {
-            drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.restaurant, t1.px, t1.py,
-              CAMPUS_HEX_R * 0.72, { ...skinOptions, tile: false });
+            const artwork = getCampusFacilityArtwork(r.facilityRole, zone?.themeId || park.themeId);
+            const sprite = artwork.pack.bake(
+              artwork.themeId,
+              CAMPUS_HEX_R * FACILITY_SPRITE_SCALE, {
+                accent: accentColor, pixelRatio: getCampusBakeScale()
+              });
+            drawMirroredFacilitySprite(ctx, t1.px, r.mirrored, () =>
+              artwork.pack.drawBaked(ctx, t1.px, t1.py, sprite));
             ctx.fillStyle = "#0f172a";
             ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
             ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
               t1.px, t1.py + CAMPUS_HEX_R * 0.62);
           } else if (r.facilityRole === "toilets") {
-            drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.toilets, t1.px, t1.py,
-              CAMPUS_HEX_R * 0.72, { ...skinOptions, tile: false });
+            const artwork = getCampusFacilityArtwork(r.facilityRole, zone?.themeId || park.themeId);
+            const sprite = artwork.pack.bake(
+              artwork.themeId,
+              CAMPUS_HEX_R * FACILITY_SPRITE_SCALE, {
+                accent: accentColor, pixelRatio: getCampusBakeScale()
+              });
+            drawMirroredFacilitySprite(ctx, t1.px, r.mirrored, () =>
+              artwork.pack.drawBaked(ctx, t1.px, t1.py, sprite));
             ctx.fillStyle = "#0f172a";
             ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
             ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
               t1.px, t1.py + CAMPUS_HEX_R * 0.62);
           } else if (r.facilityRole === "guest_services") {
-            drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.guest_services, t1.px, t1.py,
-              CAMPUS_HEX_R * 0.72, { ...skinOptions, tile: false });
+            const artwork = getCampusFacilityArtwork(r.facilityRole, zone?.themeId || park.themeId);
+            const sprite = artwork.pack.bake(
+              artwork.themeId, CAMPUS_HEX_R * 0.72 * FACILITY_SPRITE_SCALE, {
+                accent: accentColor, pixelRatio: getCampusBakeScale()
+              });
+            drawMirroredFacilitySprite(ctx, t1.px, r.mirrored, () =>
+              artwork.pack.drawBaked(ctx, t1.px, t1.py, sprite));
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+            ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
+              t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+          } else if (r.facilityRole === "theater") {
+            const themedTheater = NEW_WORLD_THEATER_PACKS[zone?.themeId || park.themeId];
+            drawMirroredFacilitySprite(ctx, t1.px, r.mirrored, () =>
+              themedTheater
+                ? themedTheater(ctx, t1.px, t1.py, CAMPUS_HEX_R * FACILITY_SPRITE_SCALE, { t: 0.4 })
+                : drawTheater(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+                  ...skinOptions, tile: false, flip: !!r.mirrored
+                }));
             ctx.fillStyle = "#0f172a";
             ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
             ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`,
@@ -4540,8 +4678,9 @@ function drawParkCampusMap(ctx) {
             ctx.fillText(`+${RIDE_SCENERY_TIERS[effR].points}p`, t1.px, t1.py + 12);
           }
         } else if (r.modelId === "stage_show") {
-          drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.stage_show, t1.px, t1.py,
-            CAMPUS_HEX_R * 0.9, { ...skinOptions, tile: false, t: performance.now() / 1000 });
+          const themedTheater = rideThemeTier >= 3 && NEW_WORLD_THEATER_PACKS[zone?.themeId || park.themeId];
+          drawSpriteWithLabels(themedTheater || SPRITE_SKIN_PACKS.rides.stage_show, t1.px, t1.py,
+            CAMPUS_HEX_R * 0.9, { ...skinOptions, tile: false, t: getCampusAnimationMilliseconds() / 1000 });
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
@@ -4554,24 +4693,26 @@ function drawParkCampusMap(ctx) {
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "demolition_derby") {
           drawDemolitionDerby(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-            accent: accentColor, t: isDown ? undefined : performance.now() / 1000
+            ...skinOptions, t: isDown ? undefined : getCampusAnimationMilliseconds() / 1000, tile: false
           });
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "crazy_bus") {
-          drawCrazyBus(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-            ...skinOptions,
-            t: isDown ? undefined : performance.now() / 1000,
+          const artwork = getCampusRideArtwork(r.modelId, zone?.themeId || park.themeId, rideThemeTier, drawCrazyBus);
+          artwork.draw(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            ...skinOptions, themeId: artwork.themeId,
+            t: isDown ? undefined : getCampusAnimationMilliseconds() / 1000,
             tile: false
           });
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "antique_cars") {
-          drawAntiqueCars(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-            ...skinOptions,
-            t: isDown ? undefined : performance.now() / 1000,
+          const artwork = getCampusRideArtwork(r.modelId, zone?.themeId || park.themeId, rideThemeTier, drawAntiqueCars);
+          artwork.draw(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            ...skinOptions, themeId: artwork.themeId,
+            t: isDown ? undefined : getCampusAnimationMilliseconds() / 1000,
             tile: false
           });
           ctx.fillStyle = "#0f172a";
@@ -4581,15 +4722,16 @@ function drawParkCampusMap(ctx) {
           const stationLand = getTrainStationConnectedLand(park, t1);
           TRAIN_STATION_ART.draw(ctx, t1.px, t1.py, CAMPUS_HEX_R * 0.9, {
             accent: stationLand?.color || accentColor,
-            themeId: stationLand?.themeId || park.themeId, rideThemeTier: 3, tile: false
+            themeId: NEW_WORLD_SKIN_FALLBACKS[stationLand?.themeId || park.themeId] || stationLand?.themeId || park.themeId, rideThemeTier: 3, tile: false
           });
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "ferris_wheel") {
-          const rotation = isDown ? 0.3 : performance.now() / 1000 * 0.35;
-          drawFerrisWheel(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-            ...skinOptions, themeId: zone?.themeId || park.themeId, t: rotation, tile: false
+          const rotation = isDown ? 0.3 : getCampusAnimationMilliseconds() / 1000 * 0.35;
+          const artwork = getCampusRideArtwork(r.modelId, zone?.themeId || park.themeId, rideThemeTier, drawFerrisWheel);
+          artwork.draw(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            ...skinOptions, themeId: artwork.themeId, t: rotation, tile: false
           });
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
@@ -4598,7 +4740,7 @@ function drawParkCampusMap(ctx) {
           const model = FLAT_RIDE_CATALOG.find(item => item.id === "drop_tower");
           const height = r.height || model.baseHeight;
           const levels = 1 + ((height - model.baseHeight) / (model.maxHeight - model.baseHeight)) * 9;
-          const phase = performance.now() / 1000 % 6.5;
+          const phase = getCampusAnimationMilliseconds() / 1000 % 6.5;
           const gondolaPosition = isDown ? 0 : (phase < 3
             ? (1 - Math.cos(Math.PI * phase / 3)) / 2 * 0.999
             : (phase < 4 ? 1 : (phase < 4.8 ? 1 - Math.pow((phase - 4) / 0.8, 2) : 0)));
@@ -4609,7 +4751,7 @@ function drawParkCampusMap(ctx) {
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "top_spin") {
-          const seconds = performance.now() / 1000;
+          const seconds = getCampusAnimationMilliseconds() / 1000;
           const phase = seconds % 12;
           const swing = isDown ? 0.9 : 2.5 * Math.sin(Math.PI * phase / 12) * Math.sin(2 * Math.PI * phase / 2.4);
           drawTopSpin(ctx, t1.px, t1.py, CAMPUS_HEX_R, { ...skinOptions, t: swing, tile: false });
@@ -4621,21 +4763,21 @@ function drawParkCampusMap(ctx) {
             theme: skinOptions.themeId,
             rideThemeTier,
             accent: rideThemeTier >= 3 ? accentColor : "#f97316",
-            t: isDown ? 1.35 : performance.now() / 1000,
+            t: isDown ? 1.35 : getCampusAnimationMilliseconds() / 1000,
             tile: false
           });
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "scrambler") {
-          const rotation = isDown ? 0.6 : performance.now() / 1000 * 1.1;
+          const rotation = isDown ? 0.6 : getCampusAnimationMilliseconds() / 1000 * 1.1;
           drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.scrambler, t1.px, t1.py, CAMPUS_HEX_R,
             { ...skinOptions, theme: skinOptions.themeId, t: rotation, tile: false });
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "enterprise") {
-          const seconds = performance.now() / 1000;
+          const seconds = getCampusAnimationMilliseconds() / 1000;
           const phase = seconds % 16;
           const tilt = isDown ? 0 : 1.4 * Math.pow(Math.sin(Math.PI * phase / 16), 0.7);
           const spin = isDown ? 0 : seconds * (0.8 + 2.4 * Math.sin(Math.PI * phase / 16));
@@ -4644,7 +4786,7 @@ function drawParkCampusMap(ctx) {
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "claw") {
-          const seconds = performance.now() / 1000;
+          const seconds = getCampusAnimationMilliseconds() / 1000;
           const swing = isDown ? 1.7 : 2.1 * Math.sin(seconds * 0.9);
           const rotor = isDown ? 0.5 : seconds * 2.6;
           drawSpriteWithLabels(SPRITE_SKIN_PACKS.rides.claw, t1.px, t1.py, CAMPUS_HEX_R,
@@ -4653,7 +4795,7 @@ function drawParkCampusMap(ctx) {
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "chair_swings") {
-          const seconds = performance.now() / 1000;
+          const seconds = getCampusAnimationMilliseconds() / 1000;
           const phase = seconds % 14;
           const fly = isDown ? 0 : Math.min(1, Math.sin(Math.PI * phase / 14) * 1.4);
           const rotation = isDown ? 0.4 : seconds * (0.5 + 1.6 * fly);
@@ -4663,25 +4805,26 @@ function drawParkCampusMap(ctx) {
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "pirate_ship") {
-          const seconds = performance.now() / 1000;
+          const seconds = getCampusAnimationMilliseconds() / 1000;
           const phase = seconds % 12;
           const swing = isDown ? 0.6 :
             1.25 * Math.sin(Math.PI * phase / 12) * Math.sin(2 * Math.PI * phase / 2.6);
-          drawPirateShip(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-            ...skinOptions, themeId: zone?.themeId || park.themeId, angle: swing, tile: false
+          const artwork = getCampusRideArtwork(r.modelId, zone?.themeId || park.themeId, rideThemeTier, drawPirateShip);
+          artwork.draw(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            ...skinOptions, themeId: artwork.themeId, angle: swing, tile: false
           });
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "bumper_cars") {
           drawBumperCars(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-            accent: accentColor, t: performance.now() / 1000, tile: false
+            ...skinOptions, t: isDown ? undefined : getCampusAnimationMilliseconds() / 1000, tile: false
           });
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "air_race") {
-          const seconds = performance.now() / 1000;
+          const seconds = getCampusAnimationMilliseconds() / 1000;
           drawAirRace(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
             ...skinOptions, t: isDown ? 0.5 : seconds * 1.2,
             fly: isDown ? 0 : Math.abs(Math.sin(seconds * 0.35)), tile: false
@@ -4691,27 +4834,27 @@ function drawParkCampusMap(ctx) {
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "disco") {
           drawDiskO(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-            accent: accentColor, r: isDown ? 0.4 : performance.now() / 1000, tile: false
+            accent: accentColor, r: isDown ? 0.4 : getCampusAnimationMilliseconds() / 1000, tile: false
           });
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "giant_discovery") {
           drawGiantDiscovery(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-            accent: accentColor, t: isDown ? 0 : performance.now() / 1000, tile: false
+            ...skinOptions, t: isDown ? 0 : getCampusAnimationMilliseconds() / 1000, tile: false
           });
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "sky_fly") {
           drawSkyFly(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-            accent: accentColor, t: isDown ? 0 : performance.now() / 1000, tile: false
+            accent: accentColor, t: isDown ? 0 : getCampusAnimationMilliseconds() / 1000, tile: false
           });
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "carousel") {
-          const seconds = performance.now() / 1000;
+          const seconds = getCampusAnimationMilliseconds() / 1000;
           drawCarousel(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
             ...skinOptions, t: isDown ? 0.4 : seconds * 0.7 + 0.4,
             tm: seconds, tile: false
@@ -4720,11 +4863,19 @@ function drawParkCampusMap(ctx) {
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
           ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
         } else if (r.modelId === "flyer") {
-          const seconds = performance.now() / 1000;
-          drawFlyerRide(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
-            ...skinOptions, t: isDown ? 0.4 : seconds * 0.9 + 0.4,
+          const seconds = getCampusAnimationMilliseconds() / 1000;
+          const artwork = getCampusRideArtwork(r.modelId, zone?.themeId || park.themeId, rideThemeTier, drawFlyerRide);
+          artwork.draw(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            ...skinOptions, themeId: artwork.themeId, t: isDown ? 0.4 : seconds * 0.9 + 0.4,
             fly: isDown ? 0.55 : 0.5 + 0.5 * Math.sin(seconds * 0.5),
             tm: seconds, tile: false
+          });
+          ctx.fillStyle = "#0f172a";
+          ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
+          ctx.fillText(`${calculateRideTotalScore(r, p).toFixed(0)}p`, t1.px, t1.py + CAMPUS_HEX_R * 0.62);
+        } else if (r.modelId === "teacups") {
+          drawTeacups(ctx, t1.px, t1.py, CAMPUS_HEX_R, {
+            ...skinOptions, t: isDown ? 0 : getCampusAnimationMilliseconds() / 1000, tile: false
           });
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 8.5px 'Segoe UI', sans-serif";
@@ -4739,7 +4890,7 @@ function drawParkCampusMap(ctx) {
           ctx.strokeStyle = isDown ? "#991b1b" : "#dc2626";
           ctx.stroke();
 
-          const phase = isDown ? 0 : performance.now() / 1000;
+          const phase = isDown ? 0 : getCampusAnimationMilliseconds() / 1000;
           const markerX = t1.px + Math.cos(phase) * 7;
           const markerY = t1.py + Math.sin(phase) * 4;
           ctx.beginPath();
@@ -4769,6 +4920,18 @@ function drawParkCampusMap(ctx) {
 function drawCampusWeenie(ctx, ride, tile) {
   const definition = WEENIE_CATALOG.find(item => item.id === ride.modelId);
   if (!definition) throw new RangeError(`Unknown weenie model: ${ride.modelId}`);
+  if (definition.monumentId) {
+    ANCIENT_MONUMENT_ART.draw(ctx, tile.px, tile.py, CAMPUS_HEX_R, definition.monumentId);
+    return;
+  }
+  if (definition.newLandmarkId) {
+    NEW_WORLD_WEENIES.draw(ctx, tile.px, tile.py, CAMPUS_HEX_R, definition.newLandmarkId);
+    return;
+  }
+  if (definition.landmarkId) {
+    HERO_WEENIE_LANDMARKS_V2.draw(ctx, tile.px, tile.py, CAMPUS_HEX_R, definition.landmarkId);
+    return;
+  }
   if (["americana", "caribbean", "retro", "tiki"].includes(definition.themeId)) {
     NEW_WEENIE_PACK.draw(ctx, tile.px, tile.py, CAMPUS_HEX_R, { theme: definition.themeId });
     return;
@@ -4893,7 +5056,7 @@ function getCoasterRecordBadges(model, park, height, length, inversions) {
   ];
   if (model.canInvert) records.push({ field: "inversions", value: inversions, label: "INVERSIONS" });
   return records.filter(record => record.value > getCoasterRecordValue(model, park, record.field))
-    .map(record => `🏆 NEW ${record.label} RECORD!`);
+    .map(record => `NEW ${record.label} RECORD!`);
 }
 
 function expandCoasterSlider(slider) {
@@ -5476,6 +5639,18 @@ function setRestaurantMealPrice(parkId, rideId, rawPrice) {
   renderAll();
 }
 
+function toggleFacilityMirror(parkId, rideId) {
+  if (gameState.inspectedPlayerIdx !== gameState.activePlayerIdx) return;
+  const player = gameState.players[gameState.activePlayerIdx];
+  const park = player.parks.find(item => item.id === parkId);
+  const facility = park?.rides.find(ride => ride.id === rideId &&
+    ride.category === "facility" &&
+    ["toilets", "restaurant", "guest_services", "theater"].includes(ride.facilityRole));
+  if (!facility) throw new RangeError("Facility not found or cannot be mirrored.");
+  facility.mirrored = !facility.mirrored;
+  renderAll();
+}
+
 function applyRestaurantMealPriceToPark(parkId, rawPrice) {
   if (gameState.inspectedPlayerIdx !== gameState.activePlayerIdx) return;
   const player = gameState.players[gameState.activePlayerIdx];
@@ -5798,6 +5973,20 @@ function updateParkHarmonyMilestones(park, ownerPlayer = null) {
   }
 }
 
+function getOperationalParkRideCounts(park) {
+  let rides = 0, coasters = 0;
+  const trains = new Set();
+  for (const ride of park.rides || []) {
+    if (!isRideOperational(ride) || ride.category === "facility") continue;
+    if (ride.isTrainStation) {
+      const group = ride.trainGroupId || ride.id;
+      if (!trains.has(group)) { trains.add(group); rides++; }
+    } else rides++;
+    if (ride.category === "coaster") coasters++;
+  }
+  return { rides, coasters };
+}
+
 function recalculateGlobalRecords() {
   const recBonus = getRecordBonusValue();
   const records = {
@@ -5819,15 +6008,10 @@ function recalculateGlobalRecords() {
   }
   for (const p of gameState.players) {
     for (const park of p.parks) {
-      let rCnt = 0, cCnt = 0;
-      const trains = new Set();
+      const counts = getOperationalParkRideCounts(park);
       for (const r of (park.rides || [])) {
         if (!isRideOperational(r) || r.category === "facility") continue;
-        if (r.isTrainStation) {
-          if (!trains.has(r.trainGroupId)) { trains.add(r.trainGroupId); rCnt++; }
-        } else rCnt++;
         if (r.category === "coaster") {
-          cCnt++;
           if (r.track === "steel") {
             updateMaxRecord(records.tallestSteel, r.height, { type: "ride", ride: r, park, player: p });
             updateMaxRecord(records.longestSteel, r.length, { type: "ride", ride: r, park, player: p });
@@ -5839,8 +6023,8 @@ function recalculateGlobalRecords() {
         } else if (r.modelId === "drop_tower") updateMaxRecord(records.tallestDrop, r.height, { type: "ride", ride: r, park, player: p });
         else if (r.modelId === "ferris_wheel") updateMaxRecord(records.tallestWheel, r.height, { type: "ride", ride: r, park, player: p });
       }
-      if (rCnt > 0) updateMaxRecord(records.mostRidesPark, rCnt, { type: "park", park, player: p });
-      if (cCnt > 0) updateMaxRecord(records.mostCoastersPark, cCnt, { type: "park", park, player: p });
+      if (counts.rides > 0) updateMaxRecord(records.mostRidesPark, counts.rides, { type: "park", park, player: p });
+      if (counts.coasters > 0) updateMaxRecord(records.mostCoastersPark, counts.coasters, { type: "park", park, player: p });
     }
   }
   for (const k in records) {
@@ -5864,8 +6048,13 @@ function updateMaxRecord(recObj, val, entry) {
 /* --- 7. UI RENDERING & TILE INSPECTOR DRAWER --- */
 
 function switchSidebarTab(tab) {
+  const titles = { parks: "Parks", rivals: "Chains", rd: "Research", advisors: "Advisors", records: "Records & Events" };
+  if (!Object.prototype.hasOwnProperty.call(titles, tab)) return;
   document.getElementById("sidebarDrawerContent").hidden = false;
-  document.getElementById("panelLeftSidebar").classList.add("open");
+  document.getElementById("chainDrawerTitle").textContent = titles[tab];
+  const sidebar = document.getElementById("panelLeftSidebar");
+  sidebar.classList.add("open");
+  sidebar.dataset.pane = tab;
   ["parks", "rivals", "rd", "advisors", "records"].forEach(t => {
     const button = document.getElementById(`tbTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
     button.classList.toggle("active", t === tab);
@@ -5898,13 +6087,14 @@ function renderAll() {
   scenicSceneCache = null;
   recalculateGlobalRecords();
   const activePlayer = gameState.players[gameState.activePlayerIdx];
+  document.getElementById("btnEndTurn").disabled = !!gameState.gameOver;
   const inspectedPlayer = gameState.players[gameState.inspectedPlayerIdx];
   if (!inspectedPlayer.parks.some(pk => pk.id === gameState.selectedParkId)) {
     gameState.selectedParkId = inspectedPlayer.parks[0].id;
   }
   document.getElementById("hudPlayerName").textContent = `${activePlayer.ceoName} (${activePlayer.chainName})`;
   const hudLegendName = document.getElementById("hudLegendName");
-  hudLegendName.innerHTML = `${getLegendPortraitHTML(activePlayer.legend, "legend-avatar-thumb")}<span class="hud-legend-text"><span>${activePlayer.legend.isCustom ? `✨ ${escapeHtml(activePlayer.legend.name)}` : `👑 ${escapeHtml(activePlayer.legend.name)}`}</span><span class="hud-legend-hint">ℹ️ Click for Legend Info</span></span>`;
+  hudLegendName.innerHTML = `${getLegendPortraitHTML(activePlayer.legend, "legend-avatar-thumb")}<span class="hud-legend-text"><span>${escapeHtml(activePlayer.legend.name)}</span><span class="hud-legend-hint">Click for Legend Info</span></span>`;
   hudLegendName.setAttribute("aria-label", `Legend information for ${activePlayer.legend.name}`);
   document.getElementById("hudYear").textContent = `Yr ${gameState.year} • ${getCurrentEraName().split(" ")[0]}`;
   document.getElementById("hudCash").textContent = `$${activePlayer.cash.toFixed(2)}M`;
@@ -5944,27 +6134,28 @@ function renderAdvisorSidebar(player) {
     const salary = getAdvisorAnnualSalary(player, advisor.id);
     const isHired = !!advisorState?.hired;
     const initials = advisor.name.split(/\s+/).map(part => part[0]).join("").slice(0, 2);
-    return `<div class="card" style="padding:.65rem;">
-      <div style="display:flex;align-items:center;gap:.75rem;">
+    return `<article class="card chain-card advisor-card">
+      <div class="advisor-card-heading">
         <div class="advisor-avatar">
           <img src="${advisor.image}" alt="${advisor.name}" onerror="this.remove();this.parentElement.textContent='${initials}'">
         </div>
-        <div style="flex:1;min-width:0;">
-          <strong style="display:block;color:var(--accent-gold);font-size:.85rem;">${advisor.name}</strong>
-          <small style="color:var(--text-muted);display:block;">${advisor.title}</small>
-          <small style="color:var(--text-muted);display:block;">$${salary.toFixed(2)}M/yr</small>
+        <div class="advisor-card-title">
+          <strong>${escapeHtml(advisor.name)}</strong>
+          <small>${escapeHtml(advisor.title)}</small>
+          <span class="chain-salary">$${salary.toFixed(2)}M / year</span>
         </div>
+        <span class="badge ${isHired ? "badge-green" : "badge-gold"}">${isHired ? "Hired" : "Available"}</span>
       </div>
-      <div style="font-size:.68rem;color:var(--text-muted);margin:.45rem 0;line-height:1.45;">${advisor.description}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:.3rem;">
+      <p class="chain-card-description">${escapeHtml(advisor.description)}</p>
+      <div class="chain-card-actions">
         ${isHired ? '<button class="btn-outline btn-sm" onclick="fireAdvisor(\'' + advisor.id + '\')">Fire</button>' : '<button class="btn-primary btn-sm" onclick="hireAdvisor(\'' + advisor.id + '\')">Hire</button>'}
       </div>
-      <div style="margin-top:.55rem;padding:.45rem .5rem;background:rgba(15,23,42,.35);border:1px solid var(--border-color);border-radius:8px;font-size:.68rem;color:var(--text-main);line-height:1.5;">
-        <strong>Latest Report ${advisorState?.lastReportYear ? `• Year ${advisorState.lastReportYear}` : ""}</strong><br>
-        ${escapeHtml(advisorState?.latestReport || "No audit conducted yet.")}
+      <div class="advisor-report-summary">
+        <strong>Latest Report ${advisorState?.lastReportYear ? `· Year ${advisorState.lastReportYear}` : ""}</strong>
+        <p>${escapeHtml(advisorState?.latestReport || "No audit conducted yet.")}</p>
         ${advisorState?.latestReportData ? `<button class="btn-outline btn-sm advisor-report-open" onclick="openAdvisorReport('${advisor.id}')">Open Report</button>` : ""}
       </div>
-    </div>`;
+    </article>`;
   }).join("");
 }
 
@@ -6022,7 +6213,7 @@ function openAdvisorReport(advisorId) {
 
 function openPendingAdvisorReportsModal() {
   const reports = gameState.pendingAdvisorReports.splice(0);
-  openAdvisorReportsModal(reports);
+  if (GAME_SETTINGS.eventPopupMode === "all") openAdvisorReportsModal(reports);
 }
 
 function getParkMealPriceText(park) {
@@ -6043,7 +6234,7 @@ function getChainPriceRange(prices) {
 function renderLeftSidebar(inspectedPlayer) {
   const isRO = gameState.inspectedPlayerIdx !== gameState.activePlayerIdx;
   document.getElementById("inspectionNoticeBox").innerHTML = isRO
-    ? `<div class="Inspection-banner"><span style="font-size:.72rem;">👁️ Viewing <strong>${escapeHtml(inspectedPlayer.chainName)}</strong></span><button class="btn-primary btn-sm" onclick="returnToOwnChain()">My Chain</button></div>`
+    ? `<div class="chain-inspection-notice"><span>Viewing <strong>${escapeHtml(inspectedPlayer.chainName)}</strong></span><button class="btn-primary btn-sm" onclick="returnToOwnChain()">My Chain</button></div>`
     : "";
 
   const parkListEl = document.getElementById("parkListContainer");
@@ -6052,14 +6243,24 @@ function renderLeftSidebar(inspectedPlayer) {
     const summary = calculateParkScoreSummary(park, inspectedPlayer);
     const hexObj = gameState.hexByKey.get(park.hexKey);
     const totMult = getTotalHexAttendanceMultiplier(hexObj, inspectedPlayer);
-    const parkPricing = isRO
-      ? `<div style="font-size:.7rem;color:var(--accent-gold);margin-top:.22rem;">Gate: $${Number(park.ticketPrice || 45).toFixed(0)} • Food: ${escapeHtml(getParkMealPriceText(park))}</div>`
-      : "";
     const card = document.createElement("div");
-    card.className = `card ${park.id === gameState.selectedParkId ? 'active-card' : ''}`;
+    card.className = `card chain-card park-summary-card ${park.id === gameState.selectedParkId ? 'active-card' : ''}`;
     const crowdClass = summary.crowdStatus === "OVERCROWDED" ? "badge-red"
       : summary.crowdStatus === "OPTIMAL" ? "badge-gold" : "badge-green";
-    card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><strong style="cursor:pointer;" onclick="focusParkOnMap('${park.id}')">🎡 ${escapeHtml(park.name)}</strong><span class="badge badge-gold">${summary.finalScore.toFixed(1)}p</span></div><div style="font-size:.7rem;color:var(--text-muted);margin-top:.18rem;">📍 ${hexObj ? escapeHtml(hexObj.regionName) : ''} • <strong style="color:var(--accent-teal);">${totMult}x Market</strong> • Saturation: <strong>${(summary.marketSaturationEfficiency * 100).toFixed(0)}%</strong> ${!summary.hasGuestServices ? '<span class="badge badge-red">No Guest Svc (-5%)</span>' : '<span class="badge badge-green">ℹ️ OK</span>'}</div><div class="park-capacity-line"><span>Annual attendance: ${(park.lastAttendance || 0).toLocaleString()} / Annual capacity: ${summary.capacity.toLocaleString()}</span><span class="badge ${crowdClass}" title="Potential annual demand: ${summary.potentialDemand.toLocaleString()} guests">${summary.crowdStatus}</span></div>${parkPricing}${summary.infrastructureBottleneck ? '<div class="badge badge-red" style="white-space:normal;margin-top:.3rem;">⚠ Infrastructure Bottleneck: Build more F&amp;B, Services, or Plazas!</div>' : ''}<div style="display:flex;gap:.35rem;margin-top:.4rem;"><button class="btn-primary btn-sm" style="flex:1;" onclick="enterParkCampusView('${park.id}')">🔍 Open Campus</button></div>`;
+    card.innerHTML = `<div class="chain-card-heading">
+        <button class="chain-name-button" onclick="focusParkOnMap('${park.id}')" title="Select park on map">${escapeHtml(park.name)}</button>
+        <span class="badge badge-gold">${summary.finalScore.toFixed(1)} pts</span>
+      </div>
+      <p class="chain-card-description">${hexObj ? escapeHtml(hexObj.regionName) : ''} · ${totMult}x market · ${(summary.marketSaturationEfficiency * 100).toFixed(0)}% saturation</p>
+      <div class="chain-metrics">
+        <div><span>Attendance</span><strong>${(park.lastAttendance || 0).toLocaleString()}</strong></div>
+        <div><span>Capacity</span><strong>${summary.capacity.toLocaleString()}</strong></div>
+      </div>
+      <div class="chain-status-line"><span class="badge ${crowdClass}" title="Potential annual demand: ${summary.potentialDemand.toLocaleString()} guests">${summary.crowdStatus}</span>
+        ${!summary.hasGuestServices ? '<span class="badge badge-red">No Guest Services (-5%)</span>' : '<span class="badge badge-green">Guest Services OK</span>'}</div>
+      ${isRO ? `<p class="chain-card-description">Gate: $${Number(park.ticketPrice || 45).toFixed(0)} · Food: ${escapeHtml(getParkMealPriceText(park))}</p>` : ""}
+      ${summary.infrastructureBottleneck ? '<p class="chain-warning">Infrastructure bottleneck: Build more F&amp;B, services, or plazas.</p>' : ''}
+      <div class="chain-card-actions"><button class="btn-primary btn-sm" onclick="enterParkCampusView('${park.id}')">Open Campus</button></div>`;
     parkListEl.appendChild(card);
   }
 
@@ -6067,22 +6268,30 @@ function renderLeftSidebar(inspectedPlayer) {
   lbEl.innerHTML = "";
   const sorted = [...gameState.players].map((p, idx) => ({ p, idx })).sort((a, b) => b.p.totalAttendance - a.p.totalAttendance);
   for (const { p, idx } of sorted) {
-    const pct = Math.min(100, (p.totalAttendance / gameState.winAttendance) * 100);
     const chainTicketPrices = p.parks.map(park => Number(park.ticketPrice || 45));
     const chainMealPrices = p.parks.flatMap(park => park.rides
       .filter(ride => ride.facilityRole === "restaurant")
       .map(getRestaurantMealPrice));
     const card = document.createElement("div");
-    card.className = `card ${idx === gameState.inspectedPlayerIdx ? 'active-card' : ''}`;
-    card.style.cursor = "pointer";
-    card.onclick = () => {
+    card.className = `card chain-card rival-card ${idx === gameState.inspectedPlayerIdx ? 'active-card' : ''}`;
+    card.innerHTML = `<div class="rival-heading">
+        ${getLegendPortraitHTML(p.legend, "legend-avatar-thumb")}
+        <div class="rival-identity"><strong>${escapeHtml(p.chainName)}</strong><small>${escapeHtml(p.ceoName)} · ${p.parks.length} ${p.parks.length === 1 ? "park" : "parks"}</small></div>
+      </div>
+      <div class="chain-metrics">
+        <div><span>Attendance</span><strong>${p.totalAttendance.toLocaleString()}</strong></div>
+        <div><span>Treasury</span><strong>$${p.cash.toFixed(2)}M</strong></div>
+      </div>
+      <p class="chain-card-description">Gate: ${getChainPriceRange(chainTicketPrices)} · Food: ${getChainPriceRange(chainMealPrices)}</p>
+      <div class="chain-card-actions"><button class="btn-primary btn-sm inspect-chain" aria-label="Inspect parks for ${escapeHtml(p.chainName)}">Inspect Parks</button><button class="btn-outline btn-sm legend-chain" aria-label="View ${escapeHtml(p.legend.name)} legend info">Legend Info</button></div>`;
+    card.querySelector(".inspect-chain").addEventListener("click", () => {
       gameState.inspectedPlayerIdx = idx;
       gameState.selectedParkId = p.parks[0].id;
       gameState.selectedHexKey = p.parks[0].hexKey;
       switchSidebarTab("parks");
       renderAll();
-    };
-    card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:.38rem;">${getLegendPortraitHTML(p.legend, "legend-avatar-thumb")}<strong>${escapeHtml(p.chainName)}</strong></div><span style="font-size:.75rem;color:var(--accent-green);font-weight:700;">$${p.cash.toFixed(2)}M</span></div><div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem;margin-top:.1rem;"><span style="font-size:.68rem;color:var(--accent-gold);">CEO: ${escapeHtml(p.ceoName)} (${p.parks.length} Parks)</span><button class="btn-outline btn-sm" onclick="event.stopPropagation();openLegendInfoModal(${idx})" aria-label="View ${escapeHtml(p.legend.name)} legend info">👑 Legend Info</button></div><div style="font-size:.72rem;color:var(--accent-teal);margin-top:.18rem;">Att: <strong>${p.totalAttendance.toLocaleString()}</strong> (${pct.toFixed(1)}%) • Gate: ${getChainPriceRange(chainTicketPrices)} • Food: ${getChainPriceRange(chainMealPrices)}</div>`;
+    });
+    card.querySelector(".legend-chain").addEventListener("click", () => openLegendInfoModal(idx));
     lbEl.appendChild(card);
   }
 
@@ -6095,21 +6304,34 @@ function renderLeftSidebar(inspectedPlayer) {
     ...TRACKED_RIDE_CATALOG.filter(m => m.researchCost > 0).map(m => ({ ...m, cat: "Tracked" })),
     ...COASTER_CATALOG.filter(m => m.researchCost > 0).map(m => ({ ...m, cat: "Coaster" }))
   ];
+  let previousCategory = "";
   for (const m of allM) {
+    if (m.cat !== previousCategory) {
+      const heading = document.createElement("h4");
+      heading.className = "research-category-heading";
+      heading.textContent = m.cat === "Flat" ? "Flat Rides" : m.cat === "Tracked" ? "Tracked Rides" : "Coasters";
+      rdEl.appendChild(heading);
+      previousCategory = m.cat;
+    }
     const isUnl = gameState.unlockedRides.has(m.id);
     const eraOk = isModelEraAvailable(m.era);
     const c = +(m.researchCost * resMult).toFixed(2);
     const card = document.createElement("div");
-    card.className = "card";
+    card.className = "card chain-card research-card";
     const act = isUnl
       ? '<span class="badge badge-green">Unlocked</span>'
-      : (!eraOk ? `<span class="badge badge-purple">Yr ${ERA_UNLOCK_YEARS[m.era]}</span>` : `<button class="btn-gold btn-sm" ${activePlayer.cash < c ? 'disabled' : ''} onclick="researchRideDirectly('${m.id}', ${c}, '${escapeHtml(m.name)}')">R&D $${c}M</button>`);
-    card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>${escapeHtml(m.name)}</strong><div style="font-size:.66rem;color:var(--text-muted);">${m.cat} • ${m.era.toUpperCase()}</div></div>${act}</div>`;
+      : (!eraOk ? `<span class="badge badge-purple">Year ${ERA_UNLOCK_YEARS[m.era]}</span>` : `<button class="btn-gold btn-sm research-action" ${activePlayer.cash < c ? 'disabled' : ''}>R&amp;D $${c}M</button>`);
+    card.innerHTML = `<div class="research-card-copy"><strong>${escapeHtml(m.name)}</strong><small>${escapeHtml(m.era)} era</small></div>${act}`;
+    const researchButton = card.querySelector(".research-action");
+    if (researchButton) researchButton.addEventListener("click", () => researchRideDirectly(m.id, c, m.name));
     rdEl.appendChild(card);
   }
 
   document.getElementById("sidebarRecordsTableContainer").innerHTML = buildGlobalRecordsTableHTML();
-  document.getElementById("gameLogContainer").innerHTML = gameState.logs.map(l => `<div style="padding:.22rem 0;border-bottom:1px solid rgba(255,255,255,.05);">${escapeHtml(l)}</div>`).join("");
+  document.getElementById("btnFinalAwards").hidden = !gameState.finalAwards;
+  document.getElementById("gameLogContainer").innerHTML = gameState.logs.length
+    ? gameState.logs.map(l => `<div class="chain-event">${escapeHtml(l)}</div>`).join("")
+    : '<p class="chain-intro">No events yet.</p>';
 }
 
 function focusParkOnMap(parkId, openDrawer = false) {
@@ -6135,13 +6357,13 @@ function renderHexInspector() {
     const market = getHexMarketDetails(hex, owner);
     const rivalParks = getOpponentCannibalizationSummary(hex, owner.id);
     const summary = calculateParkScoreSummary(park, owner);
-    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><strong style="color:var(--accent-gold);font-size:.92rem;">🎡 ${escapeHtml(park.name)}</strong><span class="badge badge-teal">${market.total}x Att. Mod</span></div><div style="display:flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--text-muted);margin-top:.12rem;">${getLegendPortraitHTML(owner.legend, "legend-avatar-thumb")}<span>Owner: <strong>${escapeHtml(owner.chainName)}</strong> • ${escapeHtml(hex.regionName)} (${trait.name} ${market.base}x + Cluster ${market.cluster.bonus}x − Rival drain ${market.rivalPenalty}x; ${rivalParks.adjacent} adjacent, ${rivalParks.nearby} at distance 2)</span></div><div style="font-size:.72rem;color:var(--accent-gold);margin-top:.18rem;">Gate: $${Number(park.ticketPrice || 45).toFixed(0)} • Food: ${escapeHtml(getParkMealPriceText(park))}</div><div style="margin-top:.4rem;display:flex;justify-content:space-between;align-items:center;"><span>Score: <strong>${summary.finalScore.toFixed(1)} pts</strong></span><div style="display:flex;gap:.3rem;"><button class="btn-primary btn-sm" onclick="enterParkCampusView('${park.id}')">🔍 Open Campus</button></div></div>`;
+    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><strong style="color:var(--accent-gold);font-size:.92rem;">${escapeHtml(park.name)}</strong><span class="badge badge-teal">${market.total}x Att. Mod</span></div><div style="display:flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--text-muted);margin-top:.12rem;">${getLegendPortraitHTML(owner.legend, "legend-avatar-thumb")}<span>Owner: <strong>${escapeHtml(owner.chainName)}</strong> • ${escapeHtml(hex.regionName)} (${trait.name} ${market.base}x + Cluster ${market.cluster.bonus}x − Rival drain ${market.rivalPenalty}x; ${rivalParks.adjacent} adjacent, ${rivalParks.nearby} at distance 2)</span></div><div style="font-size:.72rem;color:var(--accent-gold);margin-top:.18rem;">Gate: $${Number(park.ticketPrice || 45).toFixed(0)} • Food: ${escapeHtml(getParkMealPriceText(park))}</div><div style="margin-top:.4rem;display:flex;justify-content:space-between;align-items:center;"><span>Score: <strong>${summary.finalScore.toFixed(1)} pts</strong></span><div style="display:flex;gap:.3rem;"><button class="btn-primary btn-sm" onclick="enterParkCampusView('${park.id}')">Open Campus</button></div></div>`;
   } else {
     const market = getHexMarketDetails(hex, activePlayer);
     const rivalParks = getOpponentCannibalizationSummary(hex, activePlayer.id);
     const check = canPlayerBuildParkOnHex(activePlayer, hex);
     const prices = getHexParkPricesForPlayer(activePlayer, hex);
-    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><strong>📍 ${escapeHtml(hex.regionName)} (${hex.col}, ${hex.row})</strong><span class="badge badge-gold">${trait.name} (${trait.attMult}x)</span></div><div style="font-size:.73rem;color:var(--accent-teal);margin-top:.18rem;"><strong>Total Market Multiplier: ${market.total}x</strong> (Base ${market.base}x + ${market.cluster.count} Nearby Parks = +${market.cluster.bonus}x − Rival drain ${market.rivalPenalty}x; ${rivalParks.adjacent} adjacent, ${rivalParks.nearby} at distance 2)</div><div style="font-size:.7rem;color:var(--text-muted);margin-top:.18rem;">Prices: Small <strong>$${prices.smallCost}M</strong> • Med <strong>$${prices.mediumCost}M</strong> • Large <strong>$${prices.largeCost}M</strong></div><div style="margin-top:.4rem;">${check.allowed ? `<button class="btn-gold btn-sm" style="width:100%;" onclick="openBuyParkOnHexModal('${hex.key}')">🏗️ Acquire Theme Park on This Hex</button>` : `<div style="color:var(--accent-red);font-size:.7rem;font-weight:600;">🚫 ${escapeHtml(check.reason)}</div>`}</div>`;
+    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><strong>${escapeHtml(hex.regionName)} (${hex.col}, ${hex.row})</strong><span class="badge badge-gold">${trait.name} (${trait.attMult}x)</span></div><div style="font-size:.73rem;color:var(--accent-teal);margin-top:.18rem;"><strong>Total Market Multiplier: ${market.total}x</strong> (Base ${market.base}x + ${market.cluster.count} Nearby Parks = +${market.cluster.bonus}x − Rival drain ${market.rivalPenalty}x; ${rivalParks.adjacent} adjacent, ${rivalParks.nearby} at distance 2)</div><div style="font-size:.7rem;color:var(--text-muted);margin-top:.18rem;">Prices: Small <strong>$${prices.smallCost}M</strong> • Med <strong>$${prices.mediumCost}M</strong> • Large <strong>$${prices.largeCost}M</strong></div><div style="margin-top:.4rem;">${check.allowed ? `<button class="btn-gold btn-sm" style="width:100%;" onclick="openBuyParkOnHexModal('${hex.key}')">Acquire Theme Park on This Hex</button>` : `<div style="color:var(--accent-red);font-size:.7rem;font-weight:600;">${escapeHtml(check.reason)}</div>`}</div>`;
   }
 }
 
@@ -6155,25 +6377,25 @@ function renderParkDrawer() {
   const prestige = calculateParkPrestigeMetrics(park, inspectedPlayer);
   const woodCounts = countParkWoodCoasters(park);
 
-  document.getElementById("drawerParkTitle").textContent = `🎡 ${park.name}`;
+  document.getElementById("drawerParkTitle").textContent = `${park.name}`;
   document.getElementById("drawerParkSub").textContent = `${hexObj ? hexObj.regionName : ''} • ${totMult}x Market • Score: ${summary.finalScore.toFixed(1)} pts • Market Saturation Efficiency: ${(summary.marketSaturationEfficiency * 100).toFixed(0)}% • Place-making: ${(prestige.placeMakingIndex * 100).toFixed(0)}%`;
   const identityBadges = {
-    thrill: { label: "🎢 Iron-Ride Thrill Park", style: "badge-red" },
-    resort: { label: "🏰 Immersive Resort Destination", style: "badge-blue" },
-    balanced: { label: "🎡 Balanced Regional Park", style: "badge-gold" }
+    thrill: { label: "Iron-Ride Thrill Park", style: "badge-red" },
+    resort: { label: "Immersive Resort Destination", style: "badge-blue" },
+    balanced: { label: "Balanced Regional Park", style: "badge-gold" }
   };
   const identityBadge = identityBadges[prestige.identity];
   const identityElement = document.getElementById("drawerParkIdentity");
   identityElement.textContent = identityBadge.label;
   identityElement.className = `badge ${identityBadge.style}`;
 
-  let parkOverview = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.35rem;"><div><div style="font-size:.72rem;color:var(--text-muted);">Wood Coasters: <strong>${woodCounts.totalWood}/4</strong> (Classic: ${woodCounts.classicWood}/2) • Expansion Lands: <strong>${park.expansionsBought}/${park.maxExpansions}</strong></div><div style="margin-top:.28rem;display:flex;gap:.28rem;flex-wrap:wrap;">${summary.hasGuestServices ? '<span class="badge badge-green">ℹ️ Guest Services OK</span>' : '<span class="badge badge-red">⚠️ No Guest Services (-5%)</span>'}${summary.hasBalancedBonus ? '<span class="badge badge-green">🌟 Balanced (+10%)</span>' : ''}${summary.infrastructureBottleneck ? '<span class="badge badge-red">⚠ Infrastructure Bottleneck: Build more F&amp;B, Services, or Plazas!</span>' : ''}${(park.recordTags || []).map(t => `<span class="badge badge-gold">🏆 ${escapeHtml(t)}</span>`).join("")}</div></div>${!isRO ? `<button class="icon-btn" onclick="openRenameModal('park', '${park.id}')">✏️ Rename Park</button>` : ''}</div></div>`;
+  let parkOverview = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.35rem;"><div><div style="font-size:.72rem;color:var(--text-muted);">Wood Coasters: <strong>${woodCounts.totalWood}/4</strong> (Classic: ${woodCounts.classicWood}/2) • Expansion Lands: <strong>${park.expansionsBought}/${park.maxExpansions}</strong></div><div style="margin-top:.28rem;display:flex;gap:.28rem;flex-wrap:wrap;">${summary.hasGuestServices ? '<span class="badge badge-green">Guest Services OK</span>' : '<span class="badge badge-red">No Guest Services (-5%)</span>'}${summary.hasBalancedBonus ? '<span class="badge badge-green">Balanced (+10%)</span>' : ''}${summary.infrastructureBottleneck ? '<span class="badge badge-red">Infrastructure Bottleneck: Build more F&amp;B, Services, or Plazas!</span>' : ''}${(park.recordTags || []).map(t => `<span class="badge badge-gold">${escapeHtml(t)}</span>`).join("")}</div></div>${!isRO ? `<button class="icon-btn" onclick="openRenameModal('park', '${park.id}')">Rename Park</button>` : ''}</div></div>`;
 
+  let parkPricing = "";
   if (!isRO) {
-    parkOverview += `<div class="card" style="padding:.7rem;">
+    parkPricing = `<div class="card park-pricing-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
-        <strong style="color:var(--accent-gold);">🎟️ Park Pricing</strong>
-        <span class="badge badge-gold">$${Number(park.ticketPrice || 45).toFixed(0)} gate</span>
+        <strong style="color:var(--accent-gold);">Park Pricing</strong>
       </div>
       <div style="display:flex;align-items:center;gap:.45rem;justify-content:space-between;margin-bottom:.45rem;">
         <span style="font-size:.72rem;color:var(--text-muted);">Ticket Price</span>
@@ -6187,28 +6409,24 @@ function renderParkDrawer() {
   }
 
   // 1. SELECTED HEX TILE & RIDE INSPECTOR CARD
-  let html = "";
+  let html = parkPricing;
   const selTile = park.tiles.find(t => t.key === gameState.selectedCampusTileKey) || park.tiles[0];
   if (selTile) {
     const tileZone = getZoneForTile(park, selTile);
     const ride = selTile.rideId ? park.rides.find(r => r.id === selTile.rideId) : null;
+    document.getElementById("parkZoneDrawer").dataset.panel = ride ? "edit" : "build";
     const stationLand = getTrainStationConnectedLand(park, selTile);
     const effTileLv = getEffectiveTileThemeLevel(selTile);
 
     html += `<div class="card" style="border-color:var(--accent-gold);">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem;">
-        <strong style="color:var(--accent-gold);">📍 Selected Hex Tile (${selTile.q}, ${selTile.r})</strong>
-        <span class="badge" style="background:${selTile.isTrainStationTile ? (ride && stationLand ? stationLand.color : '#e8a4df') : (tileZone ? tileZone.color : '#334155')};color:#000;">${selTile.isTrainStationTile ? 'Train Station Only' : (selTile.isEntrance ? 'Main Entrance' : (selTile.state === 'locked' || selTile.state === 'woods' ? '🔒 Expansion Plot' : (tileZone ? escapeHtml(tileZone.name) : 'Generic (Unzoned)')))}</span>
+        <strong style="color:var(--accent-gold);">Selected Hex Tile (${selTile.q}, ${selTile.r})</strong>
       </div>`;
 
     if (selTile.isEntrance) {
       html += `<div style="font-size:.76rem;color:var(--text-muted);">Fixed Park Entrance. This dedicated hex does not use a buildable land slot and cannot be demolished.</div>`;
     } else if (selTile.state === "locked" || selTile.state === "woods") {
-      const expansionCost = getParkExpansionCost(park);
-      const canUnlock = !isRO && tileZone && park.expansionsBought < park.maxExpansions &&
-        inspectedPlayer.cash >= expansionCost;
-      html += `<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.45rem;">${escapeHtml(tileZone?.name || "Expansion Land")} contains ${tileZone?.tileKeys.length || 0} buildable hexes. Unlock the whole land for $${expansionCost.toFixed(2)}M.</div>
-      ${!isRO && tileZone ? `<button class="btn-primary btn-sm" style="width:100%;" ${canUnlock ? '' : 'disabled'} onclick="unlockExpansionLand('${park.id}','${tileZone.id}')">🔓 Unlock Expansion Land ($${expansionCost.toFixed(2)}M)</button>` : ''}`;
+      html += `<div class="drawer-muted">This tile is in a locked expansion land. See Park Lands below to unlock it.</div>`;
     } else {
       // Cleared Buildable Tile Inspector
       const themeMismatch = selTile.themeLevel > 0 && effTileLv === 0;
@@ -6219,6 +6437,8 @@ function renderParkDrawer() {
       if (ride) {
         const rideScore = calculateRideTotalScore(ride, inspectedPlayer);
         const isWeenie = ride.facilityRole === "weenie";
+        const canMirrorFacility = ride.category === "facility" &&
+          ["toilets", "restaurant", "guest_services", "theater"].includes(ride.facilityRole);
         const effRideLv = getEffectiveRideThemeLevel(ride);
         const nextRideTier = RIDE_SCENERY_TIERS[effRideLv + 1];
         const catScale = isWeenie ? 2 : getCategorySceneryScale(ride.category);
@@ -6239,7 +6459,7 @@ function renderParkDrawer() {
             <span class="badge badge-gold">${rideScore.toFixed(1)} pts</span>
           </div>
           <div style="font-size:.7rem;color:var(--text-muted);margin:.15rem 0;">
-            ${escapeHtml(ride.modelName)} • ${isWeenie ? 'Weenie Building' : (ride.category === 'facility' ? 'Facility' : `${ride.lifespan}y lifespan`)}
+            ${ride.modelName !== ride.name ? `${escapeHtml(ride.modelName)} • ` : ""}${isWeenie ? 'Weenie Building' : (ride.category === 'facility' ? 'Facility' : `${ride.lifespan}y lifespan`)}
             ${isWeenie ? '' : ` • Yr ${Number(ride.age || 0).toFixed(1)} • Condition ${(getRideAgeMultiplier(ride) * 100).toFixed(0)}%`}
             ${ride.smoothnessTier ? ` • <strong>${ride.smoothnessTier}</strong>` : ''}
           </div>
@@ -6249,7 +6469,7 @@ function renderParkDrawer() {
           </div>
           ${ride.facilityRole === "restaurant" ? `<div class="card" style="margin:.4rem 0;background:rgba(245,158,11,.08);">
             <label for="mealPrice-${ride.id}" style="display:flex;justify-content:space-between;align-items:center;font-size:.76rem;color:var(--text-main);">
-              <strong>🍔 Meal Price:</strong>
+              <strong>Meal Price:</strong>
               <strong id="mealPriceValue-${ride.id}" style="color:var(--accent-gold);">$${getRestaurantMealPrice(ride)}</strong>
             </label>
             <input id="mealPrice-${ride.id}" type="range" min="${FOOD_AND_BEVERAGE_RULES.minMealPrice}" max="${FOOD_AND_BEVERAGE_RULES.maxMealPrice}" step="1" value="${getRestaurantMealPrice(ride)}" style="width:100%;margin:.35rem 0;" ${isRO ? "disabled" : `oninput="document.getElementById('mealPriceValue-${ride.id}').textContent='$'+this.value;document.getElementById('mealPriceAllValue-${ride.id}').textContent=this.value" onchange="setRestaurantMealPrice('${park.id}','${ride.id}',this.value)"`}>
@@ -6265,19 +6485,20 @@ function renderParkDrawer() {
             </div>
           </div>` : ""}
           ${!isRO ? `<div style="display:flex;gap:.3rem;flex-wrap:wrap;">
-            ${nextRideTier ? `<button class="btn-primary btn-sm" onclick="upgradeRideScenery('${park.id}','generic','${ride.id}')">🎨 +${isWeenie ? 'Building' : 'Ride'} Theme ($${nextRideCost}M)</button>` : ''}
-            ${!isWeenie && ride.status === "needs_maintenance" ? `<button class="btn-gold btn-sm" title="Maintenance service: $${maintenanceCost.toFixed(2)}M, based on raw ride cost" onclick="payRideMaintenance('${park.id}','generic','${ride.id}')">🔧 Maint ($${maintenanceCost.toFixed(2)}M)</button>` : ''}
-            ${!isWeenie && ride.status === "needs_repair" ? `<button class="btn-gold btn-sm" title="Repair: $${repairCost.toFixed(2)}M; raw base ride cost plus raw scenery, capped at 50% of base cost" onclick="payRideRepair('${park.id}','generic','${ride.id}')">🛠️ Repair ($${repairCost.toFixed(2)}M)</button>` : ''}
-            ${!isWeenie && ride.status === "needs_inspection" ? `<button class="btn-gold btn-sm" onclick="payRideInspection('${park.id}','generic','${ride.id}')">🕵️ Inspect ($0.50M)</button>` : ''}
-            ${ride.category !== "facility" ? `<button class="btn-outline btn-sm" title="Refurbish: $${refurbishCost.toFixed(2)}M; raw base ride cost plus raw scenery, capped at 50% of base cost" ${inspectedPlayer.cash < refurbishCost ? 'disabled' : ''} onclick="refurbishRide('${park.id}','${ride.id}')">🔄 Refurbish Ride ($${refurbishCost.toFixed(2)}M)</button>` : ''}
-            <button class="icon-btn" onclick="openRenameModal('ride','${park.id}','generic','${ride.id}')">✏️ Rename</button>
-            <button class="btn-danger btn-sm" style="margin-left:auto;" title="Demolition: $${demolitionCost.toFixed(2)}M; existing ground scenery is preserved" ${inspectedPlayer.cash < demolitionCost ? 'disabled' : ''} onclick="demolishSingleRide('${park.id}','generic','${ride.id}')">🗑️ Demolish / Replace ($${demolitionCost.toFixed(2)}M)</button>
+            ${canMirrorFacility ? `<button class="btn-outline btn-sm" aria-pressed="${ride.mirrored ? "true" : "false"}" onclick="toggleFacilityMirror('${park.id}','${ride.id}')">↔ Mirror Sprite: ${ride.mirrored ? "On" : "Off"}</button>` : ""}
+            ${nextRideTier ? `<button class="btn-primary btn-sm" onclick="upgradeRideScenery('${park.id}','generic','${ride.id}')">+${isWeenie ? 'Building' : 'Ride'} Theme ($${nextRideCost}M)</button>` : ''}
+            ${!isWeenie && ride.status === "needs_maintenance" ? `<button class="btn-gold btn-sm" title="Maintenance service: $${maintenanceCost.toFixed(2)}M, based on raw ride cost" onclick="payRideMaintenance('${park.id}','generic','${ride.id}')">Maint ($${maintenanceCost.toFixed(2)}M)</button>` : ''}
+            ${!isWeenie && ride.status === "needs_repair" ? `<button class="btn-gold btn-sm" title="Repair: $${repairCost.toFixed(2)}M; raw base ride cost plus raw scenery, capped at 50% of base cost" onclick="payRideRepair('${park.id}','generic','${ride.id}')">Repair ($${repairCost.toFixed(2)}M)</button>` : ''}
+            ${!isWeenie && ride.status === "needs_inspection" ? `<button class="btn-gold btn-sm" onclick="payRideInspection('${park.id}','generic','${ride.id}')">Inspect ($0.50M)</button>` : ''}
+            ${ride.category !== "facility" ? `<button class="btn-outline btn-sm" title="Refurbish: $${refurbishCost.toFixed(2)}M; raw base ride cost plus raw scenery, capped at 50% of base cost" ${inspectedPlayer.cash < refurbishCost ? 'disabled' : ''} onclick="refurbishRide('${park.id}','${ride.id}')">Refurbish Ride ($${refurbishCost.toFixed(2)}M)</button>` : ''}
+            <button class="icon-btn" onclick="openRenameModal('ride','${park.id}','generic','${ride.id}')">Rename</button>
+            <button class="btn-danger btn-sm" style="margin-left:auto;" title="Demolition: $${demolitionCost.toFixed(2)}M; existing ground scenery is preserved" ${inspectedPlayer.cash < demolitionCost ? 'disabled' : ''} onclick="demolishSingleRide('${park.id}','generic','${ride.id}')">Demolish / Replace ($${demolitionCost.toFixed(2)}M)</button>
           </div>` : ''}
         </div>`;
       } else if (!isRO) {
-        html += `<button class="btn-gold btn-sm" style="width:100%;margin-top:.2rem;" onclick="openBuildModal('${selTile.key}')">${selTile.isTrainStationTile ? '🚂 Build Park Train Station' : '➕ Construct Ride or Facility on This Hex'}</button>`;
+        html += `<button class="btn-gold btn-sm" style="width:100%;margin-top:.2rem;" onclick="openBuildModal('${selTile.key}')">${selTile.isTrainStationTile ? 'Build Park Train Station' : 'Construct Ride or Facility on This Hex'}</button>`;
         if (tileZone) {
-          html += `<button class="btn-outline btn-sm" style="width:100%;margin-top:.25rem;" onclick="openWeenieModal('${park.id}','${selTile.key}')">🏰 Build Themed Weenie</button>`;
+          html += `<button class="btn-outline btn-sm" style="width:100%;margin-top:.25rem;" onclick="openWeenieModal('${park.id}','${selTile.key}')">Build Themed Weenie</button>`;
         }
       }
     }
@@ -6295,13 +6516,14 @@ function renderParkDrawer() {
     const unlocked = zone.unlocked !== false;
     const landHexCount = zone.tileKeys?.length ?? park.tiles.filter(tile => tile.zoneId === zone.id).length;
     html += `<div class="card campus-land-card${unlocked ? "" : " locked"}" style="border-left:4px solid ${theme.borderColor};">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div class="campus-land-heading">
         <div>
           <strong>${escapeHtml(zone.name)}</strong>
-          <span class="badge land-theme-badge" style="--theme-accent:${theme.badgeColor};--theme-border:${theme.borderColor};margin-left:4px;">${unlocked ? `${escapeHtml(theme.name)} · ${landHexCount} Hexes` : `Expansion Plot · ${landHexCount} Hexes`}</span>
+          <span class="badge land-theme-badge" style="--theme-accent:${theme.badgeColor};--theme-border:${theme.borderColor};margin-left:4px;">${unlocked ? `${landHexCount} Hexes` : `Expansion Plot · ${landHexCount} Hexes`}</span>
         </div>
         <div style="display:flex;gap:.25rem;align-items:center;">
           ${unlocked ? `<span class="badge badge-gold">${ev.finalLandScore.toFixed(1)}p</span>` : ""}
+          ${unlocked && !isRO ? `<button class="icon-btn btn-sm" type="button" onclick="openRenameModal('plot','${park.id}','${zone.id}')" aria-label="Rename ${escapeHtml(zone.name)}">Rename</button>` : ""}
         </div>
       </div>
       ${unlocked ? `<label class="campus-land-theme-label">Land theme
@@ -6316,16 +6538,16 @@ function renderParkDrawer() {
       ${!isRO ? (() => {
         const upgrade = getThemedLandTileUpgrade(park, zone, inspectedPlayer);
         const label = upgrade.tiles.length && upgrade.nextTier
-          ? `🎨 Upgrade Land to ${upgrade.nextTier.name} · $${upgrade.cost.toFixed(2)}M`
+          ? `Upgrade Land to ${upgrade.nextTier.name} · $${upgrade.cost.toFixed(2)}M`
           : "✓ Land Fully Upgraded";
         return `<button class="btn-outline btn-sm themed-land-upgrade" style="margin-top:.35rem;" ${upgrade.tiles.length && inspectedPlayer.cash >= upgrade.cost ? "" : "disabled"} onclick="upgradeThemedLandTiles('${park.id}','${zone.id}')">${label}</button>`;
       })() : ""}
       <div style="display:flex;gap:.3rem;margin-top:.3rem;flex-wrap:wrap;">
-        <span class="badge ${ev.hasToilets ? 'badge-green' : 'badge-red'}">🚻 RR ${ev.hasToilets ? 'Covered' : 'Missing (-10%)'}</span>
-        <span class="badge ${ev.hasRestaurant ? 'badge-green' : 'badge-red'}">🍔 FB ${ev.hasRestaurant ? 'Covered' : 'Missing (-10%)'}</span>
+        <span class="badge ${ev.hasToilets ? 'badge-green' : 'badge-red'}">RR ${ev.hasToilets ? 'Covered' : 'Missing (-10%)'}</span>
+        <span class="badge ${ev.hasRestaurant ? 'badge-green' : 'badge-red'}">FB ${ev.hasRestaurant ? 'Covered' : 'Missing (-10%)'}</span>
       </div>
-      ` : `<div class="campus-expansion-copy">Locked land plot with ${zone.tileKeys.length} buildable hexes. Unlock it for $${getParkExpansionCost(park).toFixed(2)}M.</div>
-        ${!isRO ? `<button class="btn-primary btn-sm campus-expansion-button" ${inspectedPlayer.cash >= getParkExpansionCost(park) ? "" : "disabled"} onclick="unlockExpansionLand('${park.id}','${zone.id}')">🔓 Unlock Land ($${getParkExpansionCost(park).toFixed(2)}M)</button>` : ""}`}
+      ` : `<div class="campus-expansion-copy">Unlock this land to build attractions.</div>
+        ${!isRO ? `<button class="btn-primary btn-sm campus-expansion-button" ${inspectedPlayer.cash >= getParkExpansionCost(park) && park.expansionsBought < park.maxExpansions ? "" : "disabled"} onclick="unlockExpansionLand('${park.id}','${zone.id}')">Unlock Land ($${getParkExpansionCost(park).toFixed(2)}M)</button>` : ""}`}
     </div>`;
   }
 
@@ -6402,7 +6624,6 @@ function saveZoneEditor(parkId) {
   let targetZoneId = zEd.editingZoneId;
   if (targetZoneId) {
     const z = park.zones.find(zn => zn.id === targetZoneId);
-    z.name = `${theme.name} Land`;
     z.themeId = theme.id;
     z.color = theme.borderColor;
     // Remove tiles that were unchecked from this zone
@@ -6515,9 +6736,9 @@ function openBuyParkOnHexModal(hexKey) {
   const trait = HEX_TRAITS[hex.traitId];
   const totMult = getTotalHexAttendanceMultiplier(hex, player);
   const prices = getHexParkPricesForPlayer(player, hex);
-  document.getElementById("buyParkModalHeader").textContent = `🗺️ Acquire Park in ${hex.regionName} (${trait.name} • ${totMult}x Att)`;
+  document.getElementById("buyParkModalHeader").textContent = `Acquire Park in ${hex.regionName} (${trait.name} • ${totMult}x Att)`;
   const options = [["small", "Small", prices.smallCost], ["medium", "Medium", prices.mediumCost], ["large", "Large", prices.largeCost]];
-  document.getElementById("buyParkModalBody").innerHTML = `<div class="form-group"><label>New Park Name</label><div style="display:flex;gap:.5rem;"><input type="text" id="newParkNameInput" value="${generateRandomParkName()}"><button class="btn-outline btn-sm" onclick="document.getElementById('newParkNameInput').value=generateRandomParkName()">🎲</button></div></div><div class="form-group"><label for="newParkThemeSelect">Default Land Theme</label><select id="newParkThemeSelect">${LAND_THEMES.map(theme => `<option value="${theme.id}">${escapeHtml(theme.name)}</option>`).join("")}</select><div style="font-size:.7rem;color:var(--text-muted);">Each unlocked land can be themed separately after purchase.</div></div>${options.map(([tier, label, cost]) => `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>${label} Park (1 Starting Land)</strong><div style="font-size:.72rem;color:var(--text-muted);">${CAMPUS_PARK_LAYOUTS[tier].lands.length - 1} locked lands ($${CAMPUS_EXPANSION_COST}M each)</div></div><button class="btn-primary" ${player.cash < cost ? "disabled" : ""} onclick="purchaseNewParkOnHex('${hex.key}','${tier}',${cost})">Buy $${cost}M</button></div></div>`).join("")}`;
+  document.getElementById("buyParkModalBody").innerHTML = `<div class="form-group"><label>New Park Name</label><div style="display:flex;gap:.5rem;"><input type="text" id="newParkNameInput" value="${generateRandomParkName()}"><button class="btn-outline btn-sm" onclick="document.getElementById('newParkNameInput').value=generateRandomParkName()">Random</button></div></div><div class="form-group"><label for="newParkThemeSelect">Default Land Theme</label><select id="newParkThemeSelect">${LAND_THEMES.map(theme => `<option value="${theme.id}">${escapeHtml(theme.name)}</option>`).join("")}</select><div style="font-size:.7rem;color:var(--text-muted);">Each unlocked land can be themed separately after purchase.</div></div>${options.map(([tier, label, cost]) => `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>${label} Park (1 Starting Land)</strong><div style="font-size:.72rem;color:var(--text-muted);">${CAMPUS_PARK_LAYOUTS[tier].lands.length - 1} locked lands ($${CAMPUS_EXPANSION_COST}M each)</div></div><button class="btn-primary" ${player.cash < cost ? "disabled" : ""} onclick="purchaseNewParkOnHex('${hex.key}','${tier}',${cost})">Buy $${cost}M</button></div></div>`).join("")}`;
   document.getElementById("buyParkModal").classList.add("active");
 }
 
@@ -6642,12 +6863,12 @@ function openWeenieModal(parkId, tileKey) {
   if (!park || !tile || tile.state !== "cleared" || tile.isEntrance || tile.rideId || !zone) return;
 
   const theme = getLandTheme(zone.themeId);
-  document.getElementById("weenieModalTitle").textContent = `🏰 ${theme.name} Weenies`;
+  document.getElementById("weenieModalTitle").textContent = `${theme.name} Weenies`;
   document.getElementById("weenieModalBody").innerHTML = `
-    <p class="weenie-modal-note">Build only the landmark assigned to this land. Each weenie is limited to one per park, costs $${WEENIE_CATALOG[0].baseCost}M, and is automatically immersive.</p>
+    <p class="weenie-modal-note">Build the landmark assigned to this land, or choose an ancient monument available in any land. Each weenie is limited to one per park, costs $${WEENIE_CATALOG[0].baseCost}M, and is automatically immersive.</p>
     <div class="weenie-card-grid">
-      ${WEENIE_CATALOG.map(weenie => {
-        const themeMatches = weenie.themeId === zone.themeId;
+      ${WEENIE_CATALOG.filter(weenie => !weenie.legacy).map(weenie => {
+        const themeMatches = !weenie.themeId || weenie.themeId === zone.themeId;
         const alreadyBuilt = park.rides.some(ride =>
           ride.facilityRole === "weenie" && ride.modelId === weenie.id
         );
@@ -6663,7 +6884,7 @@ function openWeenieModal(parkId, tileKey) {
           <canvas class="weenie-preview" width="140" height="110" data-weenie-preview="${weenie.id}" aria-label="${escapeHtml(weenie.name)} preview"></canvas>
           <div class="weenie-card-copy">
             <strong>${escapeHtml(weenie.name)}</strong>
-            <small>${escapeHtml(getLandTheme(weenie.themeId).name)}</small>
+            <small>${escapeHtml(weenie.themeId ? getLandTheme(weenie.themeId).name : "All lands")}</small>
             <small>${status}</small>
             <button class="btn-gold btn-sm" ${canBuild ? "" : "disabled"} onclick="buildWeenie('${park.id}','${tile.key}','${weenie.id}')">
               Build ($${weenie.baseCost}M)
@@ -6675,7 +6896,7 @@ function openWeenieModal(parkId, tileKey) {
   document.querySelectorAll("[data-weenie-preview]").forEach(canvas => {
     const weenie = WEENIE_CATALOG.find(item => item.id === canvas.dataset.weeniePreview);
     const ctx = canvas.getContext("2d");
-    const pack = getCampusTileThemePack(weenie.themeId);
+    const pack = getCampusTileThemePack(zone.themeId);
     pack.drawThemeGround(ctx, 70, 56, 40, pack.pack, false);
     drawCampusWeenie(ctx, { id: `preview-${weenie.id}`, modelId: weenie.id }, { px: 70, py: 56 });
   });
@@ -6690,7 +6911,7 @@ function buildWeenie(parkId, tileKey, weenieId) {
   const definition = WEENIE_CATALOG.find(item => item.id === weenieId);
   if (!park || !tile || !zone || !definition ||
       tile.state !== "cleared" || tile.isEntrance || tile.rideId ||
-      zone.themeId !== definition.themeId ||
+      (definition.themeId && zone.themeId !== definition.themeId) ||
       park.rides.some(ride => ride.facilityRole === "weenie" && ride.modelId === definition.id)) {
     return;
   }
@@ -6752,6 +6973,23 @@ function populateInitialSceneryDropdown(cat) {
   sel.innerHTML = RIDE_SCENERY_TIERS.map(t => `<option value="${t.level}">${t.name} ($${+(t.cost * scale * legMult).toFixed(2)}M • +${t.points} base pts)</option>`).join("");
 }
 
+const MANUFACTURER_LOGO_FILES = {
+  zampini: "zampini_logo.png",
+  intramax: "intramax_logo.png",
+  bh: "b&h_logo.png",
+  gerstmann: "gerstmann_logo.png",
+  macht: "macht_logo.png",
+  velkona: "velkona_logo.png",
+  rmc: "rusty_mountain_logo.png",
+  sankyo: "sankyo_logo.png",
+  vector_dynamics: "vector_logo.png",
+  lawson: "lawson_logo.png",
+  fbs: "FBS_logo.png",
+  hauss: "hauss_logo.png",
+  gravityworks: "gravityworks_logo.png",
+  gtc: "gtc_logo.png"
+};
+
 function switchBuildCategory(cat, manufacturerId = null) {
   gameState.buildContext.category = cat;
   gameState.buildContext.selectedModelId = null;
@@ -6778,6 +7016,10 @@ function switchBuildCategory(cat, manufacturerId = null) {
         : cat === "legendary" ? LEGENDARY_RIDE_CATALOG : FACILITY_CATALOG;
   const list = allModels.filter(model => primaryTile.isTrainStationTile ? model.isTrain : !model.isTrain);
   const usesManufacturer = ["flat", "tracked", "coaster"].includes(cat);
+  document.getElementById("buildRideModal").dataset.view =
+    usesManufacturer && !manufacturerId ? "manufacturers" : "attractions";
+  const inspector = document.querySelector("#buildRideModal .ride-inspector-pane");
+  inspector.hidden = usesManufacturer && !manufacturerId;
   if (usesManufacturer && !manufacturerId) {
     const manufacturerChoices = new Map();
     for (const model of list) {
@@ -6789,31 +7031,12 @@ function switchBuildCategory(cat, manufacturerId = null) {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([id, manufacturer]) => {
         const name = manufacturer?.name || "Independent";
-        const origin = manufacturer?.origin || "No manufacturer modifiers";
-        const models = list.filter(model => getManufacturerIdsForRide(model, cat).includes(id));
-        const costMod = cat === "coaster"
-          ? (manufacturer?.costMod || 0)
-          : (manufacturer?.flatCostMod ?? manufacturer?.costMod ?? 0);
-        const badges = [
-          costMod ? `${costMod > 0 ? "+" : ""}${Math.round(costMod * 100)}% Cost` : "",
-          manufacturer?.issueMod ? `${manufacturer.issueMod > 0 ? "+" : ""}${Math.round(manufacturer.issueMod * 100)}% Issues` : "",
-          manufacturer?.issueModAfterTurnValue
-            ? `+${Math.round(manufacturer.issueModAfterTurnValue * 100)}% Issues after Turn ${manufacturer.issueModAfterTurn}`
-            : "",
-          manufacturer && manufacturer.capMult !== 1 ? `${manufacturer.capMult}x Capacity` : "",
-          manufacturer?.pointsMod ? `+${Math.round(manufacturer.pointsMod * 100)}% Points` : "",
-          manufacturer?.smoothnessRule === "always_smooth" ? "Always Smooth" :
-            manufacturer?.smoothnessRule === "no_rough" ? "No Rough" :
-              manufacturer?.smoothnessRule === "no_fine" ? "No Fine" : ""
-        ].filter(Boolean);
-        return `<button type="button" class="manufacturer-card" onclick="switchBuildCategory('${cat}','${id}')">
-          <strong>${escapeHtml(name)}</strong><span>${escapeHtml(origin)}</span>
-          <small>${models.length} ride models</small>
-          <span class="manufacturer-traits">${badges.map(badge => `<i>${escapeHtml(badge)}</i>`).join("") || "<i>Baseline</i>"}</span>
-          ${manufacturer?.desc ? `<small class="manufacturer-description">${escapeHtml(manufacturer.desc)}</small>` : ""}
+        const logoFile = MANUFACTURER_LOGO_FILES[id];
+        return `<button type="button" class="manufacturer-card" aria-label="${escapeHtml(name)}" title="${escapeHtml(name)}" onclick="switchBuildCategory('${cat}','${id}')">
+          ${logoFile ? `<img class="manufacturer-logo" src="Images/${logoFile}" alt="" loading="lazy">` : `<span class="manufacturer-logo-fallback">${escapeHtml(name)}</span>`}
         </button>`;
       }).join("");
-    catalogEl.innerHTML = `<div class="manufacturer-grid" aria-label="Ride manufacturers">${manufacturerCards}</div>`;
+    catalogEl.innerHTML = `<h3 class="drawer-section-title">Choose a manufacturer</h3><div class="manufacturer-grid" aria-label="Ride manufacturers">${manufacturerCards}</div>`;
     clearRideInspector();
     return;
   }
@@ -6823,7 +7046,7 @@ function switchBuildCategory(cat, manufacturerId = null) {
   if (usesManufacturer) {
     const manufacturer = getRideManufacturer(displayedModels[0], cat, manufacturerId);
     catalogEl.innerHTML = `<button type="button" class="btn-outline btn-sm manufacturer-back" onclick="switchBuildCategory('${cat}')">← All ${cat === "coaster" ? "Coaster" : cat === "tracked" ? "Tracked Ride" : "Flat Ride"} Manufacturers</button>
-      <div class="manufacturer-selected">${escapeHtml(manufacturer?.name || "Independent")} ${manufacturer ? `• ${escapeHtml(manufacturer.origin)}` : "• No manufacturer modifiers"}</div>`;
+      <div class="manufacturer-selected"><strong>${escapeHtml(manufacturer?.name || "Independent")}</strong>${manufacturer?.origin && manufacturer.origin !== manufacturer.name ? `<span>${escapeHtml(manufacturer.origin)}</span>` : ""}<small>${escapeHtml(manufacturer?.desc || "No manufacturer modifiers")}</small></div>`;
   }
   if (cat === "facility") {
     const zone = getZoneForTile(park, primaryTile);
@@ -6833,7 +7056,7 @@ function switchBuildCategory(cat, manufacturerId = null) {
     weenieRow.className = "ride-list-row";
     weenieRow.disabled = !zone || weenieAlreadyBuilt || player.cash < WEENIE_CATALOG[0].baseCost;
     weenieRow.setAttribute("aria-label", `Themed Weenie, $${WEENIE_CATALOG[0].baseCost.toFixed(2)} million`);
-    weenieRow.innerHTML = `<span class="ride-mini-icon">🏰</span>
+    weenieRow.innerHTML = `<span class="ride-mini-icon">L</span>
       <span class="ride-list-copy"><strong>Themed Weenie</strong>
       <small>Land-specific landmark • Base $${WEENIE_CATALOG[0].baseCost.toFixed(2)}M</small>
       <span class="ride-list-badges"><span class="badge badge-teal">${zone ? escapeHtml(getLandTheme(zone.themeId).name) : "Requires a themed land"}</span></span></span>`;
@@ -6868,7 +7091,7 @@ function switchBuildCategory(cat, manufacturerId = null) {
       !check.allowed ? check.reason : (!isUnl && m.researchCost > 0 ? "Research required" : "")
     ].filter(Boolean);
     row.innerHTML = `<span class="ride-mini-icon">${getRideCatalogIcon(m, cat)}</span>
-      <span class="ride-list-copy"><strong>${escapeHtml(m.name)}</strong><small>Base $${m.cost.toFixed(2)}M</small>
+      <span class="ride-list-copy"><strong>${escapeHtml(m.name)}</strong>
       <span class="ride-list-badges">${badges.map((badge, index) => `<span class="badge ${!check.allowed && index === badges.length - 1 ? "badge-red" : "badge-teal"}">${escapeHtml(badge)}</span>`).join("")}</span></span>`;
     row.onclick = () => selectModelForCustomizer(m.id, modelCategory, manufacturerId);
     catalogEl.appendChild(row);
@@ -6885,20 +7108,18 @@ function switchBuildCategory(cat, manufacturerId = null) {
 }
 
 function getRideCatalogIcon(model, category) {
-  if (category === "legendary") return "🏆";
+  if (category === "legendary") return "L";
   if (category === "facility") {
-    if (model.facilityRole === "restaurant") return "🍽️";
-    if (model.facilityRole === "guest_services") return "ℹ️";
-    if (model.facilityRole === "theater") return "🎭";
-    if (model.facilityRole === "weenie") return "🏰";
-    return "🚻";
+    if (model.facilityRole === "restaurant") return "F&B";
+    if (model.facilityRole === "guest_services") return "GS";
+    if (model.facilityRole === "theater") return "Show";
+    if (model.facilityRole === "weenie") return "Landmark";
+    return "RR";
   }
-  if (model.id === "air_race") return "🎡";
-  if (category === "coaster") return "🎢";
-  if (category === "tracked") return model.id === "stage_show" ? "🎭" : "🌊";
-  if (model.subType === "transport") return "🚂";
-  if (model.subType === "family") return "🎠";
-  return "🎢";
+  if (category === "coaster") return "C";
+  if (category === "tracked") return model.id === "stage_show" ? "Show" : "T";
+  if (model.subType === "transport") return "T";
+  return "F";
 }
 
 function clearRideInspector() {
@@ -6906,7 +7127,7 @@ function clearRideInspector() {
   document.getElementById("ridePreviewName").textContent = "No available attractions";
   document.getElementById("ridePreviewCategory").textContent = "Unavailable";
   document.getElementById("ridePreviewStats").textContent = "";
-  document.getElementById("ridePreviewGraphic").innerHTML = "<span>🎢</span>";
+  document.getElementById("ridePreviewGraphic").innerHTML = "<span>Ride</span>";
   document.getElementById("btnConfirmBuildRide").disabled = true;
   document.getElementById("btnConfirmBuildRide").textContent = "Build Attraction";
 }
@@ -6934,6 +7155,9 @@ function getRideDisplayCategory(model, cat) {
 function renderRidePreview(model, cat, manufacturerId = null) {
   const categoryName = getRideDisplayCategory(model, cat);
   const player = gameState.players[gameState.activePlayerIdx];
+  const park = player.parks.find(item => item.id === gameState.selectedParkId);
+  const targetTile = park?.tiles.find(tile => tile.key === gameState.buildContext.plotId);
+  const zone = targetTile && getZoneForTile(park, targetTile);
   const baseRide = {
     category: cat,
     modelId: model.id,
@@ -6950,28 +7174,62 @@ function renderRidePreview(model, cat, manufacturerId = null) {
   document.getElementById("ridePreviewStats").innerHTML = `
     <span>Base $${model.cost.toFixed(2)}M</span>
     ${RIDE_CAPACITIES[model.id] ? `<span>Capacity ${getManufacturerCapacity(RIDE_CAPACITIES[model.id].parkCapacity, manufacturerId).toLocaleString()} guests/day (${(getManufacturerCapacity(RIDE_CAPACITIES[model.id].parkCapacity, manufacturerId) * 365).toLocaleString()} per year) • ${getRideCycleCapacity(model.id, manufacturerId)} per cycle</span>` : ""}
-    ${getRideManufacturer(model, cat, manufacturerId) ? `<span>Manufacturer: ${escapeHtml(getRideManufacturer(model, cat, manufacturerId).name)}</span>` : ""}
     <span>Upkeep $${upkeep.toFixed(2)}M/year</span>
     <span>Base ${Number(basePoints).toFixed(1)} pts</span>
     ${model.researchCost > 0 && !gameState.unlockedRides.has(model.id) ? `<span>Research $${(model.researchCost * getPlayerResearchFeeMultiplier(player)).toFixed(2)}M</span>` : ""}`;
   const graphic = document.getElementById("ridePreviewGraphic");
+  if (cat === "facility") {
+    const canvas = document.createElement("canvas");
+    canvas.width = 320;
+    canvas.height = 240;
+    graphic.replaceChildren(canvas);
+    const ctx = canvas.getContext("2d");
+    if (model.facilityRole === "toilets") {
+      const artwork = getCampusFacilityArtwork(model.facilityRole, zone?.themeId || park?.themeId || "classic");
+      const sprite = artwork.pack.bake(NEW_SPRITE_PACKS.facilities.toilets === artwork.pack ? artwork.themeId : "classic", 56 * FACILITY_SPRITE_SCALE, {
+        accent: "#0284c7", pixelRatio: 2
+      });
+      artwork.pack.drawBaked(ctx, 160, 168, sprite);
+    } else if (model.facilityRole === "restaurant") {
+      const artwork = getCampusFacilityArtwork(model.facilityRole, zone?.themeId || park?.themeId || "classic");
+      const sprite = artwork.pack.bake(NEW_SPRITE_PACKS.facilities.restaurant === artwork.pack ? artwork.themeId : "classic", 56 * FACILITY_SPRITE_SCALE, {
+        accent: "#0284c7", pixelRatio: 2
+      });
+      artwork.pack.drawBaked(ctx, 160, 168, sprite);
+    } else if (model.facilityRole === "guest_services") {
+      const artwork = getCampusFacilityArtwork(model.facilityRole, zone?.themeId || park?.themeId || "classic");
+      const sprite = artwork.pack.bake(
+        NEW_SPRITE_PACKS.facilities.guest_services === artwork.pack ? artwork.themeId : "classic",
+        72 * FACILITY_SPRITE_SCALE, { accent: "#0284c7", pixelRatio: 2 }
+      );
+      artwork.pack.drawBaked(ctx, 160, 155, sprite);
+    } else if (model.facilityRole === "theater") {
+      const themedTheater = NEW_WORLD_THEATER_PACKS[zone?.themeId || park?.themeId];
+      if (themedTheater) themedTheater(ctx, 160, 155, 62 * FACILITY_SPRITE_SCALE, { t: 0.4 });
+      else drawTheater(ctx, 160, 155, 62, { accent: "#0284c7", tile: false });
+    } else {
+      graphic.innerHTML = `<span>${getRideCatalogIcon(model, cat)}</span>`;
+    }
+    return;
+  }
   const drawNames = {
     air_race: "drawAirRace", bumper_cars: "drawBumperCars", carousel: "drawCarousel",
     chair_swings: "drawChairSwing", claw: "drawClaw", drop_tower: "drawDropTower",
     enterprise: "drawEnterprise", ferris_wheel: "drawFerrisWheel", flyer: "drawFlyerRide",
     giant_discovery: "drawGiantDiscovery", pirate_ship: "drawPirateShip", scrambler: "drawScrambler",
-    sky_fly: "drawSkyFly", top_spin: "drawTopSpin", disco: "drawDiskO",
+    sky_fly: "drawSkyFly", top_spin: "drawTopSpin", disco: "drawDiskO", teacups: "drawTeacups",
     log_flume: "drawFlumeSide", rapids: "drawRapidsSide", stage_show: "drawTheater",
     toilets: "drawRestrooms", guest_services: "drawGuestServices", train: "drawTrainStation",
     classic_wood: "drawWoodCoasterSide",
     antique_cars: "drawAntiqueCars",
+    crazy_bus: "drawCrazyBus",
     demolition_derby: "drawDemolitionDerby",
     dark_ride: "drawDarkRideSide",
     flying_theater: "drawFlyingTheater"
   };
-  const drawRide = model.id === "boomerang" ? BOOMERANG_ART.draw
+  let drawRide = CLASSIC_COASTER_PACKS[model.id]?.side || (model.id === "boomerang" ? BOOMERANG_ART.draw
     : model.id === "dive" ? DIVE_ART.side
-      : model.id === "train" ? TRAIN_STATION_ART.draw : window[drawNames[model.id]];
+      : model.id === "train" ? TRAIN_STATION_ART.draw : window[drawNames[model.id]]);
   if (!drawRide) {
     graphic.innerHTML = `<span>${getRideCatalogIcon(model, cat)}</span>`;
     return;
@@ -6981,8 +7239,25 @@ function renderRidePreview(model, cat, manufacturerId = null) {
   canvas.height = 240;
   graphic.replaceChildren(canvas);
   const ctx = canvas.getContext("2d");
+  const previewRide = {
+    ...baseRide,
+    zoneId: zone?.id,
+    themedForZoneId: zone?.id,
+    themeLevel: 0
+  };
+  const previewSkinOptions = {
+    accent: zone?.color || "#0284c7",
+    themeId: getCampusRideSkinThemeId(zone?.themeId || park?.themeId || "classic"),
+    rideThemeTier: getEffectiveRideThemeLevel(previewRide),
+    ...(CLASSIC_COASTER_PACKS[model.id] ? { scale: getBakeScale() } : {})
+  };
+  if (NEW_SPRITE_PACKS.rides[model.id]) {
+    const artwork = getCampusRideArtwork(model.id, zone?.themeId || park?.themeId || "classic", 0, drawRide);
+    drawRide = artwork.draw;
+    previewSkinOptions.themeId = artwork.themeId;
+  }
   drawRide(ctx, 160, 155, 72, {
-    accent: "#0284c7", tile: false, t: 0.7, fly: 0.5, tilt: 1.1, r: 0.7, tm: 0
+    ...previewSkinOptions, tile: false, t: 0.7, fly: 0.5, tilt: 1.1, r: 0.7, tm: 0
   });
 }
 
@@ -7004,7 +7279,7 @@ function selectModelForCustomizer(modelId, cat, manufacturerId = gameState.build
 
   const manufacturer = getRideManufacturer(model, cat, manufacturerId);
   document.getElementById("customizerModelTitle").textContent =
-    `Configure ${model.name}${manufacturer ? ` • ${manufacturer.name}` : ""}`;
+    "Customize Attraction";
   renderRidePreview(model, cat, manufacturerId);
   document.getElementById("customRideName").value = cat === "facility" ? model.name : generateRandomRideName();
   populateInitialSceneryDropdown(cat === "legendary" ? "tracked" : cat);
@@ -7049,7 +7324,7 @@ function selectModelForCustomizer(modelId, cat, manufacturerId = gameState.build
     slidersEl.innerHTML = h;
     const smoothnessRule = MANUFACTURERS[manufacturerId]?.smoothnessRule;
     const smoothnessLabel = hasCustomTrait(player, "pos_auto_smooth") || smoothnessRule === "always_smooth"
-      ? "✨ Guaranteed Smooth"
+      ? "Guaranteed Smooth"
       : smoothnessRule === "no_rough" ? "Fine or Smooth only"
         : smoothnessRule === "no_fine" ? "Rough or Smooth only"
           : `Smoothness Odds (${model.gen.toUpperCase()})`;
@@ -7453,6 +7728,11 @@ function researchRideDirectly(modelId, cost, modelName) {
 
 function endPlayerTurn() {
   if (gameState.gameOver) return;
+  const player = gameState.players[gameState.activePlayerIdx];
+  if (GAME_SETTINGS.confirmEndTurn && player.cash >= 2 && player.parks.some(park =>
+    park.tiles.some(tile => tile.landId === "south_entry" && tile.state === "cleared" &&
+      !tile.isEntrance && !tile.isTrainStationTile && !tile.rideId)
+  ) && !confirm("You have at least $2M and empty starter tiles. End your turn anyway?")) return;
   let nextIdx = gameState.activePlayerIdx + 1;
   while (nextIdx < gameState.players.length && gameState.players[nextIdx].isAI) nextIdx++;
   if (nextIdx < gameState.players.length) {
@@ -8184,7 +8464,7 @@ function resolveSeasonEnd() {
               park.freakAccidentThisYear = true;
               r.status = "freak_accident_down";
               r.justHadFreakAccident = true;
-              addNewsHeadline("accident", `🚨 <strong>BREAKING:</strong> A 1-in-1000 Freak Accident occurred on <strong>"${escapeHtml(r.name)}"</strong> (${escapeHtml(r.modelName)}) at <strong>${escapeHtml(park.name)}</strong>! Park attendance dropped to 0.7x and the ride is closed for 1 year pending a $0.50M inspection!`);
+              addNewsHeadline("accident", `<strong>BREAKING:</strong> A 1-in-1000 Freak Accident occurred on <strong>"${escapeHtml(r.name)}"</strong> (${escapeHtml(r.modelName)}) at <strong>${escapeHtml(park.name)}</strong>! Park attendance dropped to 0.7x and the ride is closed for 1 year pending a $0.50M inspection!`);
             }
           }
         }
@@ -8348,7 +8628,7 @@ function resolveSeasonEnd() {
               const cultChance = player.legend.id === "anton_pieck" ? 2 / 3 : 1 / 3;
               if (cultRoll < cultChance) {
                 r.cultClassic = true;
-                addNewsHeadline("cult", `🌟 <strong>CULT CLASSIC:</strong> ${escapeHtml(r.modelName)} <strong>"${escapeHtml(r.name)}"</strong> at <strong>${escapeHtml(park.name)}</strong> completed its first lifecycle and achieved permanent Cult Classic status (+20% score)!`);
+                addNewsHeadline("cult", `<strong>CULT CLASSIC:</strong> ${escapeHtml(r.modelName)} <strong>"${escapeHtml(r.name)}"</strong> at <strong>${escapeHtml(park.name)}</strong> completed its first lifecycle and achieved permanent Cult Classic status (+20% score)!`);
               }
             }
             if (player.isAI) {
@@ -8368,8 +8648,8 @@ function resolveSeasonEnd() {
     }
   }
   const nextYear = gameState.year + 1;
-  if (nextYear === 15) addNewsHeadline("era", "🚀 <strong>YEAR 15 — MODERN ERA UNLOCKED!</strong>");
-  if (nextYear === 30) addNewsHeadline("era", "⚡ <strong>YEAR 30 — ADVANCED ERA UNLOCKED!</strong>");
+  if (nextYear === 15) addNewsHeadline("era", "<strong>YEAR 15 — MODERN ERA UNLOCKED!</strong>");
+  if (nextYear === 30) addNewsHeadline("era", "<strong>YEAR 30 — ADVANCED ERA UNLOCKED!</strong>");
   attendanceRows.forEach((row, index) => { row.newTreasury = gameState.players[index].cash; });
   gameState.lastTurnReport = {
     page: 1,
@@ -8426,8 +8706,8 @@ function ordinalSuffix(i) {
 }
 
 function generateRideAdditionHeadline(ceoName, parkName, plotName, rideName, modelName, plotRideCount, smoothTier) {
-  let b = `📰 <strong>${escapeHtml(parkName)}</strong> added a brand new ${escapeHtml(modelName)}, called <strong>"${escapeHtml(rideName)}"</strong>! This is the ${ordinalSuffix(plotRideCount)} addition in the <em>${escapeHtml(plotName)}</em> area of the park.`;
-  if (smoothTier) b += ` 🗣️ <em>"Fans say the ride is <strong>${smoothTier}</strong>!"</em>`;
+  let b = `<strong>${escapeHtml(parkName)}</strong> added a brand new ${escapeHtml(modelName)}, called <strong>"${escapeHtml(rideName)}"</strong>! This is the ${ordinalSuffix(plotRideCount)} addition in the <em>${escapeHtml(plotName)}</em> area of the park.`;
+  if (smoothTier) b += ` <em>"Fans say the ride is <strong>${smoothTier}</strong>!"</em>`;
   return b;
 }
 
@@ -8452,7 +8732,7 @@ function stepReportPage(delta) {
 
 function updateReportPageVisibility() {
   const p = gameState.lastTurnReport.page;
-  document.getElementById("yearEndModalTitle").textContent = `📊 End of Year ${gameState.lastTurnReport.yearFinished} Report`;
+  document.getElementById("yearEndModalTitle").textContent = `End of Year ${gameState.lastTurnReport.yearFinished} Report`;
   document.getElementById("yearEndStepIndicator").textContent = `Page ${p} of 4`;
   for (let i = 1; i <= 4; i++) {
     document.getElementById(`reportTabBtn${i}`).classList.toggle("active", p === i);
@@ -8460,7 +8740,7 @@ function updateReportPageVisibility() {
   }
   document.getElementById("btnReportPrev").style.display = p > 1 ? "inline-flex" : "none";
   const nextBtn = document.getElementById("btnReportNext");
-  const labels = ["", "Next Page: News Wire ➔", "Next Page: Awards & Records ➔", "Next Page: Maintenance & Safety ➔", `Start Year ${gameState.year + 1} ➔`];
+  const labels = ["", "Next Page: News Wire ➔", "Next Page: Awards & Records ➔", "Next Page: Maintenance & Safety ➔", gameState.year >= gameState.maxYears ? "View Final Awards ➔" : `Start Year ${gameState.year + 1} ➔`];
   nextBtn.textContent = labels[p];
   nextBtn.className = p === 4 ? "btn-primary" : "btn-gold";
 }
@@ -8470,11 +8750,11 @@ function renderReportPage1() {
   const money = value => `${value >= 0 ? "+" : "-"}$${Math.abs(value).toFixed(2)}M`;
   const climateBadge = document.getElementById("globalTourismBadge");
   if (tourismClimate) {
-    climateBadge.innerHTML = `<span class="badge ${tourismClimate.badgeClass}">${tourismClimate.label} (${tourismClimate.mult.toFixed(2)}x)</span>`;
+    climateBadge.innerHTML = `<span class="badge ${escapeHtml(tourismClimate.badgeClass)}">${escapeHtml(tourismClimate.label)} (${tourismClimate.mult.toFixed(2)}x)</span>`;
   } else {
     climateBadge.textContent = "";
   }
-  document.getElementById("reportPage1").innerHTML = `<h4 style="margin-bottom:.55rem;color:var(--accent-teal);">📈 Chain-Wide Yearly Attendance & Revenue</h4>
+  document.getElementById("reportPage1").innerHTML = `<h4 style="margin-bottom:.55rem;color:var(--accent-teal);">Chain-Wide Yearly Attendance & Revenue</h4>
     <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.45rem;">Gross revenue is reduced by progressive chain overhead, ride upkeep, and F&amp;B costs.</div>
     <table><thead><tr><th>CEO &amp; Chain</th><th>Parks</th><th>Yearly Attendance</th><th>Gate Revenue</th><th>F&amp;B Sales</th><th>F&amp;B COGS &amp; OpEx</th><th>Ride Upkeep</th><th>Corporate Overhead</th><th>Net Season Profit</th><th>Updated Treasury</th></tr></thead>
     <tbody>${attendanceRows.map(row => `<tr>
@@ -8493,23 +8773,26 @@ function renderReportPage1() {
 
 function renderReportPage2() {
   const { newsHeadlines, yearFinished } = gameState.lastTurnReport;
-  document.getElementById("reportPage2").innerHTML = `<h4 style="margin-bottom:.65rem;color:var(--accent-gold);">🗞️ Coaster Chronicle — Year ${yearFinished} News Wire</h4>${(!newsHeadlines || !newsHeadlines.length) ? '<div class="card" style="color:var(--text-muted);">A quiet year across the industry.</div>' : newsHeadlines.map(item => `<div class="news-card ${item.type}"><div style="font-size:.84rem;line-height:1.42;">${item.htmlText}</div></div>`).join("")}`;
+  const visibleNews = (newsHeadlines || []).filter(item =>
+    GAME_SETTINGS.eventPopupMode === "all" ||
+    (GAME_SETTINGS.eventPopupMode === "major" && ["accident", "era", "cult"].includes(item.type)));
+  document.getElementById("reportPage2").innerHTML = `<h4 style="margin-bottom:.65rem;color:var(--accent-gold);">Coaster Chronicle — Year ${yearFinished} News Wire</h4>${!visibleNews.length ? '<div class="card" style="color:var(--text-muted);">No news shown for the current notification setting.</div>' : visibleNews.map(item => `<div class="news-card ${escapeHtml(item.type)}"><div style="font-size:.84rem;line-height:1.42;">${item.htmlText}</div></div>`).join("")}`;
 }
 
 function renderReportPage3() {
   const { awardsGiven, yearFinished } = gameState.lastTurnReport;
-  let h = `<h4 style="margin-bottom:.55rem;color:var(--accent-gold);">🏅 Annual Golden Ticket Awards</h4>`;
+  let h = `<h4 style="margin-bottom:.55rem;color:var(--accent-gold);">Annual Golden Ticket Awards</h4>`;
   if (yearFinished <= 5) h += `<div class="card" style="color:var(--text-muted);">Awards ceremonies begin after Year 5.</div>`;
   else if (!awardsGiven.length) h += `<div class="card" style="color:var(--text-muted);">No eligible winners this season.</div>`;
-  else h += `<table style="margin-bottom:1rem;"><thead><tr><th>Award</th><th>Winner</th><th>Chain</th><th>Score</th><th>Prize</th></tr></thead><tbody>${awardsGiven.map(a => `<tr><td><strong>🏆 ${escapeHtml(a.title)}</strong></td><td>${escapeHtml(a.winner)}</td><td>${escapeHtml(a.ceo)}</td><td>${a.score}</td><td style="color:var(--accent-green);font-weight:700;">+$${a.cash.toFixed(2)}M</td></tr>`).join("")}</tbody></table>`;
-  h += `<h4 style="margin-bottom:.55rem;color:var(--accent-teal);">🌍 Global World Record Holders (+${getRecordBonusValue()} pt each)</h4>${buildGlobalRecordsTableHTML()}`;
+  else h += `<table style="margin-bottom:1rem;"><thead><tr><th>Award</th><th>Winner</th><th>Chain</th><th>Score</th><th>Prize</th></tr></thead><tbody>${awardsGiven.map(a => `<tr><td><strong>${escapeHtml(a.title)}</strong></td><td>${escapeHtml(a.winner)}</td><td>${escapeHtml(a.ceo)}</td><td>${escapeHtml(a.score)}</td><td style="color:var(--accent-green);font-weight:700;">+$${a.cash.toFixed(2)}M</td></tr>`).join("")}</tbody></table>`;
+  h += `<h4 style="margin-bottom:.55rem;color:var(--accent-teal);">Global World Record Holders (+${getRecordBonusValue()} pt each)</h4>${buildGlobalRecordsTableHTML()}`;
   document.getElementById("reportPage3").innerHTML = h;
 }
 
 function renderReportPage4() {
   const el = document.getElementById("reportPage4");
   const humanPlayers = gameState.players.filter(p => !p.isAI);
-  let html = `<p style="font-size:.75rem;color:var(--text-muted);margin-bottom:.75rem;">Refurbishment and repair use the raw base ride cost plus un-multiplied ride scenery, capped at <strong>50% of base ride cost</strong>. Demolition preserves existing ground scenery. Any completed service grants <strong>3-Turn Immunity (🛡️)</strong>.</p>`;
+  let html = `<p style="font-size:.75rem;color:var(--text-muted);margin-bottom:.75rem;">Refurbishment and repair use the raw base ride cost plus un-multiplied ride scenery, capped at <strong>50% of base ride cost</strong>. Demolition preserves existing ground scenery. Any completed service grants <strong>3-Turn Immunity ()</strong>.</p>`;
   for (const player of humanPlayers) {
     let itemsHtml = "";
     for (const park of player.parks) {
@@ -8518,23 +8801,23 @@ function renderReportPage4() {
           if (r.pendingEolDecision) {
             const refCost = getRideRefurbishCost(r, player);
             const demolitionCost = getRideDemolitionCost(r);
-            itemsHtml += `<div class="card" style="border-color:var(--accent-gold);display:flex;justify-content:space-between;align-items:center;"><div><span class="badge badge-gold">⏳ Lifecycle #${(r.refurbCount || 0) + 1}</span> ${r.cultClassic ? '<span class="badge badge-gold">🌟 Cult Classic</span>' : ''} <strong>${escapeHtml(r.name)}</strong> (${escapeHtml(park.name)})</div><div style="display:flex;gap:.35rem;"><button class="btn-gold btn-sm" title="Refurbish: $${refCost.toFixed(2)}M; raw base ride cost plus raw scenery, capped at 50% of base cost" ${player.cash < refCost ? 'disabled' : ''} onclick="refurbishEndOfLifeRide('${park.id}','${plot.id}','${r.id}')">🔄 Refurb ($${refCost.toFixed(2)}M)</button><button class="btn-danger btn-sm" title="Demolition: $${demolitionCost.toFixed(2)}M; existing ground scenery is preserved" ${player.cash < demolitionCost ? 'disabled' : ''} onclick="letEndOfLifeRideDemolish('${park.id}','${plot.id}','${r.id}')">🗑️ Demolish ($${demolitionCost.toFixed(2)}M)</button></div></div>`;
+            itemsHtml += `<div class="card" style="border-color:var(--accent-gold);display:flex;justify-content:space-between;align-items:center;"><div><span class="badge badge-gold">⏳ Lifecycle #${(r.refurbCount || 0) + 1}</span> ${r.cultClassic ? '<span class="badge badge-gold">Cult Classic</span>' : ''} <strong>${escapeHtml(r.name)}</strong> (${escapeHtml(park.name)})</div><div style="display:flex;gap:.35rem;"><button class="btn-gold btn-sm" title="Refurbish: $${refCost.toFixed(2)}M; raw base ride cost plus raw scenery, capped at 50% of base cost" ${player.cash < refCost ? 'disabled' : ''} onclick="refurbishEndOfLifeRide('${park.id}','${plot.id}','${r.id}')">Refurb ($${refCost.toFixed(2)}M)</button><button class="btn-danger btn-sm" title="Demolition: $${demolitionCost.toFixed(2)}M; existing ground scenery is preserved" ${player.cash < demolitionCost ? 'disabled' : ''} onclick="letEndOfLifeRideDemolish('${park.id}','${plot.id}','${r.id}')">Demolish ($${demolitionCost.toFixed(2)}M)</button></div></div>`;
           }
           if (r.status === "needs_maintenance") {
             const c = getRideMaintenanceCost(r, player);
-            itemsHtml += `<div class="card" style="border-color:var(--accent-teal);display:flex;justify-content:space-between;align-items:center;"><div><span class="badge badge-teal">🔧 Maintenance</span> <strong>${escapeHtml(r.name)}</strong> (${escapeHtml(park.name)})</div><button class="btn-primary btn-sm" title="Maintenance service: $${c.toFixed(2)}M, based on raw ride cost" ${player.cash < c ? 'disabled' : ''} onclick="payRideMaintenance('${park.id}','${plot.id}','${r.id}',true)">Pay $${c.toFixed(2)}M</button></div>`;
+            itemsHtml += `<div class="card" style="border-color:var(--accent-teal);display:flex;justify-content:space-between;align-items:center;"><div><span class="badge badge-teal">Maintenance</span> <strong>${escapeHtml(r.name)}</strong> (${escapeHtml(park.name)})</div><button class="btn-primary btn-sm" title="Maintenance service: $${c.toFixed(2)}M, based on raw ride cost" ${player.cash < c ? 'disabled' : ''} onclick="payRideMaintenance('${park.id}','${plot.id}','${r.id}',true)">Pay $${c.toFixed(2)}M</button></div>`;
           }
           if (r.status === "needs_repair") {
             const c = getRideRepairCost(r);
-            itemsHtml += `<div class="card" style="border-color:var(--accent-red);display:flex;justify-content:space-between;align-items:center;"><div><span class="badge badge-red">🛠️ Repair</span> <strong>${escapeHtml(r.name)}</strong> (${escapeHtml(park.name)})</div><button class="btn-gold btn-sm" title="Base ride cost plus raw scenery, capped at 50% of base ride cost" ${player.cash < c ? 'disabled' : ''} onclick="payRideRepair('${park.id}','${plot.id}','${r.id}',true)">Fix $${c.toFixed(2)}M</button></div>`;
+            itemsHtml += `<div class="card" style="border-color:var(--accent-red);display:flex;justify-content:space-between;align-items:center;"><div><span class="badge badge-red">Repair</span> <strong>${escapeHtml(r.name)}</strong> (${escapeHtml(park.name)})</div><button class="btn-gold btn-sm" title="Base ride cost plus raw scenery, capped at 50% of base ride cost" ${player.cash < c ? 'disabled' : ''} onclick="payRideRepair('${park.id}','${plot.id}','${r.id}',true)">Fix $${c.toFixed(2)}M</button></div>`;
           }
           if (r.status === "needs_inspection") {
-            itemsHtml += `<div class="card" style="border-color:var(--accent-red);display:flex;justify-content:space-between;align-items:center;"><div><span class="badge badge-red">🕵️ Inspection</span> <strong>${escapeHtml(r.name)}</strong> (${escapeHtml(park.name)})</div><button class="btn-gold btn-sm" ${player.cash < 0.5 ? 'disabled' : ''} onclick="payRideInspection('${park.id}','${plot.id}','${r.id}',true)">Inspect $0.50M</button></div>`;
+            itemsHtml += `<div class="card" style="border-color:var(--accent-red);display:flex;justify-content:space-between;align-items:center;"><div><span class="badge badge-red">Inspection</span> <strong>${escapeHtml(r.name)}</strong> (${escapeHtml(park.name)})</div><button class="btn-gold btn-sm" ${player.cash < 0.5 ? 'disabled' : ''} onclick="payRideInspection('${park.id}','${plot.id}','${r.id}',true)">Inspect $0.50M</button></div>`;
           }
         }
       }
     }
-    html += `<div style="margin-bottom:.8rem;"><div style="display:flex;justify-content:space-between;margin-bottom:.28rem;"><strong>${escapeHtml(player.ceoName)} (${escapeHtml(player.chainName)})</strong><span style="color:var(--accent-green);font-weight:700;">Cash: $${player.cash.toFixed(2)}M</span></div>${itemsHtml || '<div class="card" style="color:var(--accent-green);">✅ All attractions operating safely!</div>'}</div>`;
+    html += `<div style="margin-bottom:.8rem;"><div style="display:flex;justify-content:space-between;margin-bottom:.28rem;"><strong>${escapeHtml(player.ceoName)} (${escapeHtml(player.chainName)})</strong><span style="color:var(--accent-green);font-weight:700;">Cash: $${player.cash.toFixed(2)}M</span></div>${itemsHtml || '<div class="card" style="color:var(--accent-green);">All attractions operating safely!</div>'}</div>`;
   }
   el.innerHTML = html;
 }
@@ -8542,26 +8825,17 @@ function renderReportPage4() {
 function finalizeYearAndStartNextTurn() {
   for (const p of gameState.players) {
     for (const pk of p.parks) {
-      for (const pl of pk.plots) {
-        for (let i = pl.rides.length - 1; i >= 0; i--) if (pl.rides[i].pendingEolDecision) pl.rides.splice(i, 1);
-      }
+      for (const ride of [...pk.rides]) if (ride.pendingEolDecision) removeRideFromCampus(pk, ride.id);
     }
   }
   closeModal("yearEndModal");
-  const winners = gameState.players.filter(p => p.totalAttendance >= gameState.winAttendance);
-  const reachedTurnLimit = gameState.year >= gameState.maxYears;
-  if (winners.length > 0 || reachedTurnLimit) {
-    const contenders = winners.length ? winners : gameState.players;
-    const topAttendance = Math.max(...contenders.map(player => player.totalAttendance));
-    const topPlayers = contenders.filter(player => player.totalAttendance === topAttendance);
-    const winnerNames = topPlayers.map(player => `${player.ceoName} (${player.chainName})`).join(", ");
-    const result = winners.length
-      ? "reaching 50M chainwide attendance"
-      : `leading chainwide attendance at the ${gameState.year}-turn limit`;
+  if (gameState.year >= gameState.maxYears) {
     gameState.gameOver = true;
-    alert(`🏆 GAME OVER! ${winnerNames} ${topPlayers.length === 1 ? "wins" : "tie"} with ${topAttendance.toLocaleString()} guests in Year ${gameState.year} by ${result}.`);
+    gameState.finalAwards = calculateFinalAwards();
     renderAll();
     openPendingAdvisorReportsModal();
+    autosaveGame(gameState.year);
+    openFinalAwards();
     return;
   }
   gameState.year++;
@@ -8571,6 +8845,7 @@ function finalizeYearAndStartNextTurn() {
   gameState.selectedHexKey = gameState.players[0].parks[0].hexKey;
   renderAll();
   openPendingAdvisorReportsModal();
+  autosaveGame(gameState.year - 1);
 }
 
 function buildGlobalRecordsTableHTML() {
@@ -8589,7 +8864,7 @@ function buildGlobalRecordsTableHTML() {
 
 function openLegendDetailsModal() {
   const p = gameState.players[gameState.inspectedPlayerIdx];
-  document.getElementById("recordsModalTitle").textContent = `👑 Legend Profile — ${p.ceoName}`;
+  document.getElementById("recordsModalTitle").textContent = `Legend Profile — ${p.ceoName}`;
   document.getElementById("recordsModalBody").innerHTML = `<div class="card"><h4 style="color:var(--accent-gold);margin-bottom:.3rem;">${escapeHtml(p.ceoName)} • ${escapeHtml(p.chainName)}</h4><p style="font-size:.88rem;line-height:1.45;">${escapeHtml(p.legend.desc)}</p></div>`;
   document.getElementById("recordsModal").classList.add("active");
 }
@@ -8613,7 +8888,7 @@ function openLegendInfoModal(playerIdx = gameState.activePlayerIdx) {
   })[0];
   const attendance = player.totalAttendance || 0;
   const body = document.getElementById("legendInfoModalBody");
-  document.getElementById("legendInfoModalTitle").textContent = `👑 Legend Dossier — ${legend.name}`;
+  document.getElementById("legendInfoModalTitle").textContent = `Legend Dossier — ${legend.name}`;
   body.innerHTML = `
     <div class="legend-dossier-layout">
       <div class="legend-dossier-portrait">
@@ -8645,9 +8920,17 @@ function openLegendInfoModal(playerIdx = gameState.activePlayerIdx) {
 function openRenameModal(type, parkId, plotId = null, rideId = null) {
   const park = gameState.players[gameState.activePlayerIdx].parks.find(pk => pk.id === parkId);
   if (!park) return;
+  const item = type === "park" ? park :
+    type === "plot" ? park.zones.find(zone => zone.id === plotId && zone.unlocked !== false) :
+    type === "ride" ? park.rides.find(ride => ride.id === rideId) : null;
+  if (!item) return;
   gameState.renameContext = { type, parkId, plotId, rideId };
   const inputEl = document.getElementById("renameModalInput");
-  inputEl.value = type === "park" ? park.name : (type === "plot" ? park.plots.find(pl => pl.id === plotId).name : park.plots.find(pl => pl.id === plotId).rides.find(r => r.id === rideId).name);
+  const itemLabel = type === "plot" ? "Land" : type === "park" ? "Park" : "Attraction";
+  document.getElementById("renameModalHeader").textContent = `Rename ${itemLabel}`;
+  document.getElementById("renameModalLabel").textContent = `Enter New ${itemLabel} Name`;
+  document.getElementById("renameModalRandom").hidden = type === "plot";
+  inputEl.value = item.name;
   document.getElementById("renameModal").classList.add("active");
   setTimeout(() => { inputEl.focus(); inputEl.select(); }, 50);
 }
@@ -8667,12 +8950,13 @@ function saveRenameModal() {
   if (!val) return;
   const { type, parkId, plotId, rideId } = gameState.renameContext;
   const park = gameState.players[gameState.activePlayerIdx].parks.find(pk => pk.id === parkId);
-  if (type === "park") park.name = val;
-  else if (type === "plot") {
-    const zone = park.zones.find(item => item.id === plotId);
-    if (zone) zone.name = `${getLandTheme(zone.themeId).name} Land`;
-  }
-  else park.plots.find(pl => pl.id === plotId).rides.find(r => r.id === rideId).name = val;
+  if (!park) return;
+  const item = type === "park" ? park :
+    type === "plot" ? park.zones.find(zone => zone.id === plotId && zone.unlocked !== false) :
+    type === "ride" ? park.rides.find(ride => ride.id === rideId) : null;
+  if (!item) return;
+  item.name = val;
+  if (type === "plot") syncParkPlotsMirror(park);
   closeModal("renameModal");
   renderAll();
 }

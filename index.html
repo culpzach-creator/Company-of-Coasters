@@ -5,87 +5,110 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Company of Coasters — Alpha v1.7</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="hud.css">
+  <link rel="stylesheet" href="settings.css">
+  <link rel="stylesheet" href="tutorial.css">
+  <link rel="stylesheet" href="park-drawer.css">
+  <link rel="stylesheet" href="campus-ui.css">
+  <link rel="stylesheet" href="chain-drawer.css">
+  <link rel="stylesheet" href="final-awards.css">
 </head>
 <body>
 
-<header>
+<header class="game-header">
   <div class="top-hud" id="topHud">
-    <div class="hud-stat" id="hudLegendPill" onclick="openLegendInfoModal()" title="Click for Legend Info" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLegendInfoModal()}">
-      <span class="hud-value hud-legend-value" id="hudLegendName">—</span>
-    </div>
-    <div class="hud-stat">
-      <span class="hud-label">CEO & Chain</span>
-      <span class="hud-value" id="hudPlayerName">—</span>
-    </div>
-    <div class="hud-stat">
-      <span class="hud-label">Year / Era</span>
-      <span class="hud-value year" id="hudYear">Yr 1 • Classic</span>
+    <div class="hud-left">
+    <div class="hud-player-group">
+      <div class="hud-stat" id="hudLegendPill" onclick="openLegendInfoModal()" title="Click for Legend Info" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLegendInfoModal()}">
+        <span class="hud-value hud-legend-value" id="hudLegendName">—</span>
+      </div>
+      <div class="hud-player-details">
+        <div class="hud-stat" id="hudIdentityBox">
+          <span class="hud-label">CEO & Chain</span>
+          <span class="hud-value" id="hudPlayerName">—</span>
+        </div>
+        <div class="hud-stat" id="hudYearBox">
+          <span class="hud-label">Year / Era</span>
+          <span class="hud-value year" id="hudYear">Yr 1 • Classic</span>
+        </div>
+      </div>
     </div>
     <div class="hud-stat" id="hudBankBox">
       <span class="hud-label">Chain Treasury</span>
       <span class="hud-value cash" id="hudCash">$30.00M</span>
     </div>
-    <div class="hud-stat">
-      <span class="hud-label">Chain Attendance (Annual)</span>
-      <span class="hud-value att" id="hudAttendance">0</span>
     </div>
-    <div class="hud-stat">
-      <span class="hud-label">Chain Capacity (Annual Max)</span>
-      <span class="hud-value capacity" id="hudCapacity">0</span>
+    <img class="hud-logo" src="Images/company_of_coasters_icon.png" alt="Company of Coasters">
+    <div class="hud-right">
+    <div class="hud-chain-stats">
+      <div class="hud-stat" id="hudAttendanceBox">
+        <span class="hud-label">Chain Attendance (Annual)</span>
+        <span class="hud-value att" id="hudAttendance">0</span>
+      </div>
+      <div class="hud-stat" id="hudCapacityBox">
+        <span class="hud-label">Chain Capacity (Annual Max)</span>
+        <span class="hud-value capacity" id="hudCapacity">0</span>
+      </div>
     </div>
     <button class="btn-gold" id="btnEndTurn" onclick="endPlayerTurn()">End Turn ➔</button>
-    <button class="btn-outline btn-sm" onclick="openSetupModal()">New Game</button>
-    <button class="hud-settings" type="button" disabled title="Settings coming soon" aria-label="Settings coming soon">⚙</button>
+    <button class="hud-settings" id="btnSettings" type="button" onclick="openSettings()" title="Settings" aria-label="Settings"><img src="Images/settings_icon.png" alt=""></button>
+    </div>
+    <div class="toolbar-tabs" aria-label="Game panels">
+      <button class="toolbar-tab-btn" id="tbTabParks" onclick="switchSidebarTab('parks')" aria-label="Parks" title="Parks" aria-expanded="false" aria-controls="sidebarDrawerContent"><img src="Images/parks_icon.png" alt=""></button>
+      <button class="toolbar-tab-btn" id="tbTabRd" onclick="switchSidebarTab('rd')" aria-label="Research" title="Research" aria-expanded="false" aria-controls="sidebarDrawerContent"><img src="Images/research_icon.png" alt=""></button>
+      <button class="toolbar-tab-btn" id="tbTabAdvisors" onclick="switchSidebarTab('advisors')" aria-label="Advisors" title="Advisors" aria-expanded="false" aria-controls="sidebarDrawerContent"><img src="Images/advisor_icon.png" alt=""></button>
+      <button class="toolbar-tab-btn" id="tbTabRivals" onclick="switchSidebarTab('rivals')" aria-label="Chains" title="Chains" aria-expanded="false" aria-controls="sidebarDrawerContent"><img src="Images/chains_icon.png" alt=""></button>
+      <button class="toolbar-tab-btn" id="tbTabRecords" onclick="switchSidebarTab('records')" aria-label="Records" title="Records" aria-expanded="false" aria-controls="sidebarDrawerContent"><img src="Images/awards_icon.png" alt=""></button>
+    </div>
   </div>
 </header>
 
 <div class="main-workspace">
   <aside class="left-toolbar" id="panelLeftSidebar">
-    <div class="toolbar-tabs">
-      <button class="toolbar-tab-btn" id="tbTabParks" onclick="switchSidebarTab('parks')" aria-label="Parks" title="Parks" aria-expanded="false"><span>🎡</span></button>
-      <button class="toolbar-tab-btn" id="tbTabRd" onclick="switchSidebarTab('rd')" aria-label="Research" title="Research" aria-expanded="false"><span>🔬</span></button>
-      <button class="toolbar-tab-btn" id="tbTabAdvisors" onclick="switchSidebarTab('advisors')" aria-label="Advisors" title="Advisors" aria-expanded="false"><span>🧠</span></button>
-      <button class="toolbar-tab-btn" id="tbTabRivals" onclick="switchSidebarTab('rivals')" aria-label="Chains" title="Chains" aria-expanded="false"><span>🏢</span></button>
-      <button class="toolbar-tab-btn" id="tbTabRecords" onclick="switchSidebarTab('records')" aria-label="Records" title="Records" aria-expanded="false"><span>🏆</span></button>
-    </div>
-
     <div class="sidebar-drawer-content" id="sidebarDrawerContent" hidden>
+    <div class="chain-drawer-header">
+      <div><span class="chain-drawer-eyebrow">Company of Coasters</span><h2 id="chainDrawerTitle">Parks</h2></div>
+      <button class="btn-outline btn-sm chain-drawer-close" type="button" onclick="closeSidebarDrawer()" aria-label="Close chain drawer">✕</button>
+    </div>
     <div class="toolbar-body" id="sidebarParksPane">
       <div id="inspectionNoticeBox"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
-        <span style="font-size:.72rem;text-transform:uppercase;color:var(--text-muted);font-weight:700;">Selected Chain's Parks</span>
-        <button class="btn-outline btn-sm" onclick="openLegendDetailsModal()">👑 Legend</button>
+      <div class="chain-section-heading">
+        <h3>Selected Chain's Parks</h3>
+        <button class="btn-outline btn-sm" onclick="openLegendInfoModal(gameState.inspectedPlayerIdx)">Legend</button>
       </div>
       <div id="parkListContainer"></div>
-      <div style="margin-top:.8rem;padding:.65rem;background:#f0f9ff;border:1px solid var(--border-color);border-radius:8px;font-size:.74rem;color:var(--text-muted);line-height:1.4;">
-        💡 <strong>Facility Coverage:</strong> Each land needs an operational restroom and restaurant, regardless of distance. A land loses 10% of its points per missing amenity (up to 20%). Each Park still needs 1 <strong>Guest Services</strong> (-5% park score if missing). Above 1M attendance, keep at least 25% of points in support and scenery to avoid overcrowding penalties.
-      </div>
+      <details class="chain-guide">
+        <summary>Facility coverage guide</summary>
+        <p>Each land needs an operational restroom and restaurant, regardless of distance. A land loses 10% of its points per missing amenity (up to 20%). Each park also needs guest services (-5% park score if missing). Above 1M attendance, keep at least 25% of points in support and scenery to avoid overcrowding penalties.</p>
+      </details>
     </div>
 
     <div class="toolbar-body" id="sidebarRivalsPane" style="display:none;">
-      <div style="font-size:.72rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:.5rem;font-weight:700;">Global Conglomerates (Click to Inspect)</div>
+      <div class="chain-section-heading"><h3>Global Conglomerates</h3></div>
+      <p class="chain-intro">Compare chains and inspect their parks.</p>
       <div id="leaderboardContainer"></div>
     </div>
 
     <div class="toolbar-body" id="sidebarRdPane" style="display:none;">
-      <p style="font-size:.73rem;color:var(--text-muted);margin-bottom:.6rem;">
-        Classic (Yr 1) • <strong>Modern</strong> (Yr 15) • <strong>Advanced</strong> (Yr 30). First to research & build earns a <strong>$1.00M Innovation Bonus</strong>!
-      </p>
+      <div class="chain-section-heading"><h3>Attraction Research</h3></div>
+      <p class="chain-intro">Classic: Year 1 · Modern: Year 15 · Advanced: Year 30. First to research and build earns a <strong>$1.00M Innovation Bonus</strong>.</p>
       <div id="researchListContainer"></div>
     </div>
 
     <div class="toolbar-body" id="sidebarAdvisorsPane" style="display:none;">
-      <div style="font-size:.72rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:.55rem;font-weight:700;">Chain Advisers</div>
+      <div class="chain-section-heading"><h3>Chain Advisors</h3></div>
+      <p class="chain-intro">Hire advisors for three-year contracts and review their reports.</p>
       <div id="advisorListContainer"></div>
     </div>
 
     <div class="toolbar-body" id="sidebarRecordsPane" style="display:none;">
-      <div style="font-size:.73rem;color:var(--text-muted);margin-bottom:.6rem;">Each World Record grants <strong>+<span id="lblRecPts">1</span> pt</strong> (+1 every 10 yrs).</div>
+      <div class="chain-section-heading"><h3>World Records</h3></div>
+      <p class="chain-intro">Each record grants <strong>+<span id="lblRecPts">1</span> pt</strong> (+1 every 10 years).</p>
+      <button id="btnFinalAwards" class="btn-gold btn-sm" type="button" onclick="openFinalAwards()" hidden>View Final Awards</button>
       <div id="sidebarRecordsTableContainer"></div>
-      <div style="margin-top:1rem;font-size:.72rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:.4rem;font-weight:700;">Event Feed</div>
-      <div id="gameLogContainer" style="font-size:.74rem;display:flex;flex-direction:column;gap:.35rem;"></div>
+      <div class="chain-section-heading chain-feed-heading"><h3>Event Feed</h3></div>
+      <div id="gameLogContainer"></div>
     </div>
-    <button class="drawer-close" type="button" onclick="closeSidebarDrawer()" aria-label="Close chain drawer">Close drawer ➜</button>
     </div>
   </aside>
 
@@ -95,12 +118,7 @@
 
     <div class="map-top-bar">
       <div class="map-pill">
-        <span id="mapModeIndicator" style="font-weight:700;color:var(--accent-gold);">🌎 Contiguous US Population Hex Map</span>
-        <button class="btn-primary btn-sm" id="btnExitParkView" style="display:none;" onclick="exitParkCampusView()">⬅ Back to Map</button>
-        <div class="campus-view-toggle" id="campusViewToggle" style="display:none;" role="group" aria-label="Campus view mode">
-          <button type="button" class="btn-outline btn-sm active" id="btnScenicView" aria-pressed="true" onclick="toggleCampusViewMode('scenic')">🎡 Scenic View</button>
-          <button type="button" class="btn-outline btn-sm" id="btnStrategicView" aria-pressed="false" onclick="toggleCampusViewMode('strategic')">🗺️ Strategic View</button>
-        </div>
+        <span id="mapModeIndicator" style="font-weight:700;color:var(--accent-gold);">Contiguous US Population Hex Map</span>
       </div>
 
       <div class="map-legend-box" id="usMapTraitLegend">
@@ -112,6 +130,14 @@
       </div>
     </div>
 
+    <div class="campus-controls">
+      <button class="btn-outline btn-sm" id="btnExitParkView" style="display:none;" onclick="exitParkCampusView()">← Back to Map</button>
+      <div class="campus-view-toggle" id="campusViewToggle" style="display:none;" role="group" aria-label="Campus view mode">
+        <button type="button" class="btn-outline btn-sm active" id="btnScenicView" aria-pressed="true" onclick="toggleCampusViewMode('scenic')">Scenic View</button>
+        <button type="button" class="btn-outline btn-sm" id="btnStrategicView" aria-pressed="false" onclick="toggleCampusViewMode('strategic')">Strategic View</button>
+      </div>
+    </div>
+
     <div class="map-bottom-left" id="hexInspectorCard">
       <div style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Hex Inspector</div>
       <div id="hexInspectorContent" style="margin-top:.35rem;font-size:.82rem;">
@@ -120,24 +146,21 @@
     </div>
 
     <div class="map-bottom-right">
-      <button class="btn-outline btn-sm" onclick="zoomMapBy(1.25)">➕ Zoom In</button>
-      <button class="btn-outline btn-sm" onclick="zoomMapBy(0.8)">➖ Zoom Out</button>
-      <button class="btn-outline btn-sm" onclick="resetMapCamera()">🎯 Center Map</button>
+      <button class="btn-outline btn-sm" onclick="zoomMapBy(1.25)">+ Zoom In</button>
+      <button class="btn-outline btn-sm" onclick="zoomMapBy(0.8)">- Zoom Out</button>
+      <button class="btn-outline btn-sm" onclick="resetMapCamera()">Center Map</button>
     </div>
 
     <div class="park-drawer" id="parkZoneDrawer">
-      <div class="modal-header" style="background:#f8fafc;">
-        <div>
+      <div class="modal-header park-drawer-header">
+        <div class="park-drawer-title-block">
           <span id="drawerParkTitle" style="color:var(--accent-gold);">Park Zones</span>
           <div id="drawerParkSub" style="font-size:.7rem;color:var(--text-muted);font-weight:400;"></div>
           <span id="drawerParkIdentity" class="badge badge-gold" style="margin-top:.25rem;"></span>
         </div>
-        <div style="display:flex;gap:.35rem;">
-          <button class="btn-outline btn-sm" onclick="toggleParkDrawer(false)">Close ✕</button>
-        </div>
+        <button class="btn-outline btn-sm park-drawer-header-close" type="button" onclick="toggleParkDrawer(false)" aria-label="Close park drawer">✕</button>
       </div>
-      <div class="modal-body" id="drawerParkBody" style="padding:.85rem;"></div>
-      <button class="drawer-close" type="button" onclick="toggleParkDrawer(false)">⬅ Close drawer</button>
+      <div class="modal-body" id="drawerParkBody"></div>
     </div>
   </main>
 </div>
@@ -145,12 +168,14 @@
 <div class="tutorial-floating" id="tutorialFloatingBox">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem;">
     <span class="badge badge-gold" id="tutorialStepBadge">Tutorial 1 / 6</span>
-    <button class="icon-btn" onclick="endTutorial()">Skip ✕</button>
+    <span><button type="button" class="icon-btn" id="btnTutorialMinimize" onclick="toggleTutorialMinimized()" aria-expanded="true">Minimize</button>
+    <button class="icon-btn" onclick="endTutorial()">Skip ✕</button></span>
   </div>
   <h4 id="tutorialStepTitle" style="color:var(--accent-gold);margin-bottom:.35rem;">Welcome</h4>
   <p id="tutorialStepText" style="font-size:.82rem;color:var(--text-main);line-height:1.45;margin-bottom:.8rem;"></p>
-  <div style="display:flex;justify-content:space-between;">
-    <button class="btn-outline btn-sm" id="btnTutPrev" onclick="stepTutorial(-1)">⬅ Back</button>
+  <button type="button" class="btn-outline btn-sm" id="btnTutorialLocation" onclick="showTutorialLocation()" hidden>Show location</button>
+  <div class="tutorial-navigation" style="display:flex;justify-content:space-between;">
+    <button class="btn-outline btn-sm" id="btnTutPrev" onclick="stepTutorial(-1)">← Back</button>
     <button class="btn-gold btn-sm" id="btnTutNext" onclick="stepTutorial(1)">Next Tip ➔</button>
   </div>
 </div>
@@ -158,20 +183,94 @@
 <!-- MODALS -->
 <div class="modal-backdrop active" id="homeModal">
   <div class="modal-content home-menu">
-    <div class="home-logo" aria-hidden="true">🎢</div>
+    <div class="home-logo" aria-hidden="true"></div>
     <h1>Company of Coasters</h1>
     <p>Build your theme park empire.</p>
     <div class="home-actions">
       <button class="btn-gold" onclick="openSetupModal()">New Game</button>
       <button class="btn-outline" disabled>Multiplayer <small>Coming soon</small></button>
-      <button class="btn-outline" disabled>Settings <small>Coming soon</small></button>
-      <button class="btn-outline" disabled>Tutorial <small>Coming soon</small></button>
+      <button class="btn-outline" type="button" onclick="openSettings()">Settings</button>
+      <button class="btn-outline" type="button" onclick="openTutorialConfirmation()">Tutorial</button>
+      <button class="btn-outline home-load" type="button" onclick="openLoadGame()">Load Game</button>
     </div>
   </div>
 </div>
-<div class="modal-backdrop" id="setupModal">
+<div class="modal-backdrop" id="loadGameModal" role="dialog" aria-modal="true" aria-labelledby="load-game-title">
+  <div class="modal-content tutorial-confirm-content">
+    <div class="modal-header"><span id="load-game-title">Load Game</span></div>
+    <div class="modal-body"><p>Continue the last automatic save or import a saved JSON file.</p></div>
+    <div class="modal-footer">
+      <button type="button" class="btn-outline" onclick="closeModal('loadGameModal')">Cancel</button>
+      <button type="button" class="btn-outline" onclick="chooseSaveFile()">Import Save</button>
+      <button type="button" class="btn-gold" id="btnLoadAutosave" onclick="loadAutosave()">Load Autosave</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="saveFileInput" accept=".json,application/json" hidden>
+<div class="modal-backdrop" id="tutorialConfirmModal" role="dialog" aria-modal="true" aria-labelledby="tutorialConfirmTitle">
+  <div class="modal-content tutorial-confirm-content">
+    <div class="modal-header"><span id="tutorialConfirmTitle">Begin Tutorial?</span></div>
+    <div class="modal-body">
+      <p>Start a new game as Walt and learn how to build and manage your park chain. You can explore at your own pace, go back through lessons, or skip the tutorial at any time.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-outline" onclick="closeTutorialConfirmation()">Cancel</button>
+      <button type="button" class="btn-gold" onclick="startTutorialGame()">Begin Tutorial</button>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+  <div class="modal-content settings-content">
+    <div class="settings-header">
+      <h2 id="settings-title">Settings &amp; Preferences</h2>
+      <button type="button" class="settings-close" onclick="cancelSettings()" aria-label="Close settings">✕</button>
+    </div>
+    <div class="settings-tabs" role="tablist" aria-label="Settings categories">
+      <button type="button" role="tab" id="settings-tab-gameplay" aria-controls="settings-gameplay" aria-selected="true" onclick="selectSettingsTab('gameplay')">Gameplay</button>
+      <button type="button" role="tab" id="settings-tab-graphics" aria-controls="settings-graphics" aria-selected="false" onclick="selectSettingsTab('graphics')">Graphics</button>
+      <button type="button" role="tab" id="settings-tab-audio" aria-controls="settings-audio" aria-selected="false" onclick="selectSettingsTab('audio')">Audio</button>
+      <button type="button" role="tab" id="settings-tab-controls" aria-controls="settings-controls" aria-selected="false" onclick="selectSettingsTab('controls')">Controls &amp; Data</button>
+    </div>
+    <div class="settings-body">
+      <section id="settings-gameplay" role="tabpanel" aria-labelledby="settings-tab-gameplay">
+        <label class="settings-row"><span><strong>Confirm End Turn</strong><small>Warn before ending a turn with available starter tiles and at least $2M.</small></span><input type="checkbox" data-setting="confirmEndTurn"></label>
+        <label class="settings-row"><span><strong>Event Notifications</strong><small>Filter optional news and automatic advisor reports; the year-end report remains available.</small></span><select data-setting="eventPopupMode"><option value="all">All</option><option value="major">Major only</option><option value="silent">Silent</option></select></label>
+        <label class="settings-row"><span><strong>Autosave</strong><small>Save after completed game years, including maintenance decisions.</small></span><select data-setting="autoSaveInterval"><option value="1">Every year</option><option value="5">Every 5 years</option><option value="10">Every 10 years</option><option value="0">Off</option></select></label>
+      </section>
+      <section id="settings-graphics" role="tabpanel" aria-labelledby="settings-tab-graphics" hidden>
+        <label class="settings-row"><span><strong>Animate Rides</strong><small>Disable ride and train animation to reduce rendering work.</small></span><input type="checkbox" data-setting="animateRides"></label>
+        <label class="settings-row"><span><strong>Render Quality</strong><small>Changes artwork baking resolution.</small></span><select data-setting="renderQuality"><option value="high">High</option><option value="standard">Standard</option><option value="performance">Performance</option></select></label>
+        <label class="settings-row"><span><strong>Scenic Hex Grid</strong><small>Show tile outlines always, on hover and selection, or never.</small></span><select data-setting="hexGridVisibility"><option value="hover">Hover</option><option value="always">Always</option><option value="hidden">Hidden</option></select></label>
+        <label class="settings-row"><span><strong>Atmospheric Effects</strong><small>Unavailable until atmospheric effects are implemented.</small></span><input type="checkbox" data-setting="atmosphericVfx" disabled></label>
+        <label class="settings-row"><span><strong>Edge Scroll Speed</strong><small>Unavailable until edge scrolling is implemented.</small></span><span class="settings-range"><input type="range" min="0" max="100" step="1" data-setting="edgeScrollSpeed" disabled><output data-output="edgeScrollSpeed"></output></span></label>
+      </section>
+      <section id="settings-audio" role="tabpanel" aria-labelledby="settings-tab-audio" hidden>
+        <label class="settings-row"><span><strong>Background Music</strong><small>The three-track playlist plays during a game.</small></span><input type="checkbox" data-setting="musicEnabled"></label>
+        <label class="settings-row"><span><strong>Master Volume</strong><small>Adjust overall music volume.</small></span><span class="settings-range"><input type="range" min="0" max="100" step="1" data-setting="masterVolume"><output data-output="masterVolume"></output></span></label>
+        <label class="settings-row"><span><strong>Music Volume</strong><small>Adjust the playlist volume.</small></span><span class="settings-range"><input type="range" min="0" max="100" step="1" data-setting="musicVolume"><output data-output="musicVolume"></output></span></label>
+        <label class="settings-row"><span><strong>Sound Effects Volume</strong><small>Unavailable until sound effects are implemented.</small></span><span class="settings-range"><input type="range" min="0" max="100" step="1" data-setting="sfxVolume" disabled><output data-output="sfxVolume"></output></span></label>
+        <label class="settings-row"><span><strong>UI Sounds</strong><small>Unavailable until UI sounds are implemented.</small></span><input type="checkbox" data-setting="uiSounds" disabled></label>
+        <p class="settings-status" id="music-status" role="status" aria-live="polite"></p>
+      </section>
+      <section id="settings-controls" role="tabpanel" aria-labelledby="settings-tab-controls" hidden>
+        <label class="settings-row"><span><strong>Interface Scale</strong><small>Scale drawers and game dialogs.</small></span><select data-setting="uiScale"><option value="0.9">90%</option><option value="1">100%</option><option value="1.15">115%</option></select></label>
+        <label class="settings-row"><span><strong>Colorblind Badges</strong><small>Add clear text labels to colored status badges.</small></span><input type="checkbox" data-setting="colorblindBadges"></label>
+      </section>
+    </div>
+    <div class="settings-footer">
+      <button type="button" class="btn-outline" onclick="resetSettings()">Reset Defaults</button>
+      <span class="settings-data-actions" id="settings-game-actions" hidden>
+        <button type="button" class="btn-outline" onclick="exportGameSave()">Export Save (.json)</button>
+        <button type="button" class="btn-outline" onclick="chooseSaveFile()">Import Save</button>
+        <button type="button" class="btn-outline" onclick="exitToMainMenu()">Exit to Main Menu</button>
+      </span>
+      <button type="button" class="btn-gold" onclick="saveAndCloseSettings()">Save &amp; Close</button>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop" id="setupModal" data-step="options">
   <div class="modal-content setup-modal-content">
-    <div class="modal-header"><span>🎢 Company of Coasters — Game Setup</span></div>
+    <div class="modal-header"><span>Company of Coasters — Game Setup</span></div>
     <div class="modal-body setup-modal-body">
       <section id="setupStepConfig" class="setup-step">
         <div class="setup-step-heading">
@@ -179,7 +278,7 @@
           <h2>Game Options</h2>
           <p>Choose your game settings before selecting players.</p>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;">
+        <div class="setup-options-grid">
           <div class="form-group">
             <label for="setupMap">Map</label>
             <select id="setupMap">
@@ -200,25 +299,32 @@
           <div class="form-group">
             <label for="setupGameLength">Game Length</label>
             <select id="setupGameLength">
-              <option value="30">30 turns</option>
+              <option value="25">25 turns</option>
               <option value="50" selected>50 turns</option>
               <option value="100">100 turns</option>
-              <option value="unlimited">Unlimited (until a chain reaches 50M)</option>
+              <option value="150">150 turns</option>
+              <option value="200">200 turns</option>
             </select>
           </div>
           <div class="form-group">
             <label for="setupStartingCash">Starting Cash (millions)</label>
-            <input type="number" id="setupStartingCash" value="30" min="1" max="10000" step="any" required>
+            <div class="setup-number-control">
+              <input type="number" id="setupStartingCash" value="30" min="1" max="10000" step="1" required>
+              <div class="setup-number-stepper" aria-label="Adjust starting cash">
+                <button type="button" aria-label="Increase starting cash" onclick="adjustSetupStartingCash(1)">▲</button>
+                <button type="button" aria-label="Decrease starting cash" onclick="adjustSetupStartingCash(-1)">▼</button>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="form-group" style="margin-top:.2rem;">
+        <div class="form-group setup-toggle" id="setupUnlockAllTechnologyGroup" style="margin-top:.2rem;">
           <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;color:var(--text-main);">
-            <input type="checkbox" id="setupUnlockAllTechnology" style="width:auto;"> Unlock All Technology (all rides researched and available from Year 1)
+            <input type="checkbox" id="setupUnlockAllTechnology"> Unlock All Technology (all rides researched and available from Year 1)
           </label>
         </div>
-        <div class="form-group" style="margin-top:.2rem;">
+        <div class="form-group setup-toggle" id="setupDisableTutorialGroup" style="margin-top:.2rem;">
           <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;color:var(--text-main);">
-            <input type="checkbox" id="setupDisableTutorial" style="width:auto;"> Disable Interactive UI Tutorial on Start
+            <input type="checkbox" id="setupDisableTutorial"> Disable Interactive UI Tutorial on Start
           </label>
         </div>
         <div class="setup-step-actions">
@@ -323,7 +429,7 @@
 <div class="modal-backdrop" id="legendInfoModal">
   <div class="modal-content" style="max-width:760px;">
     <div class="modal-header">
-      <span id="legendInfoModalTitle">👑 Legend Dossier</span>
+      <span id="legendInfoModalTitle">Legend Dossier</span>
       <button class="btn-outline btn-sm" onclick="closeModal('legendInfoModal')" aria-label="Close legend dossier">✕</button>
     </div>
     <div class="modal-body" id="legendInfoModalBody"></div>
@@ -335,7 +441,7 @@
 
 <div class="modal-backdrop" id="welcomeModal">
   <div class="modal-content" style="max-width:580px;">
-    <div class="modal-header"><span>🗞️ Official Press Release — A New Era Begins!</span></div>
+    <div class="modal-header"><span>Official Press Release — A New Era Begins!</span></div>
     <div class="modal-body" id="welcomeModalBody" style="line-height:1.6;font-size:.95rem;"></div>
     <div class="modal-footer">
       <button class="btn-gold" onclick="closeWelcomeAndStartTutorial()">Step Into the CEO Office ➔</button>
@@ -347,20 +453,20 @@
   <div class="modal-content ride-modal-content">
     <div class="modal-header">
       <span id="buildModalTitle">Construct Attraction or Facility</span>
-      <button class="btn-outline btn-sm" onclick="closeModal('buildRideModal')">✕</button>
+      <button class="btn-outline btn-sm" onclick="closeModal('buildRideModal')" aria-label="Close attraction builder">✕</button>
     </div>
     <div class="modal-body ride-modal-body">
       <div class="tabs ride-category-tabs">
-        <button class="tab-btn" id="buildTabCoaster" onclick="switchBuildCategory('coaster')">🎢 Roller Coasters</button>
-        <button class="tab-btn active" id="buildTabFlat" onclick="switchBuildCategory('flat')">🎠 Flat Rides</button>
-        <button class="tab-btn" id="buildTabLegendary" onclick="switchBuildCategory('legendary')">🏆 Legendary Rides</button>
-        <button class="tab-btn" id="buildTabFacility" onclick="switchBuildCategory('facility')">🏢 Facilities</button>
+        <button class="tab-btn" id="buildTabCoaster" onclick="switchBuildCategory('coaster')">Roller Coasters</button>
+        <button class="tab-btn active" id="buildTabFlat" onclick="switchBuildCategory('flat')">Flat Rides</button>
+        <button class="tab-btn" id="buildTabLegendary" onclick="switchBuildCategory('legendary')">Legendary Rides</button>
+        <button class="tab-btn" id="buildTabFacility" onclick="switchBuildCategory('facility')">Facilities</button>
       </div>
       <div class="ride-split-layout">
         <div id="buildCatalogSection" class="ride-catalog-list" aria-label="Available attractions"></div>
         <section class="ride-inspector-pane">
           <div class="ride-preview-showcase">
-            <div class="ride-preview-graphic" id="ridePreviewGraphic"><span>🎢</span></div>
+            <div class="ride-preview-graphic" id="ridePreviewGraphic"><span>Ride</span></div>
             <div class="ride-preview-copy">
               <span id="ridePreviewCategory" class="badge badge-teal">Attraction</span>
               <h3 id="ridePreviewName">Select an attraction</h3>
@@ -373,7 +479,7 @@
               <label>Attraction / Facility Name</label>
               <div style="display:flex;gap:.5rem;">
                 <input type="text" id="customRideName" placeholder="Enter custom name..." oninput="updateCustomizerPreview()">
-                <button class="btn-outline btn-sm" type="button" onclick="rollRandomAttractionName()">🎲 Random</button>
+                <button class="btn-outline btn-sm" type="button" onclick="rollRandomAttractionName()">Random</button>
               </div>
             </div>
             <div id="customSlidersContainer" class="ride-custom-sliders"></div>
@@ -414,7 +520,7 @@
 <div class="modal-backdrop" id="buyParkModal">
   <div class="modal-content" style="max-width:540px;">
     <div class="modal-header">
-      <span id="buyParkModalHeader">🗺️ Acquire Regional Theme Park</span>
+      <span id="buyParkModalHeader">Acquire Regional Theme Park</span>
       <button class="btn-outline btn-sm" onclick="closeModal('buyParkModal')">✕</button>
     </div>
     <div class="modal-body" id="buyParkModalBody"></div>
@@ -424,15 +530,15 @@
 <div class="modal-backdrop" id="renameModal">
   <div class="modal-content" style="max-width:440px;">
     <div class="modal-header">
-      <span id="renameModalHeader">✏️ Rename Item</span>
+      <span id="renameModalHeader">Rename Item</span>
       <button class="btn-outline btn-sm" onclick="closeModal('renameModal')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label id="renameModalLabel">Enter New Name</label>
+        <label id="renameModalLabel" for="renameModalInput">Enter New Name</label>
         <div style="display:flex;gap:.5rem;">
-          <input type="text" id="renameModalInput" onkeydown="if(event.key==='Enter') saveRenameModal()">
-          <button class="btn-outline btn-sm" type="button" onclick="randomizeRenameModalInput()">🎲</button>
+          <input type="text" id="renameModalInput" maxlength="80" onkeydown="if(event.key==='Enter') saveRenameModal()">
+          <button class="btn-outline btn-sm" id="renameModalRandom" type="button" onclick="randomizeRenameModalInput()">Random</button>
         </div>
       </div>
     </div>
@@ -459,7 +565,7 @@
 <div class="modal-backdrop" id="yearEndModal">
   <div class="modal-content" style="max-width:880px;">
     <div class="modal-header">
-      <span id="yearEndModalTitle">📊 Season Report</span>
+      <span id="yearEndModalTitle">Season Report</span>
       <span class="badge badge-gold" id="yearEndStepIndicator">Page 1 of 4</span>
     </div>
     <div class="modal-body">
@@ -476,16 +582,35 @@
       <div id="reportPage4" style="display:none;"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn-outline" id="btnReportPrev" onclick="stepReportPage(-1)" style="display:none;">⬅ Previous Page</button>
+      <button class="btn-outline" id="btnReportPrev" onclick="stepReportPage(-1)" style="display:none;">← Previous Page</button>
       <button class="btn-gold" id="btnReportNext" onclick="stepReportPage(1)">Next Page: News Wire ➔</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="finalAwardsModal" role="dialog" aria-modal="true" aria-labelledby="finalAwardsTitle">
+  <div class="modal-content final-awards-content">
+    <div class="modal-header"><span id="finalAwardsTitle">Bronze Ticket Awards</span></div>
+    <div class="modal-body" id="finalAwardsBody"></div>
+    <div class="modal-footer"><button type="button" class="btn-gold" onclick="closeModal('finalAwardsModal')">Review Game</button></div>
+  </div>
+</div>
+<div class="modal-backdrop" id="legacyLengthModal" role="dialog" aria-modal="true" aria-labelledby="legacyLengthTitle">
+  <div class="modal-content legacy-length-content">
+    <div class="modal-header"><span id="legacyLengthTitle">Choose a Game Length</span></div>
+    <div class="modal-body">
+      <p>This save used unlimited play. Choose a turn limit for the Bronze Ticket awards. If the limit has already passed, the awards will be presented after the current turn.</p>
+      <label for="legacyLengthSelect">Game length</label>
+      <select id="legacyLengthSelect"><option value="25">25 turns</option><option value="50" selected>50 turns</option><option value="100">100 turns</option><option value="150">150 turns</option><option value="200">200 turns</option></select>
+    </div>
+    <div class="modal-footer"><button class="btn-gold" type="button" onclick="applyLegacyGameLength()">Continue</button></div>
   </div>
 </div>
 
 <div class="modal-backdrop" id="recordsModal">
   <div class="modal-content" style="max-width:640px;">
     <div class="modal-header">
-      <span id="recordsModalTitle">👑 Legend Profile</span>
+      <span id="recordsModalTitle">Legend Profile</span>
       <button class="btn-outline btn-sm" onclick="closeModal('recordsModal')">✕</button>
     </div>
     <div class="modal-body" id="recordsModalBody"></div>
@@ -495,9 +620,12 @@
   </div>
 </div>
 
+<script src="settings.js"></script>
 <script src="data.js"></script>
 <script src="europeMap.js"></script>
 <script src="sprites.js"></script>
+<script src="restroomFacilityPack.js"></script>
+<script src="restaurantFacilityPack.js"></script>
 <script src="parkEntrancePack.js"></script>
 <script src="crazyBusSkinPack.js"></script>
 <script src="macroLandPacks.js"></script>
@@ -516,6 +644,8 @@
 <script src="regionalThemePacks.js"></script>
 <script src="themePacks.js"></script>
 <script src="revisedLandPacks.js"></script>
+<script src="newWorldLandPacks.js"></script>
+<script src="classicCoasterPacks.js"></script>
 <script src="newWeeniePacks.js"></script>
 <script src="campusScenery.js"></script>
 <script src="largeCampusScenery.js"></script>
@@ -528,6 +658,21 @@
 <script src="modernInvertedCoasterPack.js"></script>
 <script src="nebulazSkinPack.js"></script>
 <script src="legendarySpaceMountainPack.js"></script>
+<script src="evolvedDropTowerSkinPack.js"></script>
+<script src="demolitionDerbySpritePack.js"></script>
+<script src="bumperCarsSpritePack.js"></script>
+<script src="teacupsSpritePack.js"></script>
+<script src="giantDiscoverySpritePack.js"></script>
+<script src="guestServicesFacilityPack.js"></script>
+<script src="wildernessLandPack.js"></script>
+<script src="ancientMonumentsWeeniePack.js"></script>
+<script src="heroWeenieLandmarkPack.js"></script>
+<script src="newWorldWeeniePack.js"></script>
+<script src="newWorldTheaterPacks.js"></script>
+<script src="newSpritePacks.js"></script>
+<script src="tutorial.js"></script>
+<script src="savegame.js"></script>
 <script src="engine.js"></script>
+<script src="final-awards.js"></script>
 </body>
 </html>

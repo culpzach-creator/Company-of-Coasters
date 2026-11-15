@@ -1,0 +1,190 @@
+#panelLeftSidebar {
+  width: min(390px, 42vw);
+}
+#panelLeftSidebar .sidebar-drawer-content {
+  --bg-card: #0c2536;
+  --text-main: #f5e8c1;
+  --text-muted: #b7c8ce;
+  --accent-gold: #f1cf6b;
+  --border-color: #896f32;
+  zoom: 1;
+  align-self: flex-end;
+  flex: 0 0 auto;
+  width: calc(100% / var(--ui-scale, 1));
+  height: calc((100% - 54px) / var(--ui-scale, 1));
+  margin-top: 54px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-left: 2px solid #d6aa48;
+  border-radius: 0;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 13px, rgba(102, 145, 167, .055) 13px 14px),
+    repeating-linear-gradient(-45deg, transparent 0 13px, rgba(102, 145, 167, .055) 13px 14px),
+    linear-gradient(#152d41, #05111e 75%);
+  box-shadow: -8px 0 24px #0008;
+  color: #f5e8c1;
+  transform: scale(var(--ui-scale, 1));
+  transform-origin: top right;
+}
+#panelLeftSidebar[data-pane] .sidebar-drawer-content {
+  background-image:
+    repeating-linear-gradient(45deg, transparent 0 13px, rgba(102, 145, 167, .055) 13px 14px),
+    repeating-linear-gradient(-45deg, transparent 0 13px, rgba(102, 145, 167, .055) 13px 14px),
+    linear-gradient(#152d41, #05111e 75%);
+}
+#panelLeftSidebar .sidebar-drawer-content,
+#panelLeftSidebar .sidebar-drawer-content * { font-family: Georgia, "Times New Roman", serif; }
+#panelLeftSidebar .chain-drawer-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .8rem 1rem;
+  border-bottom: 2px solid #bd9137;
+  background: linear-gradient(135deg, #173044, #05111e);
+}
+#panelLeftSidebar .chain-drawer-header h2 { color: #f6d76b; font-size: 1.15rem; }
+#panelLeftSidebar .chain-drawer-eyebrow { color: #b7c8ce; font-size: .6rem; letter-spacing: .08em; text-transform: uppercase; }
+#panelLeftSidebar .toolbar-body {
+  min-height: 0;
+  padding: .8rem;
+  overflow: auto;
+  color: #f5e8c1;
+}
+#panelLeftSidebar .toolbar-body > div:first-child { color: inherit !important; }
+#panelLeftSidebar .chain-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-bottom: .5rem;
+}
+#panelLeftSidebar .chain-section-heading h3,
+#panelLeftSidebar .research-category-heading {
+  color: #f6d76b;
+  font-size: .78rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+#panelLeftSidebar .chain-intro,
+#panelLeftSidebar .chain-card-description {
+  margin: 0 0 .65rem;
+  color: #b7c8ce;
+  font-size: .73rem;
+  line-height: 1.45;
+}
+#panelLeftSidebar .chain-card {
+  margin: 0 0 .65rem;
+  padding: .75rem;
+  border: 1px solid #a78338;
+  border-radius: 0;
+  background: linear-gradient(145deg, #122b3d, #061421);
+  color: #f5e8c1;
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+}
+#panelLeftSidebar .chain-card.active-card { border-color: #f4d77c; box-shadow: inset 3px 0 #e7c56e; }
+#panelLeftSidebar .chain-card strong { color: #f6d76b; }
+#panelLeftSidebar .chain-card-heading,
+#panelLeftSidebar .advisor-card-heading,
+#panelLeftSidebar .rival-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+#panelLeftSidebar .chain-name-button {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #f6d76b;
+  font-size: .95rem;
+  font-weight: bold;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+#panelLeftSidebar .chain-name-button:hover { text-decoration: underline; }
+#panelLeftSidebar .chain-card-heading + .chain-card-description { margin-top: .35rem; }
+#panelLeftSidebar .chain-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem; margin: .55rem 0; }
+#panelLeftSidebar .chain-metrics > div { min-width: 0; padding: .4rem .5rem; border: 1px solid #526c76; background: #071724; }
+#panelLeftSidebar .chain-metrics span { display: block; color: #b7c8ce; font-size: .62rem; text-transform: uppercase; }
+#panelLeftSidebar .chain-metrics strong { display: block; margin-top: .15rem; color: #f5e8c1; font-size: .82rem; overflow-wrap: anywhere; }
+#panelLeftSidebar .chain-status-line { display: flex; flex-wrap: wrap; gap: .3rem; margin: .45rem 0; }
+#panelLeftSidebar .badge { border-radius: 2px; white-space: normal; }
+#panelLeftSidebar .chain-warning { margin: .45rem 0; color: #ffaaa0; font-size: .72rem; line-height: 1.4; }
+#panelLeftSidebar .chain-card-actions { display: flex; gap: .35rem; margin-top: .55rem; }
+#panelLeftSidebar .chain-card-actions button { flex: 1; }
+#panelLeftSidebar .btn-outline,
+#panelLeftSidebar .btn-primary {
+  border: 1px solid #b78f3b;
+  border-radius: 2px;
+  background: linear-gradient(#1b4055, #071724);
+  color: #f5e8c1;
+  box-shadow: none;
+}
+#panelLeftSidebar .btn-gold {
+  border: 1px solid #f3d577;
+  border-radius: 2px;
+  background: linear-gradient(#fff0ac, #e1b64b 55%, #a87417);
+  color: #241700;
+}
+#panelLeftSidebar button:hover:not(:disabled) { filter: brightness(1.15); }
+#panelLeftSidebar button:disabled { opacity: .5; cursor: not-allowed; }
+#panelLeftSidebar button:focus-visible,
+#panelLeftSidebar summary:focus-visible { outline: 2px solid #fff3bd; outline-offset: 2px; }
+#panelLeftSidebar .chain-inspection-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-bottom: .65rem;
+  padding: .55rem;
+  border: 1px solid #b78f3b;
+  background: #173044;
+  color: #f5e8c1;
+  font-size: .73rem;
+}
+#panelLeftSidebar .chain-guide {
+  margin: .7rem 0;
+  padding: .65rem;
+  border: 1px solid #526c76;
+  background: #071724;
+  color: #b7c8ce;
+  font-size: .73rem;
+  line-height: 1.45;
+}
+#panelLeftSidebar .chain-guide summary { color: #f6d76b; cursor: pointer; font-weight: bold; }
+#panelLeftSidebar .chain-guide p { margin-top: .5rem; }
+#panelLeftSidebar .rival-heading { justify-content: flex-start; }
+#panelLeftSidebar .rival-heading .legend-avatar-thumb,
+#panelLeftSidebar .rival-heading .hud-legend-fallback {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border: 2px solid #cba23d;
+}
+#panelLeftSidebar .rival-identity, #panelLeftSidebar .advisor-card-title, #panelLeftSidebar .research-card-copy { min-width: 0; flex: 1; }
+#panelLeftSidebar .rival-identity strong, #panelLeftSidebar .advisor-card-title strong, #panelLeftSidebar .research-card-copy strong { display: block; overflow-wrap: anywhere; }
+#panelLeftSidebar .rival-identity small, #panelLeftSidebar .advisor-card-title small, #panelLeftSidebar .research-card-copy small { display: block; margin-top: .2rem; color: #b7c8ce; font-size: .7rem; }
+#panelLeftSidebar .research-category-heading { margin: .9rem 0 .45rem; }
+#panelLeftSidebar .research-card { display: flex; align-items: center; gap: .5rem; margin-bottom: .35rem; padding: .6rem .7rem; }
+#panelLeftSidebar .research-card-copy small { text-transform: capitalize; }
+#panelLeftSidebar .advisor-avatar { flex-basis: 62px; width: 62px; height: 62px; border: 1px solid #cba23d; border-radius: 2px; }
+#panelLeftSidebar .advisor-card-heading { align-items: flex-start; }
+#panelLeftSidebar .chain-salary { display: block; margin-top: .3rem; color: #f6d76b; font-size: .7rem; }
+#panelLeftSidebar .advisor-card .chain-card-description { margin-top: .5rem; }
+#panelLeftSidebar .advisor-report-summary { margin-top: .65rem; padding: .55rem; border: 1px solid #526c76; background: #071724; font-size: .7rem; line-height: 1.45; }
+#panelLeftSidebar .advisor-report-summary p { margin-top: .25rem; color: #b7c8ce; }
+#panelLeftSidebar #sidebarRecordsTableContainer { overflow-x: auto; }
+#panelLeftSidebar #sidebarRecordsTableContainer table { width: 100%; border-collapse: collapse; font-size: .7rem; }
+#panelLeftSidebar #sidebarRecordsTableContainer th { color: #f6d76b; text-align: left; }
+#panelLeftSidebar #sidebarRecordsTableContainer th,
+#panelLeftSidebar #sidebarRecordsTableContainer td { padding: .5rem .3rem; border-bottom: 1px solid #526c76; vertical-align: top; overflow-wrap: anywhere; }
+#panelLeftSidebar #sidebarRecordsTableContainer td strong { color: #f5e8c1; }
+#panelLeftSidebar .chain-feed-heading { margin-top: 1rem; }
+#panelLeftSidebar .chain-event { padding: .5rem .2rem; border-bottom: 1px solid #526c76; color: #d7e1dc; font-size: .72rem; line-height: 1.4; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  #panelLeftSidebar { width: min(360px, 94vw); }
+}

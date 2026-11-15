@@ -1,0 +1,175 @@
+#parkZoneDrawer {
+  --bg-panel: #091b2b;
+  --bg-card: #0c2536;
+  --text-main: #f5e8c1;
+  --text-muted: #b7c8ce;
+  --border-color: #896f32;
+  --accent-gold: #f1cf6b;
+  --accent-teal: #a9d8e2;
+  --accent-green: #8fd7aa;
+  --accent-red: #ffaaa0;
+  zoom: 1;
+  width: min(calc(390px / var(--ui-scale, 1)), calc(42vw / var(--ui-scale, 1)));
+  max-width: none;
+  height: calc(100% / var(--ui-scale, 1));
+  bottom: auto;
+  transform: scale(var(--ui-scale, 1));
+  transform-origin: top left;
+  border: 0;
+  border-right: 2px solid #d6aa48;
+  border-radius: 0;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 13px, rgba(102, 145, 167, .055) 13px 14px),
+    repeating-linear-gradient(-45deg, transparent 0 13px, rgba(102, 145, 167, .055) 13px 14px),
+    linear-gradient(#152d41, #05111e 75%);
+  box-shadow: 8px 0 24px #0008;
+  color: var(--text-main);
+}
+@media (max-width: 760px) {
+  #parkZoneDrawer { width: min(calc(360px / var(--ui-scale, 1)), calc(94vw / var(--ui-scale, 1))); }
+}
+
+#parkZoneDrawer[data-panel] { background-image:
+  repeating-linear-gradient(45deg, transparent 0 13px, rgba(102, 145, 167, .055) 13px 14px),
+  repeating-linear-gradient(-45deg, transparent 0 13px, rgba(102, 145, 167, .055) 13px 14px),
+  linear-gradient(#152d41, #05111e 75%); }
+#parkZoneDrawer::before { display: none; }
+#parkZoneDrawer, #parkZoneDrawer * { font-family: Georgia, "Times New Roman", serif; }
+#parkZoneDrawer .park-drawer-header,
+#buildRideModal .modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .9rem 1rem;
+  border: 0;
+  border-bottom: 2px solid #bd9137;
+  border-radius: 0;
+  background: linear-gradient(135deg, #173044, #05111e) !important;
+  color: #f6e8c1;
+  font-size: 1.05rem;
+  font-weight: bold;
+}
+#parkZoneDrawer #drawerParkTitle { color: #f6d76b !important; font-size: 1.15rem; }
+#parkZoneDrawer .modal-header #drawerParkSub { color: #b7c8ce !important; line-height: 1.45; }
+#parkZoneDrawer #drawerParkIdentity { align-self: flex-start; }
+#parkZoneDrawer #drawerParkBody {
+  gap: .7rem;
+  padding: .8rem;
+  background: transparent;
+  color: #f5e8c1;
+}
+#parkZoneDrawer .card,
+#buildRideModal .ride-cost-breakdown {
+  padding: .75rem;
+  border: 1px solid #a78338;
+  border-radius: 0;
+  background: linear-gradient(145deg, #122b3d, #061421);
+  color: #f5e8c1;
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+}
+#parkZoneDrawer .card strong { color: #f6d76b; }
+#parkZoneDrawer .campus-land-card { border-left-width: 3px; }
+#parkZoneDrawer .campus-land-card.locked { opacity: 1; }
+#parkZoneDrawer .campus-land-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .35rem; }
+#parkZoneDrawer .campus-land-heading > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+#parkZoneDrawer .drawer-muted { color: #b7c8ce; font-size: .75rem; line-height: 1.45; }
+#parkZoneDrawer .badge { border-radius: 2px; }
+#parkZoneDrawer select,
+#parkZoneDrawer input[type="text"] {
+  min-width: 0;
+  border: 1px solid #a78338;
+  border-radius: 2px;
+  background: #071724;
+  color: #f5e8c1;
+}
+#parkZoneDrawer input[type="range"] { accent-color: #d6aa48; }
+#parkZoneDrawer button:focus-visible { outline: 2px solid #fff3bd; outline-offset: 2px; }
+#parkZoneDrawer .btn-outline,
+#parkZoneDrawer .btn-primary,
+#parkZoneDrawer .icon-btn,
+#parkZoneDrawer .tab-btn {
+  border: 1px solid #b78f3b;
+  border-radius: 2px;
+  background: linear-gradient(#1b4055, #071724);
+  color: #f5e8c1;
+  box-shadow: none;
+}
+#parkZoneDrawer .btn-gold {
+  border: 1px solid #f3d577;
+  border-radius: 2px;
+  background: linear-gradient(#fff0ac, #e1b64b 55%, #a87417);
+  color: #241700;
+}
+#parkZoneDrawer .btn-danger {
+  border: 1px solid #cf887e;
+  border-radius: 2px;
+  background: #552826;
+  color: #ffe4dc;
+}
+#parkZoneDrawer button:hover:not(:disabled) { filter: brightness(1.15); }
+#parkZoneDrawer button:disabled { opacity: .5; cursor: not-allowed; }
+
+#buildRideModal {
+  z-index: 4;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 13px, rgba(102, 145, 167, .055) 13px 14px),
+    repeating-linear-gradient(-45deg, transparent 0 13px, rgba(102, 145, 167, .055) 13px 14px),
+    linear-gradient(#152d41, #05111e 75%);
+}
+#buildRideModal .ride-modal-content { display: flex; flex-direction: column; background: transparent; color: #f5e8c1; }
+#buildRideModal .modal-header { flex: 0 0 auto; align-items: center; }
+#buildRideModal .ride-modal-body { padding: .75rem; background: transparent; overflow: hidden; }
+#buildRideModal .ride-category-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .3rem; margin-bottom: .7rem; }
+#buildRideModal .ride-category-tabs .tab-btn { min-height: 36px; padding: .4rem; font-size: .72rem; }
+#buildRideModal .ride-category-tabs .tab-btn.active {
+  border-color: #f5df98;
+  background: linear-gradient(#ffe69a, #c99a35);
+  color: #241700;
+}
+#buildRideModal .ride-split-layout { overflow-y: auto; overflow-x: hidden; padding-right: .25rem; }
+#buildRideModal .ride-catalog-list {
+  max-height: 34vh;
+  padding: 0 0 .6rem;
+  border: 0;
+  border-bottom: 1px solid #896f32;
+}
+#buildRideModal[data-view="manufacturers"] .ride-catalog-list { max-height: none; overflow: visible; border: 0; }
+#buildRideModal .ride-inspector-pane[hidden] { display: none; }
+#buildRideModal .drawer-section-title { margin: .1rem 0 .6rem; color: #f6d76b; font-size: .83rem; letter-spacing: .04em; text-transform: uppercase; }
+#buildRideModal .manufacturer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; padding: 0; background: none; }
+#buildRideModal .manufacturer-card {
+  display: grid;
+  min-height: 88px;
+  padding: .45rem;
+  place-items: center;
+  border: 1px solid #b78f3b;
+  border-radius: 2px;
+  background: linear-gradient(145deg, #142f42, #071724);
+}
+#buildRideModal .manufacturer-logo { width: 100%; height: 72px; border-radius: 2px; background: #fff; object-fit: contain; }
+#buildRideModal .manufacturer-logo-fallback { color: #f6d76b; font-size: .95rem; font-weight: bold; text-align: center; }
+#buildRideModal .manufacturer-selected { display: flex; flex-wrap: wrap; gap: .25rem .55rem; margin: .25rem 0 .65rem; color: #b7c8ce; line-height: 1.4; }
+#buildRideModal .manufacturer-selected strong { color: #f6d76b; font-size: .9rem; }
+#buildRideModal .manufacturer-selected small { flex-basis: 100%; color: #d9e3df; font-size: .7rem; }
+#buildRideModal .ride-list-row {
+  width: 100%;
+  margin: 0 0 .35rem;
+  border: 1px solid #526c76;
+  border-radius: 2px;
+  background: #0a2030;
+  color: #f5e8c1;
+}
+#buildRideModal .ride-list-row:hover:not(:disabled),
+#buildRideModal .ride-list-row.active { border-color: #e7c56e; background: #214456; box-shadow: inset 3px 0 #e7c56e; }
+#buildRideModal .ride-mini-icon { border: 1px solid #a78338; border-radius: 2px; background: #071724; color: #f6d76b; font-size: .75rem; }
+#buildRideModal .ride-preview-showcase { padding: .75rem 0; border-color: #896f32; }
+#buildRideModal .ride-preview-graphic { border: 1px solid #a78338; border-radius: 2px; background: radial-gradient(#28495a, #091824); color: #f6d76b; }
+#buildRideModal .ride-preview-graphic span { font-size: 1rem; }
+#buildRideModal .ride-preview-copy h3,
+#buildRideModal .ride-customizer h4 { color: #f6d76b; }
+#buildRideModal .ride-preview-stats,
+#buildRideModal #previewDiscountNote,
+#buildRideModal #previewSmoothnessOdds { color: #b7c8ce; }
+#buildRideModal .ride-customizer { padding: .7rem 0; }
+#buildRideModal .ride-build-bar { z-index: 1; padding: .6rem 0; border-color: #896f32; background: #071724; }

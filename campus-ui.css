@@ -1,0 +1,95 @@
+.map-stage.campus-view-scenic .map-pill,
+.map-stage.campus-view-strategic .map-pill {
+  display: none;
+}
+
+.campus-controls {
+  position: absolute;
+  z-index: 36;
+  right: 12px;
+  bottom: 16px;
+  left: 12px;
+  display: flex;
+  justify-content: center;
+  gap: .35rem;
+  pointer-events: none;
+}
+.campus-controls button {
+  min-height: 38px;
+  padding: .5rem .85rem;
+  border: 1px solid #d6aa48;
+  border-radius: 0;
+  background: linear-gradient(#1b4055, #071724);
+  color: #f5e8c1;
+  font: bold .76rem Georgia, "Times New Roman", serif;
+  clip-path: polygon(7px 0, calc(100% - 7px) 0, 100% 7px, 100% calc(100% - 7px), calc(100% - 7px) 100%, 7px 100%, 0 calc(100% - 7px), 0 7px);
+  pointer-events: auto;
+}
+.campus-controls button.active {
+  border-color: #ffe9a4;
+  background: linear-gradient(#ffe69a, #c99a35);
+  color: #241700;
+}
+.campus-controls button:hover { filter: brightness(1.15); }
+.campus-controls button:focus-visible { outline: 2px solid white; outline-offset: 2px; }
+@media (min-width: 1000px) {
+  .map-stage:has(.park-drawer.open) .campus-controls { left: min(390px, 42vw); }
+  .main-workspace:has(.sidebar-drawer-content:not([hidden])) .campus-controls { right: 390px; }
+}
+@media (min-width: 700px) and (max-width: 999px) {
+  .map-stage:has(.park-drawer.open) .campus-controls { left: 42vw; }
+}
+@media (max-width: 999px) {
+  .map-stage:has(.park-drawer.open) #drawerParkBody { padding-bottom: 65px; }
+  .campus-controls button { padding: .45rem .55rem; font-size: .68rem; }
+}
+
+#legendInfoModal .modal-content {
+  border: 2px solid #d6aa48;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 13px, rgba(102, 145, 167, .055) 13px 14px),
+    repeating-linear-gradient(-45deg, transparent 0 13px, rgba(102, 145, 167, .055) 13px 14px),
+    linear-gradient(#152d41, #05111e 75%);
+  color: #f5e8c1;
+  box-shadow: 0 18px 50px #000b, inset 0 0 0 2px #0b3952;
+}
+#legendInfoModal .modal-content,
+#legendInfoModal .modal-content * { font-family: Georgia, "Times New Roman", serif; }
+#legendInfoModal .modal-header,
+#legendInfoModal .modal-footer {
+  border-color: #bd9137;
+  background: linear-gradient(135deg, #173044, #05111e);
+  color: #f6d76b;
+}
+#legendInfoModal .modal-header { font-size: 1.1rem; }
+#legendInfoModal .modal-body { color: #f5e8c1; }
+#legendInfoModal .legend-dossier-portrait {
+  border: 2px solid #d6aa48;
+  border-radius: 3px;
+  background: linear-gradient(#f5eedb, #b8cbd0);
+}
+#legendInfoModal .legend-dossier-copy h3,
+#legendInfoModal .legend-dossier-copy h4 { color: #f6d76b !important; }
+#legendInfoModal .legend-dossier-title,
+#legendInfoModal .legend-empire-stat span { color: #b7c8ce; }
+#legendInfoModal .legend-dossier-perks { color: #f5e8c1; }
+#legendInfoModal .legend-empire-stat {
+  border: 1px solid #896f32;
+  border-radius: 0;
+  background: linear-gradient(145deg, #122b3d, #061421);
+}
+#legendInfoModal .legend-empire-stat strong { color: #f5e8c1; }
+#legendInfoModal .legend-empire-stat .money-value { color: #8fd7aa; }
+#legendInfoModal .btn-outline {
+  border: 1px solid #b78f3b;
+  border-radius: 2px;
+  background: linear-gradient(#1b4055, #071724);
+  color: #f5e8c1;
+}
+#legendInfoModal .btn-outline:hover { filter: brightness(1.15); }
+#renameModalRandom[hidden] { display: none; }
+@media (max-width: 480px) {
+  #legendInfoModal .legend-dossier-layout { grid-template-columns: 1fr; }
+  #legendInfoModal .legend-dossier-portrait { width: 130px; height: 170px; }
+}
